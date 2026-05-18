@@ -1,0 +1,132 @@
+import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import Navbar from '../components/Navbar'
+
+const MAKES = ['Toyota','Mercedes-Benz','Mazda','Audi','Volkswagen','Subaru','BMW','Lexus','Nissan','Mitsubishi','Porsche','Suzuki','Honda','Isuzu']
+const BODY_TYPES = [{ t:'SUV', c:58 },{ t:'Sedan', c:9 },{ t:'Hatchback', c:8 },{ t:'Minivan', c:5 },{ t:'Pickup', c:2 },{ t:'Coupe', c:2 }]
+
+export default function HomePage({ user }) {
+  const navigate = useNavigate()
+  const [make, setMake]   = useState('')
+  const [body, setBody]   = useState('')
+  const [price, setPrice] = useState('')
+
+  const search = () => {
+    const p = new URLSearchParams()
+    if (make)  p.set('make', make)
+    if (body)  p.set('body', body)
+    if (price) p.set('maxPrice', price)
+    navigate(`/listings?${p.toString()}`)
+  }
+
+  return (
+    <div style={{ fontFamily: 'DM Sans, sans-serif', background: '#F7F9FC', minHeight: '100vh' }}>
+      <Navbar user={user} />
+
+      {/* Hero */}
+      <div style={{ background: 'linear-gradient(135deg,#0A2540,#1565C0)', padding: '64px 24px 0' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ color: '#4DA6FF', fontSize: 11, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', marginBottom: 12 }}>Kenya's #1 Car Platform</div>
+          <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: 52, fontWeight: 800, color: '#fff', lineHeight: 1.08, marginBottom: 14, letterSpacing: -1 }}>
+            Find Your <span style={{ color: '#4DA6FF' }}>Perfect</span><br />Car in Kenya
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 16, marginBottom: 36, maxWidth: 480 }}>
+            Browse verified listings from trusted dealers and private sellers across Kenya.
+          </p>
+
+          {/* Search box */}
+          <div style={{ background: '#fff', borderRadius: '14px 14px 0 0', padding: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 12, alignItems: 'end' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Make</label>
+                <select value={make} onChange={e => setMake(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+                  <option value="">Any Make</option>
+                  {MAKES.map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Body Type</label>
+                <select value={body} onChange={e => setBody(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+                  <option value="">Any Body</option>
+                  {BODY_TYPES.map(b => <option key={b.t}>{b.t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Budget (KSH)</label>
+                <select value={price} onChange={e => setPrice(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+                  <option value="">Any Price</option>
+                  <option value="1000000">Under 1M</option>
+                  <option value="3000000">Under 3M</option>
+                  <option value="5000000">Under 5M</option>
+                  <option value="10000000">Under 10M</option>
+                </select>
+              </div>
+              <button onClick={search} style={{ background: '#1565C0', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>
+                Search →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div style={{ background: '#EEF5FF', borderBottom: '1px solid #D9E8FA', padding: '14px 24px', display: 'flex', gap: 40 }}>
+        {[['86+','Active Listings'],['19','Car Makes'],['100%','Verified Sellers'],['7 Days','Support']].map(([n,l]) => (
+          <div key={l}><div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 20, fontWeight: 700, color: '#1565C0' }}>{n}</div><div style={{ fontSize: 11, color: '#64748B' }}>{l}</div></div>
+        ))}
+      </div>
+
+      {/* Browse by Make */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
+          <div>
+            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 24, fontWeight: 700, color: '#0A2540' }}>Browse by Make</div>
+            <div style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>Find your preferred brand</div>
+          </div>
+          <Link to="/listings" style={{ fontSize: 13, fontWeight: 600, color: '#1565C0', textDecoration: 'none' }}>View all →</Link>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {MAKES.map(m => (
+            <button key={m} onClick={() => navigate(`/listings?make=${m}`)}
+              style={{ padding: '8px 16px', border: '1.5px solid #E2E8F0', borderRadius: 100, fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer', background: '#fff', fontFamily: 'DM Sans, sans-serif', transition: 'all .15s' }}
+              onMouseOver={e => { e.target.style.background='#0A2540'; e.target.style.color='#fff'; e.target.style.borderColor='#0A2540' }}
+              onMouseOut={e => { e.target.style.background='#fff'; e.target.style.color='#475569'; e.target.style.borderColor='#E2E8F0' }}>
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Body Types */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 0' }}>
+        <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 24, fontWeight: 700, color: '#0A2540', marginBottom: 20 }}>Browse by Body Style</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12 }}>
+          {BODY_TYPES.map(b => (
+            <div key={b.t} onClick={() => navigate(`/listings?body=${b.t}`)}
+              style={{ background: '#fff', border: '1.5px solid #E8EDF3', borderRadius: 12, padding: '18px 12px', textAlign: 'center', cursor: 'pointer' }}>
+              <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#0A2540', marginBottom: 3 }}>{b.t}</div>
+              <div style={{ fontSize: 11, color: '#94A3B8' }}>{b.c} cars</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Dealer CTA */}
+      <div style={{ maxWidth: 1200, margin: '48px auto', padding: '0 24px' }}>
+        <div style={{ background: '#0A2540', borderRadius: 16, padding: '48px', display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 32 }}>
+          <div>
+            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Are You a Dealer?<br />List Your Inventory Free</div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, lineHeight: 1.6 }}>Join Kenya's fastest-growing car platform. Reach thousands of active buyers with zero listing fees for a limited time.</div>
+          </div>
+          <Link to="/pricing" style={{ background: '#4DA6FF', color: '#0A2540', padding: '14px 28px', borderRadius: 10, fontWeight: 800, fontSize: 14, textDecoration: 'none', fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>Become a Dealer →</Link>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer style={{ background: '#060F1A', padding: '28px 24px', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 6 }}>CarExpert<span style={{ color: '#4DA6FF' }}>Africa</span>®</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Kenya's Ultimate Car Listing Platform · Westlands, Nairobi · © 2025</div>
+      </footer>
+    </div>
+  )
+}
