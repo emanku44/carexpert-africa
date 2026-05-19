@@ -22,9 +22,24 @@ export const isAdmin = (user) =>
   user?.user_metadata?.role === 'admin'
 
 export const getApprovedListings = async (filters = {}) => {
-  let query = supabase.from('listings').select('*, listing_photos(*)').eq('status', 'approved')
+  let query = supabase
+    .from('listings')
+    .select('*, listing_photos(*)')
+    .eq('status', 'approved')
+    .order('featured', { ascending: false })
+    .order('created_at', { ascending: false })
   return query
 }
+
+export const getFeaturedListings = async () =>
+  supabase
+    .from('listings')
+    .select('*, listing_photos(*)')
+    .eq('status', 'approved')
+    .eq('featured', true)
+    .gt('featured_until', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(6)
 
 export const getListingById = async (id) =>
   supabase.from('listings').select('*, listing_photos(*)').eq('id', id).single()
@@ -58,3 +73,17 @@ export const unsaveListing = async (userId, listingId) =>
 
 export const getSavedListings = async (userId) =>
   supabase.from('saved_listings').select('*, listings(*, listing_photos(*))').eq('user_id', userId)
+export const markAsFeatured = async (id, days = 30) => {
+  const featuredUntil = new Date()
+  featuredUntil.setDate(featuredUntil.getDate() + days)
+  return supabase
+    .from('listings')
+    .update({ featured: true, featured_until: featuredUntil.toISOString() })
+    .eq('id', id)
+}
+
+export const removeFeatured = async (id) =>
+  supabase
+    .from('listings')
+    .update({ featured: false, featured_until: null })
+    .eq('id', id)

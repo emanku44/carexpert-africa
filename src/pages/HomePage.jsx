@@ -80,7 +80,89 @@ export default function HomePage({ user }) {
           <div key={l}><div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 20, fontWeight: 700, color: '#1565C0' }}>{n}</div><div style={{ fontSize: 11, color: '#64748B' }}>{l}</div></div>
         ))}
       </div>
+import { useEffect, useState } from 'react'
+import { getFeaturedListings } from '../lib/supabase'
 
+// Inside your component, add:
+const [featured, setFeatured] = useState([])
+
+useEffect(() => {
+  getFeaturedListings().then(({ data }) => setFeatured(data || []))
+}, [])
+
+// Then in your JSX, add this section:
+{featured.length > 0 && (
+  <section style={{ padding: '60px 20px', background: '#f8faff' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+        <span style={{ fontSize: 24 }}>⭐</span>
+        <h2 style={{ fontSize: 28, fontWeight: 700, color: '#0A2540', margin: 0 }}>
+          Featured Listings
+        </h2>
+        <span style={{
+          background: '#1565C0', color: 'white',
+          fontSize: 11, fontWeight: 700, padding: '3px 10px',
+          borderRadius: 20, letterSpacing: 1
+        }}>PROMOTED</span>
+      </div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+        gap: 24
+      }}>
+        {featured.map(car => (
+          <div key={car.id} style={{
+            background: 'white',
+            borderRadius: 12,
+            overflow: 'hidden',
+            boxShadow: '0 4px 20px rgba(21,101,192,0.15)',
+            border: '2px solid #1565C0',
+            position: 'relative'
+          }}>
+            <div style={{
+              position: 'absolute', top: 12, left: 12,
+              background: '#1565C0', color: 'white',
+              fontSize: 11, fontWeight: 700, padding: '4px 10px',
+              borderRadius: 20, zIndex: 1
+            }}>⭐ FEATURED</div>
+            <div style={{ height: 200, background: '#e8f0fe', overflow: 'hidden' }}>
+              {car.listing_photos?.[0] ? (
+                <img src={car.listing_photos[0].url} alt={car.title}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', color: '#1565C0', fontSize: 40 }}>🚗</div>
+              )}
+            </div>
+            <div style={{ padding: 16 }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: '#0A2540' }}>
+                {car.year} {car.make} {car.model}
+              </h3>
+              <p style={{ margin: '0 0 12px', fontSize: 20, fontWeight: 800, color: '#1565C0' }}>
+                KSH {car.price?.toLocaleString()}
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                {[car.mileage && `${car.mileage?.toLocaleString()} km`, car.fuel_type, car.transmission]
+                  .filter(Boolean).map((tag, i) => (
+                  <span key={i} style={{
+                    background: '#f0f4ff', color: '#1565C0',
+                    fontSize: 12, padding: '3px 8px', borderRadius: 6
+                  }}>{tag}</span>
+                ))}
+              </div>
+              <a href={`/listings/${car.id}`} style={{
+                display: 'block', textAlign: 'center',
+                background: '#1565C0', color: 'white',
+                padding: '10px', borderRadius: 8,
+                textDecoration: 'none', fontWeight: 600, fontSize: 14
+              }}>View Listing</a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
       {/* Browse by Make */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>

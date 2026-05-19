@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getAllListingsAdmin, approveListing, declineListing, isAdmin } from '../lib/supabase'
+import { getAllListingsAdmin, approveListing, declineListing, markAsFeatured, removeFeatured } from '../lib/supabase'
 
 const DECLINE_REASONS = [
   'Insufficient photos (min 5)',
@@ -191,7 +191,55 @@ function ListingRow({ listing, onApprove, onDecline }) {
     </div>
   )
 }
-
+{/* Featured toggle button — add this next to your approve/decline buttons */}
+{listing.status === 'approved' && (
+  <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+    <p style={{ fontSize: 13, color: '#666', margin: '0 0 8px' }}>
+      <strong>Featured:</strong>{' '}
+      {listing.featured
+        ? `Yes — until ${new Date(listing.featured_until).toLocaleDateString()}`
+        : 'No'}
+    </p>
+    <div style={{ display: 'flex', gap: 8 }}>
+      {[7, 14, 30].map(days => (
+        <button
+          key={days}
+          onClick={async () => {
+            await markAsFeatured(listing.id, days)
+            setToast(`Featured for ${days} days!`)
+            loadListings()
+          }}
+          style={{
+            background: listing.featured ? '#e8f0fe' : '#1565C0',
+            color: listing.featured ? '#1565C0' : 'white',
+            border: '1px solid #1565C0',
+            borderRadius: 6, padding: '6px 12px',
+            fontSize: 12, fontWeight: 600, cursor: 'pointer'
+          }}
+        >
+          ⭐ {days}d
+        </button>
+      ))}
+      {listing.featured && (
+        <button
+          onClick={async () => {
+            await removeFeatured(listing.id)
+            setToast('Removed from featured')
+            loadListings()
+          }}
+          style={{
+            background: '#fff0f0', color: '#dc2626',
+            border: '1px solid #dc2626',
+            borderRadius: 6, padding: '6px 12px',
+            fontSize: 12, fontWeight: 600, cursor: 'pointer'
+          }}
+        >
+          ✕ Remove
+        </button>
+      )}
+    </div>
+  </div>
+)}
 export default function AdminPage({ user }) {
   const [listings, setListings] = useState([])
   const [filter, setFilter]     = useState('all')
