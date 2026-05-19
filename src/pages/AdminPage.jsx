@@ -40,18 +40,18 @@ function StatCard({ icon, number, label, color }) {
   )
 }
 
-function ListingRow({ listing, onApprove, onDecline }) {
-  const [expanded, setExpanded]     = useState(false)
+function ListingRow({ listing, onApprove, onDecline, onFeatured }) {
+  const [expanded, setExpanded] = useState(false)
   const [showDecline, setShowDecline] = useState(false)
   const [showApprove, setShowApprove] = useState(false)
   const [selectedReasons, setSelectedReasons] = useState(new Set())
-  const [note, setNote]             = useState('')
-  const [tier, setTier]             = useState('standard')
+  const [note, setNote] = useState('')
+  const [tier, setTier] = useState('standard')
 
   const statusColors = {
-    pending:  { bg: '#FEF3C7', text: '#D97706', label: '⏳ Pending'  },
-    approved: { bg: '#DCFCE7', text: '#16A34A', label: '✓ Approved'  },
-    declined: { bg: '#FEE2E2', text: '#EF4444', label: '✕ Declined'  },
+    pending:  { bg: '#FEF3C7', text: '#D97706', label: '⏳ Pending' },
+    approved: { bg: '#DCFCE7', text: '#16A34A', label: '✓ Approved' },
+    declined: { bg: '#FEE2E2', text: '#EF4444', label: '✕ Declined' },
   }
   const sc = statusColors[listing.status] || statusColors.pending
 
@@ -77,7 +77,7 @@ function ListingRow({ listing, onApprove, onDecline }) {
   const borderColor = listing.status === 'approved' ? '#16A34A' : listing.status === 'declined' ? '#EF4444' : '#D97706'
 
   return (
-    <div style={{ background: '#fff', border: `1.5px solid #E8EDF3`, borderLeft: `4px solid ${borderColor}`, borderRadius: 12, marginBottom: 10, overflow: 'hidden' }}>
+    <div style={{ background: '#fff', border: '1.5px solid #E8EDF3', borderLeft: `4px solid ${borderColor}`, borderRadius: 12, marginBottom: 10, overflow: 'hidden' }}>
       {/* Main row */}
       <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr auto', gap: 14, padding: 14, alignItems: 'center', cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
         {/* Thumbnail */}
@@ -136,11 +136,38 @@ function ListingRow({ listing, onApprove, onDecline }) {
             )}
           </div>
 
+          {/* Featured toggle — only for approved listings */}
+          {listing.status === 'approved' && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #E8EDF3' }}>
+              <p style={{ fontSize: 13, color: '#475569', margin: '0 0 8px', fontWeight: 600 }}>
+                ⭐ Featured:{' '}
+                {listing.featured
+                  ? <span style={{ color: '#1565C0' }}>Yes — until {new Date(listing.featured_until).toLocaleDateString()}</span>
+                  : <span style={{ color: '#94A3B8' }}>No</span>}
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[7, 14, 30].map(days => (
+                  <button key={days}
+                    onClick={async (e) => { e.stopPropagation(); await markAsFeatured(listing.id, days); onFeatured() }}
+                    style={{ background: '#1565C0', color: 'white', border: '1px solid #1565C0', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    ⭐ {days}d
+                  </button>
+                ))}
+                {listing.featured && (
+                  <button
+                    onClick={async (e) => { e.stopPropagation(); await removeFeatured(listing.id); onFeatured() }}
+                    style={{ background: '#fff0f0', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    ✕ Remove Featured
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Decline panel */}
           {showDecline && listing.status === 'pending' && (
             <div style={{ background: '#FFF5F5', border: '1.5px solid #FECACA', borderRadius: 10, padding: 14, marginTop: 10 }}>
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#DC2626', marginBottom: 10 }}>✕ Decline — Add Reason for Seller</div>
-
               <div style={{ fontSize: 11, fontWeight: 600, color: '#64748B', marginBottom: 6 }}>Quick reasons (select all that apply)</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
                 {DECLINE_REASONS.map(r => (
@@ -150,10 +177,8 @@ function ListingRow({ listing, onApprove, onDecline }) {
                   </button>
                 ))}
               </div>
-
               <div style={{ fontSize: 11, fontWeight: 600, color: '#64748B', marginBottom: 5 }}>Additional note to seller (optional)</div>
-              <textarea
-                value={note} onChange={e => setNote(e.target.value)}
+              <textarea value={note} onChange={e => setNote(e.target.value)}
                 placeholder="e.g. Please upload at least 5 clear photos. Resubmit once updated."
                 style={{ width: '100%', padding: '9px 11px', border: '1.5px solid #FECACA', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', resize: 'vertical', minHeight: 70, outline: 'none', lineHeight: 1.5 }}
               />
@@ -169,7 +194,6 @@ function ListingRow({ listing, onApprove, onDecline }) {
             <div style={{ background: '#F0FDF4', border: '1.5px solid #86EFAC', borderRadius: 10, padding: 14, marginTop: 10 }}>
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#16A34A', marginBottom: 6 }}>✓ Approve Listing</div>
               <div style={{ fontSize: 12, color: '#475569', marginBottom: 10 }}>Listing will go live immediately. Seller notified by email.</div>
-
               <div style={{ fontSize: 11, fontWeight: 600, color: '#64748B', marginBottom: 6 }}>Listing tier</div>
               <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
                 {['standard', 'featured', 'special deal'].map(t => (
@@ -179,7 +203,6 @@ function ListingRow({ listing, onApprove, onDecline }) {
                   </button>
                 ))}
               </div>
-
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button onClick={() => setShowApprove(false)} style={{ background: '#fff', color: '#64748B', border: '1.5px solid #E2E8F0', padding: '7px 14px', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
                 <button onClick={handleApproveConfirm} style={{ background: '#16A34A', color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>✓ Approve & Publish</button>
@@ -190,90 +213,14 @@ function ListingRow({ listing, onApprove, onDecline }) {
       )}
     </div>
   )
-{/* Featured toggle */}
-          {listing.status === 'approved' && (
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-              <p style={{ fontSize: 13, color: '#666', margin: '0 0 8px' }}>
-                <strong>Featured:</strong>{' '}
-                {listing.featured
-                  ? `Yes — until ${new Date(listing.featured_until).toLocaleDateString()}`
-                  : 'No'}
-              </p>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {[7, 14, 30].map(days => (
-                  <button key={days}
-                    onClick={async (e) => { e.stopPropagation(); await markAsFeatured(listing.id, days) }}
-                    style={{ background: listing.featured ? '#e8f0fe' : '#1565C0', color: listing.featured ? '#1565C0' : 'white', border: '1px solid #1565C0', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    ⭐ {days}d
-                  </button>
-                ))}
-                {listing.featured && (
-                  <button onClick={async (e) => { e.stopPropagation(); await removeFeatured(listing.id) }}
-                    style={{ background: '#fff0f0', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    ✕ Remove
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
 }
-  <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-    <p style={{ fontSize: 13, color: '#666', margin: '0 0 8px' }}>
-      <strong>Featured:</strong>{' '}
-      {listing.featured
-        ? `Yes — until ${new Date(listing.featured_until).toLocaleDateString()}`
-        : 'No'}
-    </p>
-    <div style={{ display: 'flex', gap: 8 }}>
-      {[7, 14, 30].map(days => (
-        <button
-          key={days}
-          onClick={async () => {
-            await markAsFeatured(listing.id, days)
-            setToast(`Featured for ${days} days!`)
-            loadListings()
-          }}
-          style={{
-            background: listing.featured ? '#e8f0fe' : '#1565C0',
-            color: listing.featured ? '#1565C0' : 'white',
-            border: '1px solid #1565C0',
-            borderRadius: 6, padding: '6px 12px',
-            fontSize: 12, fontWeight: 600, cursor: 'pointer'
-          }}
-        >
-          ⭐ {days}d
-        </button>
-      ))}
-      {listing.featured && (
-        <button
-          onClick={async () => {
-            await removeFeatured(listing.id)
-            setToast('Removed from featured')
-            loadListings()
-          }}
-          style={{
-            background: '#fff0f0', color: '#dc2626',
-            border: '1px solid #dc2626',
-            borderRadius: 6, padding: '6px 12px',
-            fontSize: 12, fontWeight: 600, cursor: 'pointer'
-          }}
-        >
-          ✕ Remove
-        </button>
-      )}
-    </div>
-  </div>
-)}
+
 export default function AdminPage({ user }) {
   const [listings, setListings] = useState([])
-  const [filter, setFilter]     = useState('all')
-  const [search, setSearch]     = useState('')
-  const [loading, setLoading]   = useState(true)
-  const [toast, setToast]       = useState({ show: false, msg: '', type: 'success' })
+  const [filter, setFilter] = useState('all')
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [toast, setToast] = useState({ show: false, msg: '', type: 'success' })
 
   useEffect(() => { fetchListings() }, [])
 
@@ -293,16 +240,14 @@ export default function AdminPage({ user }) {
     const { error } = await approveListing(id, tier)
     if (error) { showToast('Error approving listing', 'error'); return }
     setListings(prev => prev.map(l => l.id === id ? { ...l, status: 'approved' } : l))
-    showToast('Listing approved and published! Seller notified.', 'success')
-    // TODO: trigger email notification via Supabase Edge Function or Resend
+    showToast('Listing approved and published!', 'success')
   }
 
   const handleDecline = async (id, note) => {
     const { error } = await declineListing(id, note)
     if (error) { showToast('Error declining listing', 'error'); return }
     setListings(prev => prev.map(l => l.id === id ? { ...l, status: 'declined', admin_note: note } : l))
-    showToast('Listing declined. Seller notified with reason.', 'error')
-    // TODO: trigger email notification via Supabase Edge Function or Resend
+    showToast('Listing declined. Seller notified.', 'error')
   }
 
   const filtered = listings.filter(l => {
@@ -314,7 +259,7 @@ export default function AdminPage({ user }) {
 
   const counts = {
     all: listings.length,
-    pending:  listings.filter(l => l.status === 'pending').length,
+    pending: listings.filter(l => l.status === 'pending').length,
     approved: listings.filter(l => l.status === 'approved').length,
     declined: listings.filter(l => l.status === 'declined').length,
   }
@@ -350,7 +295,6 @@ export default function AdminPage({ user }) {
             { label: 'Pending', icon: '⏳', badge: counts.pending, badgeRed: true },
             { label: 'Approved', icon: '✓' },
             { label: 'Declined', icon: '✕' },
-            { label: 'Flagged', icon: '⚑', badge: 0 },
             { label: '—', section: true },
             { label: 'All Users', icon: '👤' },
             { label: 'Dealers', icon: '🏢' },
@@ -366,7 +310,6 @@ export default function AdminPage({ user }) {
               color: item.active ? '#4DA6FF' : 'rgba(255,255,255,.5)',
               background: item.active ? 'rgba(77,166,255,.1)' : 'transparent',
               borderLeft: item.active ? '3px solid #4DA6FF' : '3px solid transparent',
-              transition: 'all .15s'
             }}>
               <span style={{ fontSize: 12 }}>{item.icon}</span>
               {item.label}
@@ -386,27 +329,22 @@ export default function AdminPage({ user }) {
                 placeholder="Search listings or sellers..."
                 style={{ padding: '8px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 12, outline: 'none', background: '#fff', fontFamily: 'DM Sans, sans-serif', width: 220 }}
               />
-              <select style={{ padding: '8px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 12, outline: 'none', background: '#fff', fontFamily: 'DM Sans, sans-serif' }}>
-                <option>Newest First</option>
-                <option>Oldest First</option>
-                <option>Price High</option>
-              </select>
             </div>
           </div>
 
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 18 }}>
-            <StatCard icon="⏳" number={counts.pending}  label="Pending Review"  color="#D97706" />
-            <StatCard icon="✓"  number={listings.filter(l => l.status === 'approved' && new Date(l.updated_at) > new Date(Date.now() - 86400000)).length} label="Approved Today" color="#16A34A" />
-            <StatCard icon="✕"  number={listings.filter(l => l.status === 'declined' && new Date(l.updated_at) > new Date(Date.now() - 86400000)).length} label="Declined Today"  color="#EF4444" />
-            <StatCard icon="📋" number={counts.approved} label="Total Live"      color="#1565C0" />
+            <StatCard icon="⏳" number={counts.pending} label="Pending Review" color="#D97706" />
+            <StatCard icon="✓" number={listings.filter(l => l.status === 'approved' && new Date(l.updated_at) > new Date(Date.now() - 86400000)).length} label="Approved Today" color="#16A34A" />
+            <StatCard icon="✕" number={listings.filter(l => l.status === 'declined' && new Date(l.updated_at) > new Date(Date.now() - 86400000)).length} label="Declined Today" color="#EF4444" />
+            <StatCard icon="📋" number={counts.approved} label="Total Live" color="#1565C0" />
           </div>
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 0, background: '#fff', border: '1.5px solid #E8EDF3', borderRadius: 10, overflow: 'hidden', marginBottom: 14, width: 'fit-content' }}>
             {TABS.map(t => (
               <button key={t} onClick={() => setFilter(t)}
-                style={{ padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: filter === t ? '#fff' : '#64748B', background: filter === t ? '#0A2540' : 'transparent', border: 'none', borderRight: '1px solid #F0F4F8', fontFamily: 'Outfit, sans-serif', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .15s' }}>
+                style={{ padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: filter === t ? '#fff' : '#64748B', background: filter === t ? '#0A2540' : 'transparent', border: 'none', borderRight: '1px solid #F0F4F8', fontFamily: 'Outfit, sans-serif', display: 'flex', alignItems: 'center', gap: 5 }}>
                 {t.charAt(0).toUpperCase() + t.slice(1)}
                 <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 100, background: filter === t ? 'rgba(255,255,255,.2)' : 'rgba(0,0,0,.08)' }}>{counts[t]}</span>
               </button>
@@ -419,7 +357,7 @@ export default function AdminPage({ user }) {
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#94A3B8', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>No listings found.</div>
           ) : filtered.map(l => (
-            <ListingRow key={l.id} listing={l} onApprove={handleApprove} onDecline={handleDecline} />
+            <ListingRow key={l.id} listing={l} onApprove={handleApprove} onDecline={handleDecline} onFeatured={fetchListings} />
           ))}
         </main>
       </div>
