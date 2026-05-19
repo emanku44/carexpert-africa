@@ -29,7 +29,7 @@ export default function HomePage({ user }) {
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat'
-}}
+}}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ color: '#4DA6FF', fontSize: 11, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', marginBottom: 12 }}>Kenya's #1 Car Platform</div>
           <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: 52, fontWeight: 800, color: '#fff', lineHeight: 1.08, marginBottom: 14, letterSpacing: -1 }}>
