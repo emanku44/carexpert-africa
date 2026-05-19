@@ -24,7 +24,12 @@ export default function HomePage({ user }) {
       <Navbar user={user} />
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#0A2540,#1565C0)', padding: '64px 24px 0' }}>
+      <div style={{
+  backgroundImage: 'linear-gradient(rgba(10,37,64,0.7), rgba(10,37,64,0.85)), url(/hero.jpg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat'
+}}
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ color: '#4DA6FF', fontSize: 11, fontWeight: 700, letterSpacing: '1.8px', textTransform: 'uppercase', marginBottom: 12 }}>Kenya's #1 Car Platform</div>
           <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: 52, fontWeight: 800, color: '#fff', lineHeight: 1.08, marginBottom: 14, letterSpacing: -1 }}>
