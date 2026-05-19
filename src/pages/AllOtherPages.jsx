@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { signUp, signIn } from '../lib/supabase'
+import Navbar from '../components/Navbar'
 
 const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
 
@@ -826,7 +827,7 @@ export function DashboardPage({ user }) {
 
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
-      <nav style={{ background:'#0A2540', padding:'0 24px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+      <Navbar user={user} />
         <Link to="/" style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#fff', textDecoration:'none' }}>CarExpert<span style={{ color:'#4DA6FF' }}>Africa</span>®</Link>
         <div style={{ display:'flex', gap:12, alignItems:'center' }}>
           <div style={{ width:30, height:30, borderRadius:'50%', background:'rgba(255,255,255,.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer' }}>🔔</div>
