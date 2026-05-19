@@ -190,9 +190,37 @@ function ListingRow({ listing, onApprove, onDecline }) {
       )}
     </div>
   )
+{/* Featured toggle */}
+          {listing.status === 'approved' && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+              <p style={{ fontSize: 13, color: '#666', margin: '0 0 8px' }}>
+                <strong>Featured:</strong>{' '}
+                {listing.featured
+                  ? `Yes — until ${new Date(listing.featured_until).toLocaleDateString()}`
+                  : 'No'}
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[7, 14, 30].map(days => (
+                  <button key={days}
+                    onClick={async (e) => { e.stopPropagation(); await markAsFeatured(listing.id, days) }}
+                    style={{ background: listing.featured ? '#e8f0fe' : '#1565C0', color: listing.featured ? '#1565C0' : 'white', border: '1px solid #1565C0', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    ⭐ {days}d
+                  </button>
+                ))}
+                {listing.featured && (
+                  <button onClick={async (e) => { e.stopPropagation(); await removeFeatured(listing.id) }}
+                    style={{ background: '#fff0f0', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    ✕ Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
-{/* Featured toggle button — add this next to your approve/decline buttons */}
-{listing.status === 'approved' && (
   <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
     <p style={{ fontSize: 13, color: '#666', margin: '0 0 8px' }}>
       <strong>Featured:</strong>{' '}
