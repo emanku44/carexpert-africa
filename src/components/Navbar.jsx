@@ -1,39 +1,76 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function Navbar({ user }) {
-  const { pathname } = useLocation()
-
-  const linkStyle = (path) => ({
-    color: pathname === path ? '#fff' : 'rgba(255,255,255,0.6)',
-    fontWeight: pathname === path ? 600 : 400,
-    fontSize: 13,
-    textDecoration: 'none',
-    cursor: 'pointer',
-  })
+  const navigate = useNavigate()
 
   return (
-    <nav style={{ background: '#0A2540', padding: '0 24px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
-      <Link to="/" style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 800, color: '#fff', textDecoration: 'none' }}>
+    <nav style={{
+      background: '#0A2540', padding: '0 24px', height: 56,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      position: 'sticky', top: 0, zIndex: 100
+    }}>
+      {/* Logo */}
+      <Link to="/" style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 800, color: '#fff', textDecoration: 'none', flexShrink: 0 }}>
         CarExpert<span style={{ color: '#4DA6FF' }}>Africa</span>®
       </Link>
 
-      <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-        <Link to="/listings"  style={linkStyle('/listings')}>Listings</Link>
-        <Link to="/news"      style={linkStyle('/news')}>News & Reviews</Link>
-        <Link to="/valuation" style={linkStyle('/valuation')}>Valuation</Link>
-        <Link to="/pricing"   style={linkStyle('/pricing')}>Pricing</Link>
+      {/* Nav links */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {[
+          { label: 'Buy a Car',    to: '/listings' },
+          { label: 'Sell',         to: '/list-car' },
+          { label: 'Valuation',    to: '/valuation' },
+          { label: 'News',         to: '/news' },
+          { label: 'Pricing',      to: '/pricing' },
+        ].map(({ label, to }) => (
+          <Link key={to} to={to} style={{
+            color: 'rgba(255,255,255,.7)', fontSize: 13, fontWeight: 500,
+            textDecoration: 'none', padding: '6px 12px', borderRadius: 7,
+            transition: 'all .15s'
+          }}
+            onMouseOver={e => { e.target.style.color = '#fff'; e.target.style.background = 'rgba(255,255,255,.08)' }}
+            onMouseOut={e => { e.target.style.color = 'rgba(255,255,255,.7)'; e.target.style.background = 'transparent' }}
+          >
+            {label}
+          </Link>
+        ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+      {/* Right side */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         {user ? (
           <>
-            <Link to="/dashboard" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, textDecoration: 'none' }}>My Account</Link>
-            <Link to="/list-car" style={{ background: '#1565C0', color: '#fff', padding: '7px 16px', borderRadius: 7, fontSize: 13, fontWeight: 700, textDecoration: 'none', fontFamily: 'Outfit, sans-serif' }}>List a Car</Link>
+            <Link to="/list-car" style={{
+              background: '#1565C0', color: '#fff', textDecoration: 'none',
+              padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+              fontFamily: 'Outfit, sans-serif'
+            }}>
+              + List a Car
+            </Link>
+            <Link to="/dashboard" style={{
+              width: 32, height: 32, borderRadius: '50%', background: '#1565C0',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 700,
+              color: '#fff', textDecoration: 'none'
+            }}>
+              {user.email?.[0]?.toUpperCase() || 'U'}
+            </Link>
           </>
         ) : (
           <>
-            <Link to="/auth" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, textDecoration: 'none' }}>Sign In</Link>
-            <Link to="/list-car" style={{ background: '#1565C0', color: '#fff', padding: '7px 16px', borderRadius: 7, fontSize: 13, fontWeight: 700, textDecoration: 'none', fontFamily: 'Outfit, sans-serif' }}>List a Car</Link>
+            <Link to="/auth" style={{
+              color: 'rgba(255,255,255,.7)', fontSize: 13, fontWeight: 500,
+              textDecoration: 'none', padding: '6px 12px'
+            }}>
+              Sign In
+            </Link>
+            <Link to="/auth" style={{
+              background: '#1565C0', color: '#fff', textDecoration: 'none',
+              padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+              fontFamily: 'Outfit, sans-serif'
+            }}>
+              + List a Car
+            </Link>
           </>
         )}
       </div>
