@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { signUp, signIn } from '../lib/supabase'
 
 const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
 
@@ -328,10 +329,37 @@ export function PricingPage({ user }) {
 // AUTH PAGE
 // ─────────────────────────────────────────────────────────────
 export function AuthPage({ user }) {
-  const [tab, setTab]     = useState('login')
-  const [role, setRole]   = useState('buyer')
-  const [email, setEmail] = useState('')
-  const [pass, setPass]   = useState('')
+  const [tab, setTab]       = useState('login')
+  const [role, setRole]     = useState('buyer')
+  const [email, setEmail]   = useState('')
+  const [pass, setPass]     = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName]   = useState('')
+  const [phone, setPhone]         = useState('')
+  const [business, setBusiness]   = useState('')
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState('')
+  const [success, setSuccess]     = useState('')
+
+  const handleLogin = async () => {
+    setLoading(true); setError('')
+    const { error } = await signIn(email, pass)
+    if (error) setError(error.message)
+    else window.location.href = '/dashboard'
+    setLoading(false)
+  }
+
+  const handleRegister = async () => {
+    setLoading(true); setError('')
+    const { error } = await signUp(email, pass, {
+      full_name: `${firstName} ${lastName}`,
+      phone, role,
+      business_name: business
+    })
+    if (error) setError(error.message)
+    else setSuccess('Account created! Check your email to confirm.')
+    setLoading(false)
+  }
 
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
@@ -356,11 +384,14 @@ export function AuthPage({ user }) {
         <div style={{ background:'#fff', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 56px' }}>
           <div style={{ display:'flex', borderBottom:'2px solid #F0F4F8', marginBottom:28, width:'100%', maxWidth:340 }}>
             {['login','register'].map(t => (
-              <div key={t} onClick={() => setTab(t)} style={{ flex:1, padding:'10px 0', textAlign:'center', fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, cursor:'pointer', color:tab===t?'#0A2540':'#94A3B8', borderBottom:`2px solid ${tab===t?'#1565C0':'transparent'}`, marginBottom:-2, transition:'all .2s' }}>
+              <div key={t} onClick={() => { setTab(t); setError(''); setSuccess('') }} style={{ flex:1, padding:'10px 0', textAlign:'center', fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, cursor:'pointer', color:tab===t?'#0A2540':'#94A3B8', borderBottom:`2px solid ${tab===t?'#1565C0':'transparent'}`, marginBottom:-2, transition:'all .2s' }}>
                 {t === 'login' ? 'Sign In' : 'Create Account'}
               </div>
             ))}
           </div>
+
+          {error && <div style={{ width:'100%', maxWidth:340, background:'#FEE2E2', color:'#DC2626', borderRadius:8, padding:'10px 14px', fontSize:12, fontWeight:600, marginBottom:14 }}>{error}</div>}
+          {success && <div style={{ width:'100%', maxWidth:340, background:'#DCFCE7', color:'#16A34A', borderRadius:8, padding:'10px 14px', fontSize:12, fontWeight:600, marginBottom:14 }}>{success}</div>}
 
           <div style={{ width:'100%', maxWidth:340 }}>
             {tab === 'login' ? (
@@ -374,7 +405,9 @@ export function AuthPage({ user }) {
                   </div>
                 ))}
                 <div style={{ textAlign:'right', fontSize:11, color:'#1565C0', fontWeight:600, cursor:'pointer', marginTop:-8, marginBottom:14 }}>Forgot password?</div>
-                <button style={{ width:'100%', background:'#1565C0', color:'#fff', border:'none', padding:12, borderRadius:9, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Sign In →</button>
+                <button onClick={handleLogin} disabled={loading} style={{ width:'100%', background:'#1565C0', color:'#fff', border:'none', padding:12, borderRadius:9, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', opacity:loading?0.7:1 }}>
+                  {loading ? 'Signing in...' : 'Sign In →'}
+                </button>
               </>
             ) : (
               <>
@@ -390,22 +423,36 @@ export function AuthPage({ user }) {
                   ))}
                 </div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
-                  <div><label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>First Name</label><input placeholder="John" style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/></div>
-                  <div><label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Last Name</label><input placeholder="Kamau" style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/></div>
-                </div>
-                {[['Email Address','email','you@example.com'],['Phone Number','tel','+254 7XX XXX XXX']].map(([label,type,ph]) => (
-                  <div key={label} style={{ marginBottom:14 }}>
-                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>{label}</label>
-                    <input type={type} placeholder={ph} style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/>
+                  <div>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>First Name</label>
+                    <input value={firstName} onChange={e=>setFirstName(e.target.value)} placeholder="John" style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/>
                   </div>
-                ))}
+                  <div>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Last Name</label>
+                    <input value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="Kamau" style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/>
+                  </div>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Email Address</label>
+                  <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Password</label>
+                  <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Min. 6 characters" style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Phone Number</label>
+                  <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+254 7XX XXX XXX" style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/>
+                </div>
                 {role === 'dealer' && (
                   <div style={{ marginBottom:14 }}>
                     <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Business Name</label>
-                    <input placeholder="Your dealership name" style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/>
+                    <input value={business} onChange={e=>setBusiness(e.target.value)} placeholder="Your dealership name" style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/>
                   </div>
                 )}
-                <button style={{ width:'100%', background:'#1565C0', color:'#fff', border:'none', padding:12, borderRadius:9, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginTop:4 }}>Create Account →</button>
+                <button onClick={handleRegister} disabled={loading} style={{ width:'100%', background:'#1565C0', color:'#fff', border:'none', padding:12, borderRadius:9, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginTop:4, opacity:loading?0.7:1 }}>
+                  {loading ? 'Creating account...' : 'Create Account →'}
+                </button>
               </>
             )}
           </div>
