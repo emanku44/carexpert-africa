@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { signUp, signIn } from '../lib/supabase'
-import Navbar from '../components/Navbar'
 
 const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
 
@@ -481,7 +480,7 @@ const CAR_DATA = {
   Hyundai: ['Tucson','Santa Fe','Elantra','i10','i20','ix35','Creta'],
   Kia: ['Sportage','Sorento','Picanto','Rio','Cerato','Carnival'],
   Ford: ['Ranger','Everest','Explorer','EcoSport','Fusion','Mustang'],
-  Land Rover: ['Defender','Discovery','Discovery Sport','Range Rover','Range Rover Sport','Range Rover Evoque','Freelander'],
+  'Land Rover': ['Defender','Discovery','Discovery Sport','Range Rover','Range Rover Sport','Range Rover Evoque','Freelander'],
   Jeep: ['Wrangler','Grand Cherokee','Cherokee','Renegade','Compass'],
   Isuzu: ['D-Max','MU-X','Trooper'],
   Suzuki: ['Vitara','Jimny','Swift','Alto','Baleno','Ertiga','Grand Vitara','Escudo'],
