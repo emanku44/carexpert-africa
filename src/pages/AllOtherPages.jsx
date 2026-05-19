@@ -466,17 +466,45 @@ export function AuthPage({ user }) {
 // LIST A CAR PAGE
 // ─────────────────────────────────────────────────────────────
 const FEATURES_LIST = ['Sunroof','Leather Seats','Reverse Camera','Navigation','Cruise Control','Alloy Wheels','Push Start','Heated Seats','360 Camera','Parking Sensors','Apple CarPlay','Tow Bar','Roof Rack','Bull Bar','Window Tint']
+const CAR_DATA = {
+  Toyota: ['Land Cruiser 200','Land Cruiser 300','Land Cruiser Prado 150','Land Cruiser Prado 120','Hilux','Harrier','RAV4','Vanguard','Fortuner','Rush','Fielder','Corolla','Camry','Crown','Mark X','Allion','Premio','Wish','Noah','Voxy','Alphard','Vellfire','Hiace','Probox','Succeed'],
+  Nissan: ['X-Trail','Patrol','Juke','Note','March','Tiida','Sylphy','Teana','Murano','Qashqai','Navara','Urvan','Caravan','Serena','Elgrand'],
+  Mazda: ['CX-5','CX-3','CX-7','CX-9','Demio','Axela','Atenza','BT-50','MPV'],
+  Subaru: ['Forester','Outback','Legacy','Impreza','XV','Tribeca','WRX'],
+  Mitsubishi: ['Pajero','Pajero Mini','Outlander','Eclipse Cross','Montero','L200','Colt','Galant','Lancer'],
+  BMW: ['X1','X3','X5','X6','3 Series','5 Series','7 Series','1 Series','2 Series'],
+  'Mercedes-Benz': ['C-Class','E-Class','S-Class','GLC','GLE','GLS','A-Class','B-Class','ML','GL'],
+  Audi: ['A3','A4','A6','Q3','Q5','Q7','TT'],
+  Volkswagen: ['Golf','Polo','Passat','Tiguan','Touareg','Amarok','Transporter'],
+  Honda: ['CR-V','HR-V','Fit','Jazz','Civic','Accord','Pilot','Freed','Stream','Odyssey','StepWagon'],
+  Hyundai: ['Tucson','Santa Fe','Elantra','i10','i20','ix35','Creta'],
+  Kia: ['Sportage','Sorento','Picanto','Rio','Cerato','Carnival'],
+  Ford: ['Ranger','Everest','Explorer','EcoSport','Fusion','Mustang'],
+  Land Rover: ['Defender','Discovery','Discovery Sport','Range Rover','Range Rover Sport','Range Rover Evoque','Freelander'],
+  Jeep: ['Wrangler','Grand Cherokee','Cherokee','Renegade','Compass'],
+  Isuzu: ['D-Max','MU-X','Trooper'],
+  Suzuki: ['Vitara','Jimny','Swift','Alto','Baleno','Ertiga','Grand Vitara','Escudo'],
+  Peugeot: ['3008','5008','208','308','2008','Partner'],
+  Lexus: ['LX','GX','RX','NX','IS','GS','LS','UX'],
+  Porsche: ['Cayenne','Macan','Panamera','911'],
+  Volvo: ['XC90','XC60','XC40','S60','V60'],
+  Other: ['Other'],
+}
 
+const MAKES = Object.keys(CAR_DATA)
 export function ListCarPage({ user }) {
-  const [step, setStep]     = useState(1)
-  const [make, setMake]     = useState('Toyota')
-  const [model, setModel]   = useState('')
-  const [year, setYear]     = useState('2020')
-  const [km, setKm]         = useState('')
-  const [price, setPrice]   = useState('')
-  const [nego, setNego]     = useState(false)
-  const [selFeats, setSelFeats] = useState(new Set())
-  const [photos, setPhotos] = useState(Array(10).fill(false))
+const [make, setMake]     = useState('Toyota')
+const [model, setModel]   = useState('')
+const [year, setYear]     = useState('2020')
+const [km, setKm]         = useState('')
+const [bodyType, setBodyType]   = useState('SUV')
+const [fuel, setFuel]           = useState('Petrol')
+const [transmission, setTx]     = useState('Automatic')
+const [drive, setDrive]         = useState('AWD')
+const [engineCc, setEngineCc]   = useState('')
+const [colour, setColour]       = useState('')
+const [condition, setCondition] = useState('Used — Excellent')
+const [photos, setPhotos] = useState(Array(10).fill(false))
 
   const toggleFeat = f => setSelFeats(prev => { const n=new Set(prev); n.has(f)?n.delete(f):n.add(f); return n })
   const fillPhoto  = i => setPhotos(prev => prev.map((p,idx) => idx===i?true:p))
@@ -522,33 +550,104 @@ export function ListCarPage({ user }) {
               <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:18, display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}></span> Vehicle Information
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-                {[
-                  { label:'Make', type:'select', value:make, set:setMake, opts:['Toyota','Mercedes-Benz','BMW','Audi','Mazda','Subaru','Nissan','Mitsubishi','Other'] },
-                  { label:'Model', type:'text', value:model, set:setModel, placeholder:'e.g. Land Cruiser Prado' },
-                  { label:'Year', type:'select', value:year, set:setYear, opts:Array.from({length:16},(_,i)=>`${2025-i}`) },
-                  { label:'Mileage (km)', type:'number', value:km, set:setKm, placeholder:'e.g. 62000' },
-                  { label:'Engine (cc)', type:'number', value:'', set:()=>{}, placeholder:'e.g. 2000' },
-                  { label:'Body Type', type:'select', value:'SUV', set:()=>{}, opts:['SUV','Sedan','Hatchback','Pickup','Minivan','Coupe'] },
-                  { label:'Fuel Type', type:'select', value:'Petrol', set:()=>{}, opts:['Petrol','Diesel','Hybrid','Electric'] },
-                  { label:'Transmission', type:'select', value:'Automatic', set:()=>{}, opts:['Automatic','Manual'] },
-                  { label:'Drive Type', type:'select', value:'AWD', set:()=>{}, opts:['AWD','4WD','FWD','RWD'] },
-                  { label:'Colour', type:'text', value:'', set:()=>{}, placeholder:'e.g. Pearl White' },
-                  { label:'Condition', type:'select', value:'Used — Excellent', set:()=>{}, opts:['Used — Excellent','Used — Good','Used — Fair','New'] },
-                ].map(f => (
-                  <div key={f.label}>
-                    <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>{f.label}</label>
-                    {f.type === 'select'
-                      ? <select value={f.value} onChange={e=>f.set(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}>{f.opts.map(o=><option key={o}>{o}</option>)}</select>
-                      : <input type={f.type} value={f.value} onChange={e=>f.set(e.target.value)} placeholder={f.placeholder} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/>
-                    }
-                  </div>
-                ))}
-              </div>
-              <div style={{ display:'flex', justifyContent:'flex-end', marginTop:18 }}>
-                <button onClick={() => setStep(2)} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Next: Add Photos →</button>
-              </div>
-            </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+  {/* Make */}
+  <div>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Make</label>
+    <select value={make} onChange={e => { setMake(e.target.value); setModel('') }}
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+      {MAKES.map(m => <option key={m}>{m}</option>)}
+    </select>
+  </div>
+
+  {/* Model */}
+  <div>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Model</label>
+    <select value={model} onChange={e => setModel(e.target.value)}
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+      <option value="">Select model...</option>
+      {(CAR_DATA[make] || []).map(m => <option key={m}>{m}</option>)}
+    </select>
+  </div>
+
+  {/* Year */}
+  <div>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Year</label>
+    <select value={year} onChange={e => setYear(e.target.value)}
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+      {Array.from({ length: 20 }, (_, i) => `${2025 - i}`).map(y => <option key={y}>{y}</option>)}
+    </select>
+  </div>
+
+  {/* Mileage */}
+  <div>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Mileage (km)</label>
+    <input type="number" value={km} onChange={e => setKm(e.target.value)} placeholder="e.g. 62000"
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}/>
+  </div>
+
+  {/* Engine */}
+  <div>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Engine (cc)</label>
+    <input type="number" value={engineCc} onChange={e => setEngineCc(e.target.value)} placeholder="e.g. 2000"
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}/>
+  </div>
+
+  {/* Body Type */}
+  <div>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Body Type</label>
+    <select value={bodyType} onChange={e => setBodyType(e.target.value)}
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+      {['SUV','Sedan','Hatchback','Pickup','Minivan','Coupe','Wagon','Bus','Truck'].map(o => <option key={o}>{o}</option>)}
+    </select>
+  </div>
+
+  {/* Fuel */}
+  <div>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Fuel Type</label>
+    <select value={fuel} onChange={e => setFuel(e.target.value)}
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+      {['Petrol','Diesel','Hybrid','Electric','LPG'].map(o => <option key={o}>{o}</option>)}
+    </select>
+  </div>
+
+  {/* Transmission */}
+  <div>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Transmission</label>
+    <select value={transmission} onChange={e => setTx(e.target.value)}
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+      {['Automatic','Manual','CVT','Semi-Automatic'].map(o => <option key={o}>{o}</option>)}
+    </select>
+  </div>
+
+  {/* Drive Type */}
+  <div>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Drive Type</label>
+    <select value={drive} onChange={e => setDrive(e.target.value)}
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+      {['AWD','4WD','FWD','RWD','4x4'].map(o => <option key={o}>{o}</option>)}
+    </select>
+  </div>
+
+  {/* Colour */}
+  <div>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Colour</label>
+    <select value={colour} onChange={e => setColour(e.target.value)}
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+      <option value="">Select colour...</option>
+      {['Pearl White','White','Black','Silver','Grey','Blue','Red','Brown','Beige','Gold','Green','Orange','Yellow','Maroon','Navy Blue','Champagne'].map(o => <option key={o}>{o}</option>)}
+    </select>
+  </div>
+
+  {/* Condition */}
+  <div style={{ gridColumn: '1/-1' }}>
+    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>Condition</label>
+    <select value={condition} onChange={e => setCondition(e.target.value)}
+      style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+      {['Used — Excellent','Used — Good','Used — Fair','New','Foreign Used — Excellent','Foreign Used — Good'].map(o => <option key={o}>{o}</option>)}
+    </select>
+  </div>
+</div>
           )}
 
           {step === 2 && (
