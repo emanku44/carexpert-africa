@@ -505,7 +505,10 @@ const [engineCc, setEngineCc]   = useState('')
 const [colour, setColour]       = useState('')
 const [condition, setCondition] = useState('Used — Excellent')
 const [photos, setPhotos] = useState(Array(10).fill(false))
-
+const [step, setStep] = useState(1)
+const [price, setPrice] = useState('')
+const [nego, setNego] = useState(false)
+const [selFeats, setSelFeats] = useState(new Set())
   const toggleFeat = f => setSelFeats(prev => { const n=new Set(prev); n.has(f)?n.delete(f):n.add(f); return n })
   const fillPhoto  = i => setPhotos(prev => prev.map((p,idx) => idx===i?true:p))
 
@@ -648,6 +651,10 @@ const [photos, setPhotos] = useState(Array(10).fill(false))
     </select>
   </div>
 </div>
+              <div style={{ display:'flex', justifyContent:'flex-end', marginTop:18 }}>
+                <button onClick={() => setStep(2)} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Next: Add Photos →</button>
+              </div>
+            </div>
           )}
 
           {step === 2 && (
@@ -827,12 +834,6 @@ export function DashboardPage({ user }) {
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
       <Navbar user={user} />
-        <Link to="/" style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#fff', textDecoration:'none' }}>CarExpert<span style={{ color:'#4DA6FF' }}>Africa</span>®</Link>
-        <div style={{ display:'flex', gap:12, alignItems:'center' }}>
-          <div style={{ width:30, height:30, borderRadius:'50%', background:'rgba(255,255,255,.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer' }}>🔔</div>
-          <div style={{ width:30, height:30, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:11, fontWeight:700, color:'#fff' }}>JK</div>
-        </div>
-      </nav>
 
       <div style={{ display:'grid', gridTemplateColumns:'200px 1fr', minHeight:'calc(100vh - 56px)' }}>
         <aside style={{ background:'#fff', borderRight:'1px solid #E8EDF3', padding:'20px 0' }}>
