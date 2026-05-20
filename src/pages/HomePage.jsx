@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
+import { getFeaturedListings } from '../lib/supabase'
 
 const MAKES = ['Toyota','Mercedes-Benz','Mazda','Audi','Volkswagen','Subaru','BMW','Lexus','Nissan','Mitsubishi','Porsche','Suzuki','Honda','Isuzu']
 const BODY_TYPES = [{ t:'SUV', c:58 },{ t:'Sedan', c:9 },{ t:'Hatchback', c:8 },{ t:'Minivan', c:5 },{ t:'Pickup', c:2 },{ t:'Coupe', c:2 }]
