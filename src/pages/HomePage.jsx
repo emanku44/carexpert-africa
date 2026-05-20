@@ -19,7 +19,11 @@ export default function HomePage({ user }) {
     if (price) p.set('maxPrice', price)
     navigate(`/listings?${p.toString()}`)
   }
+const [featured, setFeatured] = useState([])
 
+useEffect(() => {
+  getFeaturedListings().then(({ data }) => setFeatured(data || []))
+}, [])
   return (
     <div style={{ fontFamily: 'DM Sans, sans-serif', background: '#F7F9FC', minHeight: '100vh' }}>
       <Navbar user={user} />
