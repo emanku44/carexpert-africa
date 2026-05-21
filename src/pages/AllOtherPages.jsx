@@ -750,4 +750,355 @@ const MY_LISTINGS = [
 ]
 const SAVED_CARS = [
   { id:1, make:'BMW', model:'X5 3.0d', year:2017, price:6800000, bg:'#C8E0F0' },
-  { id:2, make:'
+  { id:2, make:'Lexus', model:'RX 350', year:2018, price:5200000, bg:'#F5E0C8' },
+  { id:3, make:'Subaru', model:'Forester', year:2019, price:2900000, bg:'#C8E6C9' },
+]
+const LEADS = [
+  { name:'David Otieno', initials:'DO', color:'#1565C0', car:'Toyota Prado 150', msg:'Hi, is the Prado still available? Would like to view it this weekend.', time:'2h ago', isNew:true },
+  { name:'Sarah Wanjiru', initials:'SW', color:'#16A34A', car:'Toyota Prado 150', msg:'What is the best price you can offer? I can pay cash.', time:'5h ago', isNew:true },
+  { name:'Michael Njiru', initials:'MN', color:'#7C3AED', car:'Toyota RAV4 LE', msg:'Can I bring a mechanic to inspect the RAV4? When is a good time?', time:'1d ago', isNew:false },
+]
+
+export function DashboardPage({ user }) {
+  const [tab, setTab] = useState('overview')
+  const [saved, setSaved] = useState(new Set(SAVED_CARS.map(c=>c.id)))
+  const navigate = useNavigate()
+
+  const NAV_ITEMS = [
+    { id:'overview', label:'Overview', icon:'⊞' },
+    { id:'listings', label:'My Listings', icon:'🚗', badge:MY_LISTINGS.length },
+    { id:'saved', label:'Saved Cars', icon:'❤️', badge:saved.size },
+    { id:'leads', label:'Leads', icon:'💬', badge:LEADS.filter(l=>l.isNew).length, badgeRed:true },
+    { id:'alerts', label:'Alerts', icon:'🔔' },
+  ]
+
+  return (
+    <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
+      <Navbar user={user} />
+      <div style={{ display:'grid', gridTemplateColumns:'200px 1fr', minHeight:'calc(100vh - 56px)' }}>
+        <aside style={{ background:'#fff', borderRight:'1px solid #E8EDF3', padding:'20px 0' }}>
+          <div style={{ padding:'0 16px 16px', borderBottom:'1px solid #F0F4F8', marginBottom:8, textAlign:'center' }}>
+            <div style={{ width:52, height:52, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:700, color:'#fff', margin:'0 auto 8px' }}>JK</div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540' }}>James Kamau</div>
+            <div style={{ background:'#EEF5FF', color:'#1565C0', border:'1px solid #BDD5FF', borderRadius:100, padding:'2px 10px', fontSize:10, fontWeight:700, display:'inline-block', marginTop:4, fontFamily:'Outfit,sans-serif' }}>Free Plan</div>
+          </div>
+          {NAV_ITEMS.map(item => (
+            <div key={item.id} onClick={() => setTab(item.id)} style={{ display:'flex', alignItems:'center', gap:9, padding:'9px 16px', fontSize:13, fontWeight:tab===item.id?600:500, color:tab===item.id?'#1565C0':'#64748B', cursor:'pointer', background:tab===item.id?'#EEF5FF':'transparent', borderLeft:`3px solid ${tab===item.id?'#1565C0':'transparent'}` }}>
+              <span style={{ fontSize:14 }}>{item.icon}</span>
+              {item.label}
+              {item.badge > 0 && <span style={{ background:item.badgeRed?'#EF4444':'#1565C0', color:'#fff', borderRadius:100, padding:'1px 6px', fontSize:9, fontWeight:700, marginLeft:'auto', fontFamily:'Outfit,sans-serif' }}>{item.badge}</span>}
+            </div>
+          ))}
+          <div style={{ margin:'8px 12px 0' }}>
+            <button onClick={() => navigate('/admin')} style={{ width:'100%', background:'#0A2540', color:'#fff', border:'none', padding:9, borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>⚡ Upgrade to Pro →</button>
+          </div>
+        </aside>
+        <main style={{ padding:20 }}>
+          {tab === 'overview' && (
+            <div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540', marginBottom:16 }}>Good morning, James 👋</div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
+                {[['👁','342','Listing Views','↑ 18% this week','#EEF5FF'],['📞','12','Contact Leads','↑ 4 new today','#DCFCE7'],['❤️','27','Times Saved','↑ 6 this week','#FEF3C7'],['🚗','2','Active Listings','1 slot remaining','#F0E8FF']].map(([icon,n,l,d,bg]) => (
+                  <div key={l} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14 }}>
+                    <div style={{ width:32, height:32, borderRadius:8, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, marginBottom:10 }}>{icon}</div>
+                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:22, fontWeight:800, color:'#0A2540', marginBottom:2 }}>{n}</div>
+                    <div style={{ fontSize:11, color:'#94A3B8' }}>{l}</div>
+                    <div style={{ fontSize:10, fontWeight:700, color:'#16A34A', marginTop:4 }}>{d}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+                <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:12 }}>Recent Activity</div>
+                  {[['#25D366','WhatsApp inquiry on Prado 150','2h ago'],['#1565C0','Profile viewed by 4 buyers','5h ago'],['#F59E0B','RAV4 listing views spiked (+34)','1d ago'],['#94A3B8','Listing approved: Prado 150','2d ago']].map(([color,text,time]) => (
+                    <div key={text} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'1px solid #F5F7FA', fontSize:12 }}>
+                      <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }}></div>
+                      <span style={{ flex:1, color:'#475569' }}>{text}</span>
+                      <span style={{ fontSize:10, color:'#94A3B8', whiteSpace:'nowrap' }}>{time}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:12 }}>Quick Actions</div>
+                  {[['#1565C0','#fff','+ List a New Car','/list-car'],['#F0F6FF','#1565C0','Edit My Listings','#'],['#F8FAFC','#475569','Get Car Valuation','/valuation'],['#F8FAFC','#475569','Set a Price Alert','#']].map(([bg,color,label,href]) => (
+                    <Link key={label} to={href} style={{ display:'block', background:bg, color, border:`1.5px solid ${bg==='#1565C0'?'transparent':'#E2E8F0'}`, padding:10, borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textAlign:'left', textDecoration:'none', marginBottom:8 }}>{label}</Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {tab === 'listings' && (
+            <div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540' }}>My Listings</div>
+                <Link to="/list-car" style={{ background:'#1565C0', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>+ Add New Listing</Link>
+              </div>
+              {MY_LISTINGS.map(l => (
+                <div key={l.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14, marginBottom:10, display:'grid', gridTemplateColumns:'80px 1fr auto', gap:14, alignItems:'center' }}>
+                  <div style={{ width:80, height:56, borderRadius:8, background:l.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <svg width="56" height="36" viewBox="0 0 56 36" fill="none"><rect x="4" y="13" width="48" height="14" rx="3" fill={l.fg} opacity=".2"/><path d="M9 13 L15 4 H41 L47 13" fill={l.fg} opacity=".15"/><circle cx="13" cy="29" r="6" fill={l.fg} opacity=".25"/><circle cx="43" cy="29" r="6" fill={l.fg} opacity=".25"/></svg>
+                  </div>
+                  <div>
+                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{l.name}</div>
+                    <div style={{ fontSize:11, color:'#94A3B8', display:'flex', gap:10, marginBottom:5 }}><span>{fmt(l.price)}</span><span>·</span><span>{l.km.toLocaleString()} km</span><span>·</span><span>{l.fuel}</span></div>
+                    <div style={{ display:'flex', gap:14 }}>
+                      {[[l.views,'views'],[l.saves,'saves'],[l.leads,'leads']].map(([n,label]) => (
+                        <div key={label} style={{ fontSize:11, color:'#64748B' }}><strong style={{ fontFamily:'Outfit,sans-serif', color:'#0A2540' }}>{n}</strong> {label}</div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'flex-end' }}>
+                    <span style={{ fontSize:10, fontWeight:700, padding:'3px 10px', borderRadius:100, background:l.status==='approved'?'#DCFCE7':'#FEF3C7', color:l.status==='approved'?'#16A34A':'#D97706', fontFamily:'Outfit,sans-serif' }}>{l.status==='approved'?'● Live':'● Pending Review'}</span>
+                    <button style={{ background:'#F0F6FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Edit</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {tab === 'saved' && (
+            <div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540', marginBottom:16 }}>Saved Cars <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({saved.size})</span></div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
+                {SAVED_CARS.filter(c => saved.has(c.id)).map(c => (
+                  <div key={c.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:10, overflow:'hidden' }}>
+                    <div style={{ height:90, background:c.bg, display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+                      <button onClick={() => setSaved(prev => { const n=new Set(prev); n.delete(c.id); return n })} style={{ position:'absolute', top:6, right:6, width:22, height:22, background:'rgba(239,68,68,.9)', borderRadius:'50%', border:'none', color:'#fff', fontSize:11, cursor:'pointer' }}>x</button>
+                    </div>
+                    <div style={{ padding:'10px 10px 0' }}>
+                      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:800, color:'#0A2540' }}>{fmt(c.price)}</div>
+                      <div style={{ fontSize:11, color:'#64748B', marginTop:1 }}>{c.year} {c.make} {c.model}</div>
+                    </div>
+                    <button style={{ width:'100%', background:'#F0F6FF', color:'#1565C0', border:'none', borderTop:'1px solid #E8EDF3', padding:7, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginTop:8 }}>View Listing</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {tab === 'leads' && (
+            <div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540' }}>Leads and Inquiries</div>
+                <span style={{ background:'#EEF5FF', color:'#1565C0', fontSize:11, fontWeight:700, padding:'4px 12px', borderRadius:100, fontFamily:'Outfit,sans-serif' }}>{LEADS.filter(l=>l.isNew).length} new</span>
+              </div>
+              {LEADS.map(l => (
+                <div key={l.name} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14, marginBottom:10, display:'grid', gridTemplateColumns:'36px 1fr auto', gap:12, alignItems:'center' }}>
+                  <div style={{ width:36, height:36, borderRadius:'50%', background:l.color, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:12, fontWeight:700, color:'#fff', flexShrink:0 }}>{l.initials}</div>
+                  <div>
+                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:2, display:'flex', alignItems:'center', gap:6 }}>
+                      {l.name}
+                      {l.isNew && <span style={{ background:'#EEF5FF', color:'#1565C0', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:100, fontFamily:'Outfit,sans-serif' }}>NEW</span>}
+                    </div>
+                    <div style={{ fontSize:11, color:'#64748B', marginBottom:3 }}>Re: <strong>{l.car}</strong></div>
+                    <div style={{ fontSize:11, color:'#64748B' }}>{l.msg}</div>
+                  </div>
+                  <div style={{ textAlign:'right' }}>
+                    <div style={{ fontSize:10, color:'#94A3B8', marginBottom:6 }}>{l.time}</div>
+                    <a href={`https://wa.me/?text=Reply to ${l.name}`} target="_blank" rel="noopener noreferrer" style={{ background:'#25D366', color:'#fff', border:'none', padding:'6px 12px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none', display:'inline-block' }}>Reply</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {tab === 'alerts' && (
+            <div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540', marginBottom:16 }}>Saved Searches and Alerts</div>
+              {[['BMW X5 Under KSH 6M Any Year','Last match: 2 days ago 3 total'],['Toyota Harrier Under KSH 4M 2018+','Last match: 5 days ago 7 total']].map(([title,sub]) => (
+                <div key={title} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <div><div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540' }}>{title}</div><div style={{ fontSize:11, color:'#94A3B8', marginTop:3 }}>{sub}</div></div>
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button style={{ background:'#EEF5FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>View Matches</button>
+                    <button style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'5px 10px', borderRadius:6, fontSize:11, cursor:'pointer' }}>x</button>
+                  </div>
+                </div>
+              ))}
+              <div style={{ border:'2px dashed #E2E8F0', borderRadius:12, padding:20, textAlign:'center', cursor:'pointer' }}>
+                <div style={{ fontSize:20, marginBottom:6 }}>🔔</div>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#475569' }}>Create a New Alert</div>
+                <div style={{ fontSize:11, color:'#94A3B8', marginTop:3 }}>Get notified when a matching car is listed</div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  )
+}
+
+// NEWS & REVIEWS PAGE
+const ARTICLES = [
+  { id:1, title:'2024 Toyota Land Cruiser 300: A Thorough Test After 3,000km on Kenyan Roads', cat:'Review', author:'James Mwangi', date:'May 14, 2025', read:'8 min', excerpt:'We put the LC300 through its paces on everything from Nairobi pothole-ridden streets to off-road trails in the Maasai Mara.', bg:'#C8DCF0', wide:true },
+  { id:2, title:'Japan Import Prices Drop 12% Is Now the Best Time to Buy?', cat:'News', author:'Faith Odhiambo', date:'May 11, 2025', read:'4 min', excerpt:'KRA duty adjustments and a stronger KES are making Japanese imports more affordable than they have been in two years.', bg:'#C8E6C9' },
+  { id:3, title:'10 Things to Always Check Before Buying a Used Car in Kenya', cat:'Guide', author:'Brian Kariuki', date:'May 8, 2025', read:'6 min', excerpt:'A practical checklist from our team that could save you from an expensive mistake.', bg:'#F5E0C8' },
+  { id:4, title:'How to Import a Car from Japan to Kenya in 2025: Full Step-by-Step', cat:'Import', author:'Peter Njoroge', date:'May 5, 2025', read:'10 min', excerpt:'The complete guide to sourcing, shipping, clearing customs, and registering a Japanese import in Kenya.', bg:'#E0D0F0' },
+]
+const CAT_COLORS = { Review:'#0A2540', News:'#1565C0', Guide:'#16A34A', Import:'#7C3AED' }
+
+export function NewsReviewsPage({ user }) {
+  const [tab, setTab] = useState('all')
+  const TABS = ['all','news','reviews','guides','import']
+  const filtered = tab === 'all' ? ARTICLES : ARTICLES.filter(a => a.cat.toLowerCase() === tab.replace('s',''))
+  return (
+    <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
+      <Navbar user={user} />
+      <div style={{ background:'#0A2540', padding:'32px 24px 0', overflow:'hidden' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, maxWidth:1200, margin:'0 auto' }}>
+          <div style={{ borderRadius:'14px 14px 0 0', height:280, display:'flex', alignItems:'flex-end', position:'relative', overflow:'hidden', cursor:'pointer' }}>
+            <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,#1a3a5c,#2563a8)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <svg width="120" height="68" viewBox="0 0 120 68" fill="none" opacity=".3"><rect x="10" y="22" width="100" height="26" rx="6" fill="#fff"/><path d="M20 22 L32 5 H88 L100 22" fill="#fff" opacity=".7"/><circle cx="28" cy="52" r="12" fill="#4DA6FF"/><circle cx="92" cy="52" r="12" fill="#4DA6FF"/><circle cx="28" cy="52" r="5" fill="#fff"/><circle cx="92" cy="52" r="5" fill="#fff"/></svg>
+            </div>
+            <div style={{ padding:18, position:'relative', zIndex:1 }}>
+              <span style={{ background:'#1565C0', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 8px', borderRadius:100, textTransform:'uppercase', fontFamily:'Outfit,sans-serif', display:'inline-block', marginBottom:7 }}>Full Review</span>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#fff', lineHeight:1.2, marginBottom:6 }}>2024 Toyota Land Cruiser 300: Is It Still Kenya's Best SUV?</div>
+              <div style={{ fontSize:11, color:'rgba(255,255,255,.6)' }}>James Mwangi · May 14, 2025 · 8 min read</div>
+            </div>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {[['news','Japan Import Prices Drop 12%','3 days ago'],['guide','Kenya EV Charging Network Launches in Nairobi','1 week ago'],['guide','10 Things to Check Before Buying a Used Car','2 weeks ago'],['import','How to Import a Car from Japan to Kenya in 2025','3 weeks ago']].map(([cat,title,time]) => (
+              <div key={title} style={{ background:'rgba(255,255,255,.06)', border:'1px solid rgba(255,255,255,.08)', borderRadius:10, padding:12, cursor:'pointer' }}>
+                <div style={{ fontSize:9, fontWeight:700, color:'#4DA6FF', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:3, fontFamily:'Outfit,sans-serif' }}>{cat}</div>
+                <div style={{ fontSize:12, fontWeight:600, color:'#fff', lineHeight:1.3 }}>{title}</div>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,.4)', marginTop:3 }}>{time}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ display:'flex', gap:0, background:'#fff', borderBottom:'2px solid #E8EDF3', padding:'0 24px' }}>
+        {TABS.map(t => (
+          <div key={t} onClick={() => setTab(t)} style={{ padding:'10px 18px', fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, cursor:'pointer', color:tab===t?'#0A2540':'#94A3B8', borderBottom:`2px solid ${tab===t?'#1565C0':'transparent'}`, marginBottom:-2, textTransform:'capitalize' }}>{t}</div>
+        ))}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 260px', gap:20, padding:'20px 24px', maxWidth:1200, margin:'0 auto' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+          {filtered.map(a => (
+            <div key={a.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden', cursor:'pointer', gridColumn: a.wide?'1/-1':'auto', display: a.wide?'grid':'block', gridTemplateColumns: a.wide?'220px 1fr':'none' }}>
+              <div style={{ height: a.wide?'100%':160, minHeight: a.wide?140:0, background:a.bg, display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+                <span style={{ position:'absolute', top:10, left:10, fontSize:9, fontWeight:700, padding:'2px 8px', borderRadius:100, textTransform:'uppercase', fontFamily:'Outfit,sans-serif', background:CAT_COLORS[a.cat]||'#1565C0', color:'#fff' }}>{a.cat}</span>
+                <span style={{ fontSize:32 }}>📰</span>
+              </div>
+              <div style={{ padding:16 }}>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize: a.wide?16:14, fontWeight:700, color:'#0A2540', marginBottom:6, lineHeight:1.3 }}>{a.title}</div>
+                <div style={{ fontSize:11, color:'#64748B', lineHeight:1.6, marginBottom:10 }}>{a.excerpt}</div>
+                <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:'#94A3B8' }}>
+                  <div style={{ width:20, height:20, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:700, color:'#fff', fontFamily:'Outfit,sans-serif' }}>{a.author[0]}</div>
+                  <span>{a.author}</span><span>·</span><span>{a.date}</span><span>·</span><span>{a.read}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:14 }}>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:12 }}>Trending This Week</div>
+            {[['Best SUVs Under KSH 3M in Kenya 2025','4.2k views'],['Toyota vs Mazda: Which Holds Value Better?','3.8k views'],['Japan Import Prices Drop 12%','3.1k views'],['How to Inspect a Car Before Buying','2.7k views'],['2025 Subaru Forester Kenya Road Test','2.2k views']].map(([title,views],i) => (
+              <div key={title} style={{ display:'flex', gap:10, alignItems:'flex-start', padding:'8px 0', borderBottom:'1px solid #F5F7FA', cursor:'pointer' }}>
+                <span style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#E2E8F0', minWidth:20 }}>{String(i+1).padStart(2,'0')}</span>
+                <div><div style={{ fontSize:12, fontWeight:600, color:'#334155', lineHeight:1.3 }}>{title}</div><div style={{ fontSize:10, color:'#94A3B8', marginTop:2 }}>{views}</div></div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background:'#0A2540', borderRadius:12, padding:16 }}>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#fff', marginBottom:6 }}>Newsletter</div>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,.55)', marginBottom:12, lineHeight:1.5 }}>Get the latest car news, reviews, and deals weekly.</div>
+            <input placeholder="your@email.com" style={{ width:'100%', padding:'8px 12px', border:'1.5px solid rgba(255,255,255,.15)', borderRadius:7, fontSize:12, color:'#fff', background:'rgba(255,255,255,.08)', outline:'none', fontFamily:'DM Sans,sans-serif', marginBottom:8 }}/>
+            <button style={{ width:'100%', background:'#4DA6FF', color:'#0A2540', border:'none', padding:9, borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Subscribe</button>
+          </div>
+        </div>
+      </div>
+      <footer style={{ background:'#060F1A', padding:'28px 24px', textAlign:'center' }}>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#fff', marginBottom:6 }}>CarExpert<span style={{ color:'#4DA6FF' }}>Africa</span></div>
+        <div style={{ fontSize:11, color:'rgba(255,255,255,.35)' }}>Kenya's Ultimate Car Listing Platform · © 2025</div>
+      </footer>
+    </div>
+  )
+}
+
+// DEALER PROFILE PAGE
+const DEALER_LISTINGS = [
+  { id:1, make:'Toyota', model:'Prado 150', year:2019, price:6200000, km:62200, fuel:'Petrol', badge:'Featured', bg:'#C8DCF0', fg:'#0D3B6E' },
+  { id:2, make:'Toyota', model:'RAV4 LE', year:2018, price:4650000, km:96000, fuel:'Petrol', badge:null, bg:'#D0E4F4', fg:'#0D3B6E' },
+  { id:3, make:'Toyota', model:'Harrier 2.0', year:2017, price:3800000, km:74000, fuel:'Petrol', badge:null, bg:'#E0EAF8', fg:'#0D3B6E' },
+  { id:4, make:'Toyota', model:'Hilux D/Cab', year:2020, price:5400000, km:48000, fuel:'Diesel', badge:'New Arrival', bg:'#C8E0D4', fg:'#0D4A20' },
+  { id:5, make:'Toyota', model:'Vanguard', year:2016, price:2900000, km:112000, fuel:'Petrol', badge:null, bg:'#EAE4D8', fg:'#4A3800' },
+  { id:6, make:'Toyota', model:'Fortuner 2.7', year:2019, price:5800000, km:55000, fuel:'Petrol', badge:'Hot', bg:'#F0D8D8', fg:'#6D0000' },
+]
+
+export function DealerProfilePage({ user }) {
+  return (
+    <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
+      <Navbar user={user} />
+      <div style={{ background:'linear-gradient(135deg,#0A2540,#1565C0)', padding:'32px 24px' }}>
+        <div style={{ background:'#fff', borderRadius:16, padding:20, display:'grid', gridTemplateColumns:'auto 1fr auto', gap:16, alignItems:'center', maxWidth:1200, margin:'0 auto' }}>
+          <div style={{ width:64, height:64, borderRadius:12, background:'#0A2540', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#fff' }}>NK</div>
+          <div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540', marginBottom:6 }}>Nairobi Kars Ltd</div>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              {[['Verified Dealer','green'],['4.8 / 5 (124 reviews)','blue'],['Westlands, Nairobi','blue'],['Member since 2023','blue']].map(([label,color]) => (
+                <span key={label} style={{ background:color==='green'?'#DCFCE7':'#EEF5FF', color:color==='green'?'#16A34A':'#1565C0', border:`1px solid ${color==='green'?'#86EFAC':'#BDD5FF'}`, borderRadius:100, padding:'3px 10px', fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif' }}>{label}</span>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" style={{ background:'#25D366', color:'#fff', border:'none', padding:'8px 16px', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>WhatsApp</a>
+            <button style={{ background:'#EEF5FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'7px 16px', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Call Dealer</button>
+          </div>
+        </div>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, padding:'16px 24px', maxWidth:1200, margin:'0 auto' }}>
+        {[['31','Active Listings'],['4.8','Avg. Rating'],['124','Total Reviews'],['2 yrs','On Platform']].map(([n,l]) => (
+          <div key={l} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14, textAlign:'center' }}>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:22, fontWeight:800, color:'#0A2540' }}>{n}</div>
+            <div style={{ fontSize:11, color:'#94A3B8', marginTop:2 }}>{l}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 280px', gap:16, padding:'0 24px 24px', maxWidth:1200, margin:'0 auto' }}>
+        <div>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540' }}>Dealer Inventory <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>(31 cars)</span></div>
+            <select style={{ padding:'6px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:12, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#fff' }}><option>Newest First</option><option>Price: Low</option><option>Price: High</option></select>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
+            {DEALER_LISTINGS.map(c => (
+              <div key={c.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden', cursor:'pointer' }}>
+                <div style={{ height:110, background:c.bg, display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+                  {c.badge && <span style={{ position:'absolute', top:7, left:7, background:'#1565C0', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 7px', borderRadius:100, textTransform:'uppercase', fontFamily:'Outfit,sans-serif' }}>{c.badge}</span>}
+                  <svg width="80" height="48" viewBox="0 0 80 48" fill="none"><rect x="6" y="17" width="68" height="19" rx="4" fill={c.fg} opacity=".18"/><path d="M13 17 L20 5 H60 L67 17" fill={c.fg} opacity=".14"/><circle cx="18" cy="38" r="8" fill={c.fg} opacity=".25"/><circle cx="62" cy="38" r="8" fill={c.fg} opacity=".25"/></svg>
+                </div>
+                <div style={{ padding:10 }}>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:800, color:'#0A2540', marginBottom:1 }}>{fmt(c.price)}</div>
+                  <div style={{ fontSize:11, fontWeight:600, color:'#64748B', marginBottom:6 }}>{c.year} {c.make} {c.model}</div>
+                  <div style={{ display:'flex', gap:3 }}>
+                    {[`${c.km.toLocaleString()}km`, c.fuel, String(c.year)].map((s,i)=><span key={i} style={{ fontSize:9, color:'#94A3B8', padding:'2px 5px', background:'#F8FAFC', borderRadius:100, border:'1px solid #E8EDF3' }}>{s}</span>)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:12 }}>Contact and Location</div>
+            {[['📍','Westlands Road, Nairobi'],['📞','+254 700 000 000'],['📱','+254 700 000 001'],['✉️','info@nairobikars.co.ke'],['🌐','www.nairobikars.co.ke']].map(([icon,text]) => (
+              <div key={text} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 0', borderBottom:'1px solid #F5F7FA', fontSize:12, color:'#475569' }}><span>{icon}</span>{text}</div>
+            ))}
+          </div>
+          <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:12 }}>Opening Hours</div>
+            {[['Mon – Fri','8:00 AM – 6:00 PM'],['Saturday','8:00 AM – 5:00 PM'],['Sunday','10:00 AM – 3:00 PM']].map(([day,hrs]) => (
+              <div key={day} style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', borderBottom:'1px solid #F5F7FA', fontSize:12 }}><span style={{ color:'#64748B' }}>{day}</span><span style={{ fontWeight:600, fontFamily:'Outfit,sans-serif' }}>{hrs}</span></div>
+            ))}
+          </div>
+          <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:10 }}>Specialities</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+              {['Japanese Imports','SUVs','Toyota','Financing','Trade-ins'].map(s => (
+                <span key={s} style={{ background:'#EEF5FF', color:'#1565C0', border:'1px solid #BDD5FF', borderRadius:100, padding:'3px 10px', fontSize:11, fontWeight:600 }}>{s}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
