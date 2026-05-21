@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import HomePage from './pages/HomePage'
 import ListingsPage from './pages/ListingsPage'
 import AdminPage from './pages/AdminPage'
+import { TermsPage } from './pages/TermsPage'
 import {
   AuthPage, ListCarPage, DashboardPage,
   ValuationPage, PricingPage, NewsReviewsPage,
@@ -56,7 +57,8 @@ export default function App() {
         <Route path="/list-car"     element={<ProtectedRoute user={user}><ListCarPage user={user} /></ProtectedRoute>} />
         <Route path="/dashboard"    element={<ProtectedRoute user={user}><DashboardPage user={user} /></ProtectedRoute>} />
         <Route path="/admin"        element={<AdminRoute user={user}><AdminPage user={user} /></AdminRoute>} />
-        <Route path="*"             element={<Navigate to="/" replace />} />
+        <Route path="/terms"        element={<TermsPage user={user} />} />
+<Route path="*"             element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )
