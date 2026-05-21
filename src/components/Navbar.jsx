@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-
+import { supabase } from '../lib/supabase'
 export default function Navbar({ user }) {
   const navigate = useNavigate()
 
@@ -47,14 +47,29 @@ export default function Navbar({ user }) {
             }}>
               + List a Car
             </Link>
-            <Link to="/dashboard" style={{
-              width: 32, height: 32, borderRadius: '50%', background: '#1565C0',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 700,
-              color: '#fff', textDecoration: 'none'
-            }}>
-              {user.email?.[0]?.toUpperCase() || 'U'}
-            </Link>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+  <Link to="/dashboard" style={{
+    width: 32, height: 32, borderRadius: '50%', background: '#1565C0',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 700,
+    color: '#fff', textDecoration: 'none'
+  }}>
+    {user.email?.[0]?.toUpperCase() || 'U'}
+  </Link>
+  <button
+    onClick={async () => {
+      await supabase.auth.signOut()
+      window.location.href = '/'
+    }}
+    style={{
+      marginLeft: 8, background: 'rgba(255,255,255,.1)', color: '#fff',
+      border: '1.5px solid rgba(255,255,255,.2)', padding: '5px 12px',
+      borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+      fontFamily: 'DM Sans, sans-serif'
+    }}>
+    Log out
+  </button>
+</div>
           </>
         ) : (
           <>
