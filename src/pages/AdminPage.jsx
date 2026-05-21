@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getAllListingsAdmin, approveListing, declineListing, markAsFeatured, removeFeatured } from '../lib/supabase'
+import { getAllListingsAdmin, approveListing, declineListing, markAsFeatured, removeFeatured, supabase } from '../lib/supabase'
 
 const DECLINE_REASONS = [
   'Insufficient photos (min 5)',
@@ -214,14 +214,192 @@ function ListingRow({ listing, onApprove, onDecline, onFeatured }) {
     </div>
   )
 }
+function UsersTab() {
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
+  useEffect(() => {
+    supabase.from('user_list').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => { setUsers(data || []); setLoading(false) })
+  }, [])
+
+  const filtered = users.filter(u =>
+    !search || u.email?.toLowerCase().includes(search.toLowerCase()) || u.full_name?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540' }}>All Users</h2>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or email..."
+          style={{ padding:'8px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, outline:'none', background:'#fff', width:240 }}/>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:18 }}>
+        {[['👥',users.length,'Total Users','#1565C0'],['✓',users.filter(u=>u.email_confirmed).length,'Verified','#16A34A'],['⭐',users.filter(u=>u.role==='admin').length,'Admins','#D97706']].map(([icon,n,label,color]) => (
+          <div key={label} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14, display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:36, height:36, borderRadius:9, background:color+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>{icon}</div>
+            <div><div style={{ fontFamily:'Outfit,sans-serif', fontSize:22, fontWeight:800, color, lineHeight:1 }}>{n}</div><div style={{ fontSize:11, color:'#94A3B8', marginTop:2 }}>{label}</div></div>
+          </div>
+        ))}
+      </div>
+      {loading ? <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading users…</div> : (
+        <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 110px 100px 90px', padding:'10px 16px', background:'#F8FAFC', borderBottom:'1px solid #E8EDF3' }}>
+            {['Name','Email','Joined','Role','Status'].map(h => (
+              <div key={h} style={{ fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.5px' }}>{h}</div>
+            ))}
+          </div>
+          {filtered.length === 0 ? <div style={{ textAlign:'center', padding:32, color:'#94A3B8', fontSize:13 }}>No users found.</div>
+          : filtered.map((u,i) => (
+            <div key={u.id} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 110px 100px 90px', padding:'12px 16px', borderBottom: i<filtered.length-1?'1px solid #F5F7FA':'none', alignItems:'center' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <div style={{ width:28, height:28, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:11, fontWeight:700, color:'#fff', flexShrink:0 }}>
+                  {(u.full_name||u.email||'?')[0].toUpperCase()}
+                </div>
+                <span style={{ fontSize:13, fontWeight:600, color:'#0A2540' }}>{u.full_name||'—'}</span>
+              </div>
+              <div style={{ fontSize:12, color:'#64748B' }}>{u.email}</div>
+              <div style={{ fontSize:12, color:'#94A3B8' }}>{new Date(u.created_at).toLocaleDateString('en-GB')}</div>
+              <div><span style={{ fontSize:10, fontWeight:700, padding:'3px 10px', borderRadius:100, background:u.role==='admin'?'#FEF3C7':u.role==='dealer'?'#EEF5FF':'#F0F4F8', color:u.role==='admin'?'#D97706':u.role==='dealer'?'#1565C0':'#64748B', fontFamily:'Outfit,sans-serif' }}>{u.role||'user'}</span></div>
+              <div><span style={{ fontSize:10, fontWeight:700, padding:'3px 10px', borderRadius:100, background:u.email_confirmed?'#DCFCE7':'#FEE2E2', color:u.email_confirmed?'#16A34A':'#DC2626', fontFamily:'Outfit,sans-serif' }}>{u.email_confirmed?'Verified':'Unverified'}</span></div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DealersTab({ listings }) {
+  const [search, setSearch] = useState('')
+  const dealerMap = {}
+  listings.forEach(l => {
+    if (!l.contact_name) return
+    const key = l.contact_name
+    if (!dealerMap[key]) dealerMap[key] = { name:key, location:l.location, listings:0, approved:0, pending:0, declined:0 }
+    dealerMap[key].listings++
+    if (l.status==='approved') dealerMap[key].approved++
+    if (l.status==='pending') dealerMap[key].pending++
+    if (l.status==='declined') dealerMap[key].declined++
+  })
+  const dealers = Object.values(dealerMap).filter(d => !search||d.name.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>b.listings-a.listings)
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540' }}>Dealers & Sellers</h2>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search dealers..."
+          style={{ padding:'8px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, outline:'none', background:'#fff', width:220 }}/>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:18 }}>
+        {[['🏢',dealers.length,'Total Sellers','#1565C0'],['📋',dealers.reduce((a,d)=>a+d.approved,0),'Live Listings','#16A34A'],['⏳',dealers.reduce((a,d)=>a+d.pending,0),'Pending Review','#D97706']].map(([icon,n,label,color]) => (
+          <div key={label} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14, display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:36, height:36, borderRadius:9, background:color+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>{icon}</div>
+            <div><div style={{ fontFamily:'Outfit,sans-serif', fontSize:22, fontWeight:800, color, lineHeight:1 }}>{n}</div><div style={{ fontSize:11, color:'#94A3B8', marginTop:2 }}>{label}</div></div>
+          </div>
+        ))}
+      </div>
+      <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 80px 80px 80px 80px', padding:'10px 16px', background:'#F8FAFC', borderBottom:'1px solid #E8EDF3' }}>
+          {['Seller','Location','Total','Live','Pending','Declined'].map(h=><div key={h} style={{ fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.5px' }}>{h}</div>)}
+        </div>
+        {dealers.length===0?<div style={{ textAlign:'center', padding:32, color:'#94A3B8', fontSize:13 }}>No sellers found.</div>
+        :dealers.map((d,i)=>(
+          <div key={d.name} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 80px 80px 80px 80px', padding:'12px 16px', borderBottom:i<dealers.length-1?'1px solid #F5F7FA':'none', alignItems:'center' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <div style={{ width:28, height:28, borderRadius:'50%', background:'#0A2540', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:11, fontWeight:700, color:'#fff', flexShrink:0 }}>{d.name[0].toUpperCase()}</div>
+              <span style={{ fontSize:13, fontWeight:600, color:'#0A2540' }}>{d.name}</span>
+            </div>
+            <div style={{ fontSize:12, color:'#64748B' }}>{d.location||'—'}</div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540' }}>{d.listings}</div>
+            <div><span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:100, background:'#DCFCE7', color:'#16A34A' }}>{d.approved}</span></div>
+            <div><span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:100, background:'#FEF3C7', color:'#D97706' }}>{d.pending}</span></div>
+            <div><span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:100, background:'#FEE2E2', color:'#EF4444' }}>{d.declined}</span></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AnalyticsTab({ listings }) {
+  const makeCounts={}, bodyCounts={}, locationCounts={}
+  listings.forEach(l => {
+    if(l.make) makeCounts[l.make]=(makeCounts[l.make]||0)+1
+    if(l.body_type) bodyCounts[l.body_type]=(bodyCounts[l.body_type]||0)+1
+    if(l.location) locationCounts[l.location]=(locationCounts[l.location]||0)+1
+  })
+  const topMakes=Object.entries(makeCounts).sort((a,b)=>b[1]-a[1]).slice(0,8)
+  const topBodies=Object.entries(bodyCounts).sort((a,b)=>b[1]-a[1]).slice(0,6)
+  const topLocations=Object.entries(locationCounts).sort((a,b)=>b[1]-a[1]).slice(0,6)
+  const maxMake=topMakes[0]?.[1]||1
+  const maxBody=topBodies[0]?.[1]||1
+  const approved=listings.filter(l=>l.status==='approved')
+  const avgPrice=approved.length?Math.round(approved.reduce((a,l)=>a+(l.price||0),0)/approved.length):0
+  const totalViews=listings.reduce((a,l)=>a+(l.views||0),0)
+  const fmt2=(n)=>'KSH '+Number(n).toLocaleString()
+  return (
+    <div>
+      <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540', marginBottom:16 }}>Analytics</h2>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
+        {[['📋',listings.length,'Total Listings','#1565C0'],['✓',approved.length,'Live Now','#16A34A'],['👁',totalViews.toLocaleString(),'Total Views','#7C3AED'],['💰',fmt2(avgPrice),'Avg. Price','#D97706']].map(([icon,n,label,color])=>(
+          <div key={label} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14, display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:36, height:36, borderRadius:9, background:color+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>{icon}</div>
+            <div><div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color, lineHeight:1 }}>{n}</div><div style={{ fontSize:11, color:'#94A3B8', marginTop:2 }}>{label}</div></div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+        <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:18 }}>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:14 }}>Top Makes</div>
+          {topMakes.map(([make,count])=>(
+            <div key={make} style={{ marginBottom:10 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:4 }}>
+                <span style={{ fontWeight:600, color:'#475569' }}>{make}</span>
+                <span style={{ fontWeight:700, color:'#0A2540', fontFamily:'Outfit,sans-serif' }}>{count}</span>
+              </div>
+              <div style={{ height:6, background:'#F0F4F8', borderRadius:100, overflow:'hidden' }}>
+                <div style={{ height:'100%', width:`${(count/maxMake)*100}%`, background:'#1565C0', borderRadius:100 }}/>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:18 }}>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:14 }}>Body Types</div>
+          {topBodies.map(([body,count])=>(
+            <div key={body} style={{ marginBottom:10 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:4 }}>
+                <span style={{ fontWeight:600, color:'#475569' }}>{body}</span>
+                <span style={{ fontWeight:700, color:'#0A2540', fontFamily:'Outfit,sans-serif' }}>{count}</span>
+              </div>
+              <div style={{ height:6, background:'#F0F4F8', borderRadius:100, overflow:'hidden' }}>
+                <div style={{ height:'100%', width:`${(count/maxBody)*100}%`, background:'#7C3AED', borderRadius:100 }}/>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:18 }}>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:14 }}>Listings by Location</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
+          {topLocations.map(([loc,count])=>(
+            <div key={loc} style={{ background:'#F8FAFC', border:'1px solid #E8EDF3', borderRadius:9, padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ fontSize:12, color:'#475569', fontWeight:600 }}>📍 {loc}</span>
+              <span style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:800, color:'#1565C0' }}>{count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 export default function AdminPage({ user }) {
   const [listings, setListings] = useState([])
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' })
-
+  const [adminTab, setAdminTab] = useState('listings')
   useEffect(() => { fetchListings() }, [])
 
   const fetchListings = async () => {
@@ -291,26 +469,24 @@ export default function AdminPage({ user }) {
         {/* Sidebar */}
         <aside style={{ background: '#0A2540', padding: '16px 0' }}>
           {[
-            { label: 'Overview', icon: '⊞', active: true },
-            { label: 'Pending', icon: '⏳', badge: counts.pending, badgeRed: true },
-            { label: 'Approved', icon: '✓' },
-            { label: 'Declined', icon: '✕' },
-            { label: '—', section: true },
-            { label: 'All Users', icon: '👤' },
-            { label: 'Dealers', icon: '🏢' },
-            { label: '—', section: true },
-            { label: 'Analytics', icon: '📊' },
-            { label: 'Settings', icon: '⚙' },
+            { label: 'Listings',  icon: '⊞', tab: 'listings' },
+            { label: 'Pending',   icon: '⏳', tab: 'listings', badge: counts.pending, badgeRed: true },
+            { section: true },
+            { label: 'All Users', icon: '👤', tab: 'users' },
+            { label: 'Dealers',   icon: '🏢', tab: 'dealers' },
+            { section: true },
+            { label: 'Analytics', icon: '📊', tab: 'analytics' },
+            { label: 'Settings',  icon: '⚙',  tab: 'settings' },
           ].map((item, i) => item.section ? (
             <div key={i} style={{ height: 1, background: 'rgba(255,255,255,.06)', margin: '8px 0' }} />
           ) : (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px',
               fontSize: 12, fontWeight: item.active ? 600 : 500, cursor: 'pointer',
-              color: item.active ? '#4DA6FF' : 'rgba(255,255,255,.5)',
-              background: item.active ? 'rgba(77,166,255,.1)' : 'transparent',
-              borderLeft: item.active ? '3px solid #4DA6FF' : '3px solid transparent',
-            }}>
+              color: adminTab === item.tab ? '#4DA6FF' : 'rgba(255,255,255,.5)',
+              background: adminTab === item.tab ? 'rgba(77,166,255,.1)' : 'transparent',
+              borderLeft: adminTab === item.tab ? '3px solid #4DA6FF' : '3px solid transparent',
+}} onClick={() => setAdminTab(item.tab)}>
               <span style={{ fontSize: 12 }}>{item.icon}</span>
               {item.label}
               {item.badge > 0 && (
@@ -352,13 +528,28 @@ export default function AdminPage({ user }) {
           </div>
 
           {/* Listings */}
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#94A3B8', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>Loading listings…</div>
-          ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#94A3B8', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>No listings found.</div>
-          ) : filtered.map(l => (
-            <ListingRow key={l.id} listing={l} onApprove={handleApprove} onDecline={handleDecline} onFeatured={fetchListings} />
-          ))}
+          {adminTab === 'listings' && (
+  <>
+    {loading ? (
+      <div style={{ textAlign: 'center', padding: 40, color: '#94A3B8', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>Loading listings…</div>
+    ) : filtered.length === 0 ? (
+      <div style={{ textAlign: 'center', padding: 40, color: '#94A3B8', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>No listings found.</div>
+    ) : filtered.map(l => (
+      <ListingRow key={l.id} listing={l} onApprove={handleApprove} onDecline={handleDecline} onFeatured={fetchListings} />
+    ))}
+  </>
+)}
+          {adminTab === 'users' && <UsersTab />}
+          {adminTab === 'dealers' && <DealersTab listings={listings} />}
+          {adminTab === 'analytics' && <AnalyticsTab listings={listings} />}
+          {adminTab === 'settings' && (
+            <div>
+              <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540', marginBottom:16 }}>Settings</h2>
+              <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:24 }}>
+                <div style={{ fontSize:13, color:'#64748B' }}>Settings coming soon.</div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
