@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { signUp, signIn } from '../lib/supabase'
-
+import { signUp, signIn, supabase } from '../lib/supabase'
 const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
 
 // ─────────────────────────────────────────────────────────────
@@ -491,7 +491,29 @@ export function ListCarPage({ user }) {
 
   const inp = { width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }
   const lbl = { display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }
+const handleSubmit = async () => {
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
+  if (!currentUser) { alert('Please log in first'); return }
 
+  const { error } = await supabase.from('listings').insert({
+    user_id: currentUser.id,
+    make, model, year, mileage: km,
+    engine_cc: engineCc,
+    body_type: bodyType,
+    fuel_type: fuel,
+    transmission,
+    drive_type: drive,
+    colour, condition, price,
+    negotiable: nego,
+    status: 'pending',
+  })
+
+  if (error) {
+    alert('Error submitting listing: ' + error.message)
+  } else {
+    setStep(5)
+  }
+}
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
       <nav style={{ background:'#0A2540', padding:'0 24px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -697,7 +719,7 @@ export function ListCarPage({ user }) {
               </div>
               <div style={{ display:'flex', justifyContent:'space-between' }}>
                 <button onClick={() => setStep(3)} style={{ background:'#fff', color:'#475569', border:'1.5px solid #E2E8F0', padding:'10px 20px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>← Back</button>
-                <button onClick={() => setStep(5)} style={{ background:'#16A34A', color:'#fff', border:'none', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Submit Listing ✓</button>
+                <button onClick={handleSubmit} style={{ background:'#16A34A', color:'#fff', border:'none', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Submit Listing ✓</button>
               </div>
             </div>
           )}
