@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { signUp, signIn } from '../lib/supabase'
 import { signUp, signIn, supabase } from '../lib/supabase'
 const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
 
