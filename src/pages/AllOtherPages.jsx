@@ -931,6 +931,7 @@ export function DashboardPage({ user }) {
                     <span style={{ fontSize:10, fontWeight:700, padding:'3px 10px', borderRadius:100, background:l.status==='approved'?'#DCFCE7':l.status==='pending'?'#FEF3C7':'#FEE2E2', color:l.status==='approved'?'#16A34A':l.status==='pending'?'#D97706':'#EF4444', fontFamily:'Outfit,sans-serif' }}>
                       {l.status==='approved'?'● Live':l.status==='pending'?'● Pending Review':'● Declined'}
                     </span>
+                    <Link to={`/edit-listing/${l.id}`} style={{ background:'#F0F6FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>Edit</Link>
                   </div>
                 </div>
               ))}
