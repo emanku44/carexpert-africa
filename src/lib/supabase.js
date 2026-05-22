@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = 'https://thpexqvpiwifzwpjzqqz.supabase.co'
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+export const supabase = createClient(supabaseUrl, supabaseKey)
+
 export const signUp = (email, password, meta) =>
   supabase.auth.signUp({ email, password, options: { data: meta } })
 
