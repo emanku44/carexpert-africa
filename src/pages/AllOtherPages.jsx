@@ -813,6 +813,17 @@ export function DashboardPage({ user }) {
           ))}
           <div style={{ margin:'8px 12px 0' }}>
             <button onClick={() => navigate('/admin')} style={{ width:'100%', background:'#0A2540', color:'#fff', border:'none', padding:9, borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>⚡ Upgrade to Pro →</button>
+          <button onClick={() => navigate('/admin')} style={{ width:'100%', background:'#0A2540', color:'#fff', border:'none', padding:9, borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>⚡ Upgrade to Pro →</button>
+
+<button
+  onClick={async () => {
+    const { supabase } = await import('../lib/supabase')
+    await supabase.auth.signOut()
+    window.location.href = '/'
+  }}
+  style={{ width:'100%', background:'transparent', color:'rgba(255,255,255,.4)', border:'1px solid rgba(255,255,255,.1)', padding:9, borderRadius:8, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginTop:8 }}>
+  Log Out
+</button>
           </div>
         </aside>
         <main style={{ padding:20 }}>
