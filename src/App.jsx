@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage'
 import ListingsPage from './pages/ListingsPage'
 import AdminPage from './pages/AdminPage'
 import { TermsPage } from './pages/TermsPage'
+import EditListingPage from './pages/EditListingPage'
 import {
   AuthPage, ListCarPage, DashboardPage,
   ValuationPage, PricingPage, NewsReviewsPage,
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="/dashboard"    element={<ProtectedRoute user={user}><DashboardPage user={user} /></ProtectedRoute>} />
         <Route path="/admin"        element={<AdminRoute user={user}><AdminPage user={user} /></AdminRoute>} />
         <Route path="/terms"        element={<TermsPage user={user} />} />
+        <Route path="/edit-listing/:id" element={<ProtectedRoute user={user}><EditListingPage user={user} /></ProtectedRoute>} />
 <Route path="*"             element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
