@@ -372,7 +372,18 @@ export function AuthPage({ user }) {
                     <input type={type} value={val} onChange={e=>set(e.target.value)} placeholder={ph} style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}/>
                   </div>
                 ))}
-                <div style={{ textAlign:'right', fontSize:11, color:'#1565C0', fontWeight:600, cursor:'pointer', marginTop:-8, marginBottom:14 }}>Forgot password?</div>
+                <div
+  onClick={async () => {
+    if (!email) { alert('Enter your email address first'); return }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://carexpert-africa.vercel.app/reset-password'
+    })
+    if (error) alert('Error: ' + error.message)
+    else alert('Password reset email sent! Check your inbox.')
+  }}
+  style={{ textAlign:'right', fontSize:11, color:'#1565C0', fontWeight:600, cursor:'pointer', marginTop:-8, marginBottom:14 }}>
+  Forgot password?
+</div>
                 <button onClick={handleLogin} disabled={loading} style={{ width:'100%', background:'#1565C0', color:'#fff', border:'none', padding:12, borderRadius:9, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', opacity:loading?0.7:1 }}>
                   {loading ? 'Signing in...' : 'Sign In →'}
                 </button>
