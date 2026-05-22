@@ -765,33 +765,42 @@ const handleSubmit = async () => {
 // ─────────────────────────────────────────────────────────────
 // DASHBOARD PAGE
 // ─────────────────────────────────────────────────────────────
-const MY_LISTINGS = [
-  { id:1, name:'2019 Toyota Land Cruiser Prado 150', price:6200000, km:62200, fuel:'Petrol', tx:'Automatic', status:'approved', views:342, saves:27, leads:8, bg:'#C8DCF0', fg:'#0D3B6E' },
-  { id:2, name:'2018 Toyota RAV4 LE', price:3900000, km:88000, fuel:'Petrol', tx:'Automatic', status:'pending', views:118, saves:9, leads:4, bg:'#E0D0F0', fg:'#4A235A' },
-]
-const SAVED_CARS = [
-  { id:1, make:'BMW', model:'X5 3.0d', year:2017, price:6800000, bg:'#C8E0F0' },
-  { id:2, make:'Lexus', model:'RX 350', year:2018, price:5200000, bg:'#F5E0C8' },
-  { id:3, make:'Subaru', model:'Forester', year:2019, price:2900000, bg:'#C8E6C9' },
-]
-const LEADS = [
-  { name:'David Otieno', initials:'DO', color:'#1565C0', car:'Toyota Prado 150', msg:'Hi, is the Prado still available? Would like to view it this weekend.', time:'2h ago', isNew:true },
-  { name:'Sarah Wanjiru', initials:'SW', color:'#16A34A', car:'Toyota Prado 150', msg:'What is the best price you can offer? I can pay cash.', time:'5h ago', isNew:true },
-  { name:'Michael Njiru', initials:'MN', color:'#7C3AED', car:'Toyota RAV4 LE', msg:'Can I bring a mechanic to inspect the RAV4? When is a good time?', time:'1d ago', isNew:false },
-]
-
 export function DashboardPage({ user }) {
   const [tab, setTab] = useState('overview')
-  const [saved, setSaved] = useState(new Set(SAVED_CARS.map(c=>c.id)))
+  const [myListings, setMyListings] = useState([])
+  const [savedCars, setSavedCars] = useState([])
+  const [loadingListings, setLoadingListings] = useState(true)
+  const [loadingSaved, setLoadingSaved] = useState(true)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!user) return
+    // Fetch user's own listings
+    supabase
+      .from('listings')
+      .select('*, listing_photos(*)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { setMyListings(data || []); setLoadingListings(false) })
+
+    // Fetch saved listings
+    supabase
+      .from('saved_listings')
+      .select('*, listings(*, listing_photos(*))')
+      .eq('user_id', user.id)
+      .then(({ data }) => { setSavedCars((data || []).map(s => s.listings).filter(Boolean)); setLoadingSaved(false) })
+  }, [user])
 
   const NAV_ITEMS = [
     { id:'overview', label:'Overview', icon:'⊞' },
-    { id:'listings', label:'My Listings', icon:'🚗', badge:MY_LISTINGS.length },
-    { id:'saved', label:'Saved Cars', icon:'❤️', badge:saved.size },
-    { id:'leads', label:'Leads', icon:'💬', badge:LEADS.filter(l=>l.isNew).length, badgeRed:true },
+    { id:'listings', label:'My Listings', icon:'🚗', badge: myListings.length },
+    { id:'saved', label:'Saved Cars', icon:'❤️', badge: savedCars.length },
+    { id:'leads', label:'Leads', icon:'💬' },
     { id:'alerts', label:'Alerts', icon:'🔔' },
   ]
+
+  const approvedListings = myListings.filter(l => l.status === 'approved')
+  const totalViews = myListings.reduce((a, l) => a + (l.views || 0), 0)
 
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
@@ -799,8 +808,12 @@ export function DashboardPage({ user }) {
       <div style={{ display:'grid', gridTemplateColumns:'200px 1fr', minHeight:'calc(100vh - 56px)' }}>
         <aside style={{ background:'#fff', borderRight:'1px solid #E8EDF3', padding:'20px 0' }}>
           <div style={{ padding:'0 16px 16px', borderBottom:'1px solid #F0F4F8', marginBottom:8, textAlign:'center' }}>
-            <div style={{ width:52, height:52, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:700, color:'#fff', margin:'0 auto 8px' }}>JK</div>
-            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540' }}>James Kamau</div>
+            <div style={{ width:52, height:52, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:700, color:'#fff', margin:'0 auto 8px' }}>
+              {(user?.user_metadata?.full_name || user?.email || 'U')[0].toUpperCase()}
+            </div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540' }}>
+              {user?.user_metadata?.full_name || user?.email}
+            </div>
             <div style={{ background:'#EEF5FF', color:'#1565C0', border:'1px solid #BDD5FF', borderRadius:100, padding:'2px 10px', fontSize:10, fontWeight:700, display:'inline-block', marginTop:4, fontFamily:'Outfit,sans-serif' }}>Free Plan</div>
           </div>
           {NAV_ITEMS.map(item => (
@@ -811,141 +824,153 @@ export function DashboardPage({ user }) {
             </div>
           ))}
           <div style={{ margin:'8px 12px 0' }}>
-  <button onClick={() => navigate('/pricing')} style={{ width:'100%', background:'#1565C0', color:'#fff', border:'none', padding:9, borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>⚡ Upgrade to Pro →</button>
-  <button
-    onClick={async () => {
-      const { supabase } = await import('../lib/supabase')
-      await supabase.auth.signOut()
-      window.location.href = '/'
-    }}
-    style={{ width:'100%', background:'#FEE2E2', color:'#DC2626', border:'1px solid #FECACA', padding:9, borderRadius:8, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginTop:8 }}>
-    Log Out
-  </button>
-</div>
+            <button onClick={() => navigate('/pricing')} style={{ width:'100%', background:'#1565C0', color:'#fff', border:'none', padding:9, borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>⚡ Upgrade to Pro →</button>
+            <button
+              onClick={async () => { await supabase.auth.signOut(); window.location.href = '/' }}
+              style={{ width:'100%', background:'#FEE2E2', color:'#DC2626', border:'1px solid #FECACA', padding:9, borderRadius:8, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginTop:8 }}>
+              Log Out
+            </button>
+          </div>
         </aside>
+
         <main style={{ padding:20 }}>
           {tab === 'overview' && (
             <div>
-              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540', marginBottom:16 }}>Good morning, James 👋</div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540', marginBottom:16 }}>
+                Welcome back, {user?.user_metadata?.full_name?.split(' ')[0] || 'there'} 👋
+              </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
-                {[['👁','342','Listing Views','↑ 18% this week','#EEF5FF'],['📞','12','Contact Leads','↑ 4 new today','#DCFCE7'],['❤️','27','Times Saved','↑ 6 this week','#FEF3C7'],['🚗','2','Active Listings','1 slot remaining','#F0E8FF']].map(([icon,n,l,d,bg]) => (
+                {[
+                  ['👁', totalViews, 'Total Views', '#EEF5FF'],
+                  ['🚗', myListings.length, 'My Listings', '#DCFCE7'],
+                  ['✓', approvedListings.length, 'Live Now', '#EEF5FF'],
+                  ['❤️', savedCars.length, 'Saved Cars', '#FEF3C7'],
+                ].map(([icon,n,l,bg]) => (
                   <div key={l} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14 }}>
                     <div style={{ width:32, height:32, borderRadius:8, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, marginBottom:10 }}>{icon}</div>
                     <div style={{ fontFamily:'Outfit,sans-serif', fontSize:22, fontWeight:800, color:'#0A2540', marginBottom:2 }}>{n}</div>
                     <div style={{ fontSize:11, color:'#94A3B8' }}>{l}</div>
-                    <div style={{ fontSize:10, fontWeight:700, color:'#16A34A', marginTop:4 }}>{d}</div>
                   </div>
                 ))}
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
                 <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
-                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:12 }}>Recent Activity</div>
-                  {[['#25D366','WhatsApp inquiry on Prado 150','2h ago'],['#1565C0','Profile viewed by 4 buyers','5h ago'],['#F59E0B','RAV4 listing views spiked (+34)','1d ago'],['#94A3B8','Listing approved: Prado 150','2d ago']].map(([color,text,time]) => (
-                    <div key={text} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'1px solid #F5F7FA', fontSize:12 }}>
-                      <div style={{ width:8, height:8, borderRadius:'50%', background:color, flexShrink:0 }}></div>
-                      <span style={{ flex:1, color:'#475569' }}>{text}</span>
-                      <span style={{ fontSize:10, color:'#94A3B8', whiteSpace:'nowrap' }}>{time}</span>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:12 }}>My Recent Listings</div>
+                  {loadingListings ? <div style={{ color:'#94A3B8', fontSize:12 }}>Loading...</div>
+                  : myListings.length === 0 ? (
+                    <div style={{ textAlign:'center', padding:20 }}>
+                      <div style={{ fontSize:11, color:'#94A3B8', marginBottom:10 }}>You have no listings yet.</div>
+                      <Link to="/list-car" style={{ background:'#1565C0', color:'#fff', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>+ List a Car</Link>
+                    </div>
+                  ) : myListings.slice(0,3).map(l => (
+                    <div key={l.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom:'1px solid #F5F7FA', fontSize:12 }}>
+                      <div>
+                        <div style={{ fontWeight:600, color:'#0A2540' }}>{l.year} {l.make} {l.model}</div>
+                        <div style={{ color:'#94A3B8', fontSize:11 }}>KSH {Number(l.price).toLocaleString()}</div>
+                      </div>
+                      <span style={{ fontSize:10, fontWeight:700, padding:'3px 10px', borderRadius:100, background:l.status==='approved'?'#DCFCE7':l.status==='pending'?'#FEF3C7':'#FEE2E2', color:l.status==='approved'?'#16A34A':l.status==='pending'?'#D97706':'#EF4444', fontFamily:'Outfit,sans-serif' }}>
+                        {l.status}
+                      </span>
                     </div>
                   ))}
                 </div>
                 <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
                   <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:12 }}>Quick Actions</div>
-                  {[['#1565C0','#fff','+ List a New Car','/list-car'],['#F0F6FF','#1565C0','Edit My Listings','#'],['#F8FAFC','#475569','Get Car Valuation','/valuation'],['#F8FAFC','#475569','Set a Price Alert','#']].map(([bg,color,label,href]) => (
+                  {[['#1565C0','#fff','+ List a New Car','/list-car'],['#F0F6FF','#1565C0','Browse Listings','/listings'],['#F8FAFC','#475569','Get Car Valuation','/valuation'],['#F8FAFC','#475569','View Pricing','/pricing']].map(([bg,color,label,href]) => (
                     <Link key={label} to={href} style={{ display:'block', background:bg, color, border:`1.5px solid ${bg==='#1565C0'?'transparent':'#E2E8F0'}`, padding:10, borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textAlign:'left', textDecoration:'none', marginBottom:8 }}>{label}</Link>
                   ))}
                 </div>
               </div>
             </div>
           )}
+
           {tab === 'listings' && (
             <div>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
                 <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540' }}>My Listings</div>
                 <Link to="/list-car" style={{ background:'#1565C0', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>+ Add New Listing</Link>
               </div>
-              {MY_LISTINGS.map(l => (
+              {loadingListings ? <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading...</div>
+              : myListings.length === 0 ? (
+                <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+                  <div style={{ fontSize:32, marginBottom:12 }}>🚗</div>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540', marginBottom:6 }}>No listings yet</div>
+                  <div style={{ fontSize:13, color:'#94A3B8', marginBottom:16 }}>List your first car and reach thousands of buyers.</div>
+                  <Link to="/list-car" style={{ background:'#1565C0', color:'#fff', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>+ List a Car</Link>
+                </div>
+              ) : myListings.map(l => (
                 <div key={l.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14, marginBottom:10, display:'grid', gridTemplateColumns:'80px 1fr auto', gap:14, alignItems:'center' }}>
-                  <div style={{ width:80, height:56, borderRadius:8, background:l.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <svg width="56" height="36" viewBox="0 0 56 36" fill="none"><rect x="4" y="13" width="48" height="14" rx="3" fill={l.fg} opacity=".2"/><path d="M9 13 L15 4 H41 L47 13" fill={l.fg} opacity=".15"/><circle cx="13" cy="29" r="6" fill={l.fg} opacity=".25"/><circle cx="43" cy="29" r="6" fill={l.fg} opacity=".25"/></svg>
+                  <div style={{ width:80, height:56, borderRadius:8, background:'#EEF5FF', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    {l.listing_photos?.[0]?.url
+                      ? <img src={l.listing_photos[0].url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                      : <span style={{ fontSize:11, color:'#94A3B8' }}>No photo</span>}
                   </div>
                   <div>
-                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{l.name}</div>
-                    <div style={{ fontSize:11, color:'#94A3B8', display:'flex', gap:10, marginBottom:5 }}><span>{fmt(l.price)}</span><span>·</span><span>{l.km.toLocaleString()} km</span><span>·</span><span>{l.fuel}</span></div>
-                    <div style={{ display:'flex', gap:14 }}>
-                      {[[l.views,'views'],[l.saves,'saves'],[l.leads,'leads']].map(([n,label]) => (
-                        <div key={label} style={{ fontSize:11, color:'#64748B' }}><strong style={{ fontFamily:'Outfit,sans-serif', color:'#0A2540' }}>{n}</strong> {label}</div>
-                      ))}
+                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{l.year} {l.make} {l.model}</div>
+                    <div style={{ fontSize:11, color:'#94A3B8', display:'flex', gap:10, marginBottom:5 }}>
+                      <span>KSH {Number(l.price).toLocaleString()}</span>
+                      <span>·</span>
+                      <span>{Number(l.mileage).toLocaleString()} km</span>
+                      <span>·</span>
+                      <span>{l.fuel_type}</span>
                     </div>
+                    <div style={{ fontSize:11, color:'#64748B' }}>{l.views || 0} views</div>
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'flex-end' }}>
-                    <span style={{ fontSize:10, fontWeight:700, padding:'3px 10px', borderRadius:100, background:l.status==='approved'?'#DCFCE7':'#FEF3C7', color:l.status==='approved'?'#16A34A':'#D97706', fontFamily:'Outfit,sans-serif' }}>{l.status==='approved'?'● Live':'● Pending Review'}</span>
-                    <button style={{ background:'#F0F6FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Edit</button>
+                    <span style={{ fontSize:10, fontWeight:700, padding:'3px 10px', borderRadius:100, background:l.status==='approved'?'#DCFCE7':l.status==='pending'?'#FEF3C7':'#FEE2E2', color:l.status==='approved'?'#16A34A':l.status==='pending'?'#D97706':'#EF4444', fontFamily:'Outfit,sans-serif' }}>
+                      {l.status==='approved'?'● Live':l.status==='pending'?'● Pending Review':'● Declined'}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
           )}
+
           {tab === 'saved' && (
             <div>
-              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540', marginBottom:16 }}>Saved Cars <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({saved.size})</span></div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
-                {SAVED_CARS.filter(c => saved.has(c.id)).map(c => (
-                  <div key={c.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:10, overflow:'hidden' }}>
-                    <div style={{ height:90, background:c.bg, display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
-                      <button onClick={() => setSaved(prev => { const n=new Set(prev); n.delete(c.id); return n })} style={{ position:'absolute', top:6, right:6, width:22, height:22, background:'rgba(239,68,68,.9)', borderRadius:'50%', border:'none', color:'#fff', fontSize:11, cursor:'pointer' }}>x</button>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540', marginBottom:16 }}>Saved Cars <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({savedCars.length})</span></div>
+              {loadingSaved ? <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading...</div>
+              : savedCars.length === 0 ? (
+                <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+                  <div style={{ fontSize:32, marginBottom:12 }}>❤️</div>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540', marginBottom:6 }}>No saved cars yet</div>
+                  <div style={{ fontSize:13, color:'#94A3B8', marginBottom:16 }}>Browse listings and save cars you like.</div>
+                  <Link to="/listings" style={{ background:'#1565C0', color:'#fff', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>Browse Cars</Link>
+                </div>
+              ) : (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
+                  {savedCars.map(c => (
+                    <div key={c.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:10, overflow:'hidden' }}>
+                      <div style={{ height:120, background:'#EEF5FF', overflow:'hidden' }}>
+                        {c.listing_photos?.[0]?.url
+                          ? <img src={c.listing_photos[0].url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                          : <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24 }}>🚗</div>}
+                      </div>
+                      <div style={{ padding:'10px 10px 0' }}>
+                        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:800, color:'#0A2540' }}>KSH {Number(c.price).toLocaleString()}</div>
+                        <div style={{ fontSize:11, color:'#64748B', marginTop:1 }}>{c.year} {c.make} {c.model}</div>
+                      </div>
+                      <Link to={`/listings/${c.id}`} style={{ display:'block', width:'100%', background:'#F0F6FF', color:'#1565C0', border:'none', borderTop:'1px solid #E8EDF3', padding:7, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginTop:8, textAlign:'center', textDecoration:'none' }}>View Listing →</Link>
                     </div>
-                    <div style={{ padding:'10px 10px 0' }}>
-                      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:800, color:'#0A2540' }}>{fmt(c.price)}</div>
-                      <div style={{ fontSize:11, color:'#64748B', marginTop:1 }}>{c.year} {c.make} {c.model}</div>
-                    </div>
-                    <button style={{ width:'100%', background:'#F0F6FF', color:'#1565C0', border:'none', borderTop:'1px solid #E8EDF3', padding:7, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginTop:8 }}>View Listing</button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
+
           {tab === 'leads' && (
-            <div>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540' }}>Leads and Inquiries</div>
-                <span style={{ background:'#EEF5FF', color:'#1565C0', fontSize:11, fontWeight:700, padding:'4px 12px', borderRadius:100, fontFamily:'Outfit,sans-serif' }}>{LEADS.filter(l=>l.isNew).length} new</span>
-              </div>
-              {LEADS.map(l => (
-                <div key={l.name} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14, marginBottom:10, display:'grid', gridTemplateColumns:'36px 1fr auto', gap:12, alignItems:'center' }}>
-                  <div style={{ width:36, height:36, borderRadius:'50%', background:l.color, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:12, fontWeight:700, color:'#fff', flexShrink:0 }}>{l.initials}</div>
-                  <div>
-                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:2, display:'flex', alignItems:'center', gap:6 }}>
-                      {l.name}
-                      {l.isNew && <span style={{ background:'#EEF5FF', color:'#1565C0', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:100, fontFamily:'Outfit,sans-serif' }}>NEW</span>}
-                    </div>
-                    <div style={{ fontSize:11, color:'#64748B', marginBottom:3 }}>Re: <strong>{l.car}</strong></div>
-                    <div style={{ fontSize:11, color:'#64748B' }}>{l.msg}</div>
-                  </div>
-                  <div style={{ textAlign:'right' }}>
-                    <div style={{ fontSize:10, color:'#94A3B8', marginBottom:6 }}>{l.time}</div>
-                    <a href={`https://wa.me/?text=Reply to ${l.name}`} target="_blank" rel="noopener noreferrer" style={{ background:'#25D366', color:'#fff', border:'none', padding:'6px 12px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none', display:'inline-block' }}>Reply</a>
-                  </div>
-                </div>
-              ))}
+            <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+              <div style={{ fontSize:32, marginBottom:12 }}>💬</div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540', marginBottom:6 }}>Leads coming soon</div>
+              <div style={{ fontSize:13, color:'#94A3B8' }}>When buyers contact you via WhatsApp, their enquiries will appear here.</div>
             </div>
           )}
+
           {tab === 'alerts' && (
-            <div>
-              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540', marginBottom:16 }}>Saved Searches and Alerts</div>
-              {[['BMW X5 Under KSH 6M Any Year','Last match: 2 days ago 3 total'],['Toyota Harrier Under KSH 4M 2018+','Last match: 5 days ago 7 total']].map(([title,sub]) => (
-                <div key={title} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <div><div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540' }}>{title}</div><div style={{ fontSize:11, color:'#94A3B8', marginTop:3 }}>{sub}</div></div>
-                  <div style={{ display:'flex', gap:8 }}>
-                    <button style={{ background:'#EEF5FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>View Matches</button>
-                    <button style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'5px 10px', borderRadius:6, fontSize:11, cursor:'pointer' }}>x</button>
-                  </div>
-                </div>
-              ))}
-              <div style={{ border:'2px dashed #E2E8F0', borderRadius:12, padding:20, textAlign:'center', cursor:'pointer' }}>
-                <div style={{ fontSize:20, marginBottom:6 }}>🔔</div>
-                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#475569' }}>Create a New Alert</div>
-                <div style={{ fontSize:11, color:'#94A3B8', marginTop:3 }}>Get notified when a matching car is listed</div>
-              </div>
+            <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+              <div style={{ fontSize:32, marginBottom:12 }}>🔔</div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540', marginBottom:6 }}>Price alerts coming soon</div>
+              <div style={{ fontSize:13, color:'#94A3B8' }}>Set alerts and get notified when matching cars are listed.</div>
             </div>
           )}
         </main>
