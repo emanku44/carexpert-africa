@@ -32,6 +32,7 @@ export default function ListingsPage({ user }) {
   const [minKm, setMinKm]       = useState(0)
   const [maxKm, setMaxKm]       = useState(300000)
   const [sort, setSort]         = useState('newest')
+  const [selectedModel, setSelectedModel] = useState('')
   const [saved, setSaved]       = useState(new Set())
 
   useEffect(() => {
@@ -58,15 +59,18 @@ export default function ListingsPage({ user }) {
     })
   }
 
-  const clearAll = () => {
-    setChecks({ makes: new Set(), bodies: new Set(), fuels: new Set(), trans: new Set(), drives: new Set() })
-    setMinPrice(0); setMaxPrice(30000000)
-    setMinYear(1990); setMaxYear(2025)
-    setMinKm(0); setMaxKm(300000)
+const clearAll = () => {
+  setChecks({ makes: new Set(), bodies: new Set(), fuels: new Set(), trans: new Set(), drives: new Set() })
+  setSelectedModel('')
+  setMinPrice(0); setMaxPrice(30000000)
+  setMinYear(1990); setMaxYear(2025)
+  setMinKm(0); setMaxKm(300000)
+}
   }
 
   const filtered = listings.filter(c => {
     if (checks.makes.size  && !checks.makes.has(c.make))       return false
+    if (selectedModel && c.model !== selectedModel) return false
     if (checks.bodies.size && !checks.bodies.has(c.body_type)) return false
     if (checks.fuels.size  && !checks.fuels.has(c.fuel_type))  return false
     if (checks.trans.size  && !checks.trans.has(c.transmission)) return false
@@ -159,7 +163,24 @@ export default function ListingsPage({ user }) {
             <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#0A2540' }}>Filters</span>
             <button onClick={clearAll} style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>✕ Clear all</button>
           </div>
-          <SbSection title="Make"         items={MAKES}  filterKey="makes" />
+          <SbSection title="Make" items={MAKES} filterKey="makes" />
+
+{checks.makes.size === 1 && (() => {
+  const selectedMake = [...checks.makes][0]
+  const models = [...new Set(listings.filter(l => l.make === selectedMake).map(l => l.model).filter(Boolean))].sort()
+  return models.length > 0 ? (
+    <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, fontFamily: 'Outfit, sans-serif' }}>Model</div>
+      <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
+        style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+        <option value="">All Models ({models.length})</option>
+        {models.map(m => (
+          <option key={m} value={m}>{m} ({listings.filter(l => l.make === selectedMake && l.model === m).length})</option>
+        ))}
+      </select>
+    </div>
+  ) : null
+})()}
           <SbSection title="Body Type"    items={BODIES} filterKey="bodies" />
           <RangeSection title="Budget (KSH)" min={minPrice} max={maxPrice} absMin={0} absMax={30000000} setMin={setMinPrice} setMax={setMaxPrice} format={n => `${(n/1e6).toFixed(1)}M`} />
           <RangeSection title="Year"      min={minYear}  max={maxYear}  absMin={1990} absMax={2025} setMin={setMinYear}  setMax={setMaxYear} />
