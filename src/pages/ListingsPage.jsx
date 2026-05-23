@@ -66,7 +66,6 @@ const clearAll = () => {
   setMinYear(1990); setMaxYear(2025)
   setMinKm(0); setMaxKm(300000)
 }
-  }
 
   const filtered = listings.filter(c => {
     if (checks.makes.size  && !checks.makes.has(c.make))       return false
