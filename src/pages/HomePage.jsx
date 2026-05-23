@@ -184,9 +184,7 @@ useEffect(() => {
                 </div>
               ))}
         </div>
-      </div>
-          </div>
-        </section>
+      </section>
       )}
 
       {/* Browse by Make */}
