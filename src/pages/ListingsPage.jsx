@@ -205,7 +205,7 @@ const clearAll = () => {
         style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
         <option value="">All {selectedMake} Models</option>
         {allModels.map(m => (
-          <option key={m} value={m}>{m}{liveCounts[m] ? ` (${liveCounts[m]})` : '
+          <option key={m} value={m}>{m}{liveCounts[m] ? ` (${liveCounts[m]})` : ''}</option>
           <SbSection title="Body Type"    items={BODIES} filterKey="bodies" />
           <RangeSection title="Budget (KSH)" min={minPrice} max={maxPrice} absMin={0} absMax={30000000} setMin={setMinPrice} setMax={setMaxPrice} format={n => `${(n/1e6).toFixed(1)}M`} />
           <RangeSection title="Year"      min={minYear}  max={maxYear}  absMin={1990} absMax={2025} setMin={setMinYear}  setMax={setMaxYear} />
