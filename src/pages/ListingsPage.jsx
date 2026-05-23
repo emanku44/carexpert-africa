@@ -118,7 +118,14 @@ const clearAll = () => {
               <div style={{ width: 14, height: 14, border: `1.5px solid ${checks[filterKey].has(item) ? '#1565C0' : '#CBD5E1'}`, borderRadius: 3, background: checks[filterKey].has(item) ? '#1565C0' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 9, color: '#fff' }}>
                 {checks[filterKey].has(item) ? '✓' : ''}
               </div>
-              <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>{item}</span>
+              <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>
+  {item}
+  {filterKey === 'makes' && listings.filter(l => l.make === item).length > 0 && (
+    <span style={{ color: '#94A3B8', fontSize: 11, marginLeft: 4 }}>
+      ({listings.filter(l => l.make === item).length})
+    </span>
+  )}
+</span>
             </div>
           ))}
         </div>
@@ -166,20 +173,39 @@ const clearAll = () => {
 
 {checks.makes.size === 1 && (() => {
   const selectedMake = [...checks.makes][0]
-  const models = [...new Set(listings.filter(l => l.make === selectedMake).map(l => l.model).filter(Boolean))].sort()
-  return models.length > 0 ? (
+  const CAR_MODELS = {
+    Toyota: ['Allion','Alphard','Camry','Corolla','Crown','Fielder','Fortuner','Harrier','Hiace','Hilux','Land Cruiser 200','Land Cruiser 300','Land Cruiser Prado 120','Land Cruiser Prado 150','Mark X','Noah','Premio','Probox','RAV4','Rush','Succeed','Vanguard','Vellfire','Voxy','Wish'],
+    Nissan: ['Caravan','Elgrand','Juke','March','Murano','Navara','Note','Patrol','Qashqai','Serena','Sylphy','Teana','Tiida','Urvan','X-Trail'],
+    Mazda: ['Atenza','Axela','BT-50','CX-3','CX-5','CX-7','CX-9','Demio','MPV'],
+    Subaru: ['Forester','Impreza','Legacy','Outback','Tribeca','WRX','XV'],
+    Mitsubishi: ['Colt','Eclipse Cross','Galant','L200','Lancer','Montero','Outlander','Pajero','Pajero Mini'],
+    BMW: ['1 Series','2 Series','3 Series','5 Series','7 Series','X1','X3','X5','X6'],
+    'Mercedes-Benz': ['A-Class','B-Class','C-Class','E-Class','GLC','GLE','GLS','GL','ML','S-Class'],
+    Audi: ['A3','A4','A6','Q3','Q5','Q7','TT'],
+    Volkswagen: ['Amarok','Golf','Passat','Polo','Tiguan','Touareg','Transporter'],
+    Honda: ['Accord','CR-V','Civic','Fit','Freed','HR-V','Jazz','Odyssey','Pilot','StepWagon','Stream'],
+    Hyundai: ['Creta','Elantra','Santa Fe','Tucson','i10','i20','ix35'],
+    Kia: ['Carnival','Cerato','Picanto','Rio','Sorento','Sportage'],
+    Ford: ['EcoSport','Everest','Explorer','Fusion','Mustang','Ranger'],
+    'Land Rover': ['Defender','Discovery','Discovery Sport','Freelander','Range Rover','Range Rover Evoque','Range Rover Sport'],
+    Lexus: ['GS','GX','IS','LS','LX','NX','RX','UX'],
+    Isuzu: ['D-Max','MU-X','Trooper'],
+    Suzuki: ['Alto','Baleno','Ertiga','Escudo','Grand Vitara','Jimny','Swift','Vitara'],
+    Porsche: ['911','Cayenne','Macan','Panamera'],
+  }
+  const allModels = CAR_MODELS[selectedMake] || []
+  const liveCounts = {}
+  listings.filter(l => l.make === selectedMake).forEach(l => {
+    if (l.model) liveCounts[l.model] = (liveCounts[l.model] || 0) + 1
+  })
+  return (
     <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, fontFamily: 'Outfit, sans-serif' }}>Model</div>
       <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
         style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
-        <option value="">All Models ({models.length})</option>
-        {models.map(m => (
-          <option key={m} value={m}>{m} ({listings.filter(l => l.make === selectedMake && l.model === m).length})</option>
-        ))}
-      </select>
-    </div>
-  ) : null
-})()}
+        <option value="">All {selectedMake} Models</option>
+        {allModels.map(m => (
+          <option key={m} value={m}>{m}{liveCounts[m] ? ` (${liveCounts[m]})` : '
           <SbSection title="Body Type"    items={BODIES} filterKey="bodies" />
           <RangeSection title="Budget (KSH)" min={minPrice} max={maxPrice} absMin={0} absMax={30000000} setMin={setMinPrice} setMax={setMaxPrice} format={n => `${(n/1e6).toFixed(1)}M`} />
           <RangeSection title="Year"      min={minYear}  max={maxYear}  absMin={1990} absMax={2025} setMin={setMinYear}  setMax={setMaxYear} />
@@ -293,3 +319,4 @@ const clearAll = () => {
       </div>
     </div>
   )
+}
