@@ -8,41 +8,40 @@ const BODY_TYPES = [{ t:'SUV', c:58 },{ t:'Sedan', c:9 },{ t:'Hatchback', c:8 },
 
 export default function HomePage({ user }) {
   const navigate = useNavigate()
-  const [make, setMake] = useState('')
-  const [body, setBody] = useState('')
-  const [price, setPrice] = useState('')
-  const [showMore, setShowMore] = useState(false)
+  const [make, setMake]               = useState('')
+  const [body, setBody]               = useState('')
+  const [price, setPrice]             = useState('')
+  const [showMore, setShowMore]       = useState(false)
   const [transmission, setTransmission] = useState('')
-  const [fuel, setFuel] = useState('')
-  const [minYear, setMinYear] = useState('')
-  const [maxKm, setMaxKm] = useState('')
-  const [featured, setFeatured] = useState([])
+  const [fuel, setFuel]               = useState('')
+  const [minYear, setMinYear]         = useState('')
+  const [maxKm, setMaxKm]             = useState('')
+  const [featured, setFeatured]       = useState([])
+  const [totalCars, setTotalCars]     = useState(0)
+  const [makeCounts, setMakeCounts]   = useState({})
 
-  const [totalCars, setTotalCars] = useState(0)
-const [makeCounts, setMakeCounts] = useState({})
-
-useEffect(() => {
-  getFeaturedListings().then(({ data }) => setFeatured(data || []))
-  supabase.from('listings').select('make').eq('status', 'approved').then(({ data }) => {
-    if (!data) return
-    setTotalCars(data.length)
-    const counts = {}
-    data.forEach(l => { counts[l.make] = (counts[l.make] || 0) + 1 })
-    setMakeCounts(counts)
-  })
-}, [])
+  useEffect(() => {
+    getFeaturedListings().then(({ data }) => setFeatured(data || []))
+    supabase.from('listings').select('make').eq('status', 'approved').then(({ data }) => {
+      if (!data) return
+      setTotalCars(data.length)
+      const counts = {}
+      data.forEach(l => { counts[l.make] = (counts[l.make] || 0) + 1 })
+      setMakeCounts(counts)
+    })
+  }, [])
 
   const search = () => {
-  const p = new URLSearchParams()
-  if (make)         p.set('make', make)
-  if (body)         p.set('body', body)
-  if (price)        p.set('maxPrice', price)
-  if (transmission) p.set('transmission', transmission)
-  if (fuel)         p.set('fuel', fuel)
-  if (minYear)      p.set('minYear', minYear)
-  if (maxKm)        p.set('maxKm', maxKm)
-  navigate(`/listings?${p.toString()}`)
-}
+    const p = new URLSearchParams()
+    if (make)         p.set('make', make)
+    if (body)         p.set('body', body)
+    if (price)        p.set('maxPrice', price)
+    if (transmission) p.set('transmission', transmission)
+    if (fuel)         p.set('fuel', fuel)
+    if (minYear)      p.set('minYear', minYear)
+    if (maxKm)        p.set('maxKm', maxKm)
+    navigate(`/listings?${p.toString()}`)
+  }
 
   return (
     <div style={{ fontFamily: 'DM Sans, sans-serif', background: '#F7F9FC', minHeight: '100vh' }}>
@@ -64,6 +63,8 @@ useEffect(() => {
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 16, marginBottom: 36, maxWidth: 480 }}>
             Browse verified listings from trusted dealers and private sellers across Kenya.
           </p>
+
+          {/* Search box */}
           <div style={{ background: '#fff', borderRadius: '14px 14px 0 0', padding: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 12, alignItems: 'end' }}>
               <div>
@@ -85,69 +86,81 @@ useEffect(() => {
                 <select value={price} onChange={e => setPrice(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
                   <option value="">Any Price</option>
                   <option value="1000000">Under 1M</option>
+                  <option value="2000000">Under 2M</option>
                   <option value="3000000">Under 3M</option>
                   <option value="5000000">Under 5M</option>
+                  <option value="8000000">Under 8M</option>
                   <option value="10000000">Under 10M</option>
                 </select>
               </div>
               <button onClick={search} style={{ background: '#1565C0', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>
-  Search {totalCars > 0 ? `${totalCars} Cars` : ''} →
-</button>
-</div>
+                Search {totalCars > 0 ? `${totalCars} Cars` : ''} →
+              </button>
+            </div>
 
-  {/* More filters */}
-  <div onClick={() => setShowMore(!showMore)}
-    style={{ marginTop:12, display:'flex', alignItems:'center', gap:6, cursor:'pointer', width:'fit-content' }}>
-    <span style={{ fontSize:12, fontWeight:600, color:'#1565C0' }}>{showMore ? '▲ Hide filters' : '▼ More filters'}</span>
-  </div>
+            {/* More filters toggle */}
+            <div onClick={() => setShowMore(!showMore)}
+              style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', width: 'fit-content' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#1565C0' }}>{showMore ? '▲ Hide filters' : '▼ More filters'}</span>
+            </div>
 
-  {showMore && (
-    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:12, marginTop:14, paddingTop:14, borderTop:'1px solid #F0F4F8' }}>
-      <div>
-        <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Transmission</label>
-        <select value={transmission} onChange={e => setTransmission(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}>
-          <option value="">Any</option>
-          <option>Automatic</option>
-          <option>Manual</option>
-          <option>CVT</option>
-        </select>
-      </div>
-      <div>
-        <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Fuel Type</label>
-        <select value={fuel} onChange={e => setFuel(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}>
-          <option value="">Any</option>
-          <option>Petrol</option>
-          <option>Diesel</option>
-          <option>Hybrid</option>
-          <option>Electric</option>
-        </select>
-      </div>
-      <div>
-        <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Min Year</label>
-        <select value={minYear} onChange={e => setMinYear(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}>
-          <option value="">Any</option>
-          {[2024,2023,2022,2021,2020,2019,2018,2017,2016,2015,2014,2013,2012,2010].map(y => <option key={y}>{y}</option>)}
-        </select>
-      </div>
-      <div>
-        <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Max Mileage</label>
-        <select value={maxKm} onChange={e => setMaxKm(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}>
-          <option value="">Any</option>
-          <option value="20000">Under 20,000 km</option>
-          <option value="50000">Under 50,000 km</option>
-          <option value="80000">Under 80,000 km</option>
-          <option value="100000">Under 100,000 km</option>
-          <option value="150000">Under 150,000 km</option>
-        </select>
-      </div>
-    </div>
-  )}
+            {showMore && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginTop: 14, paddingTop: 14, borderTop: '1px solid #F0F4F8' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Transmission</label>
+                  <select value={transmission} onChange={e => setTransmission(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+                    <option value="">Any</option>
+                    <option>Automatic</option>
+                    <option>Manual</option>
+                    <option>CVT</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Fuel Type</label>
+                  <select value={fuel} onChange={e => setFuel(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+                    <option value="">Any</option>
+                    <option>Petrol</option>
+                    <option>Diesel</option>
+                    <option>Hybrid</option>
+                    <option>Electric</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Min Year</label>
+                  <select value={minYear} onChange={e => setMinYear(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+                    <option value="">Any</option>
+                    {[2024,2023,2022,2021,2020,2019,2018,2017,2016,2015,2014,2013,2012,2010].map(y => <option key={y}>{y}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Max Mileage</label>
+                  <select value={maxKm} onChange={e => setMaxKm(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+                    <option value="">Any</option>
+                    <option value="20000">Under 20,000 km</option>
+                    <option value="50000">Under 50,000 km</option>
+                    <option value="80000">Under 80,000 km</option>
+                    <option value="100000">Under 100,000 km</option>
+                    <option value="150000">Under 150,000 km</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+      </div>
 
       {/* Stats bar */}
       <div style={{ background: '#EEF5FF', borderBottom: '1px solid #D9E8FA', padding: '14px 24px', display: 'flex', gap: 40 }}>
-        {[['86+','Active Listings'],['19','Car Makes'],['100%','Verified Sellers'],['7 Days','Support']].map(([n,l]) => (
-          <div key={l}><div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 20, fontWeight: 700, color: '#1565C0' }}>{n}</div><div style={{ fontSize: 11, color: '#64748B' }}>{l}</div></div>
+        {[
+          [totalCars > 0 ? `${totalCars}+` : '0', 'Active Listings'],
+          [Object.keys(makeCounts).length || '19', 'Car Makes'],
+          ['100%', 'Verified Sellers'],
+          ['7 Days', 'Support']
+        ].map(([n,l]) => (
+          <div key={l}>
+            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 20, fontWeight: 700, color: '#1565C0' }}>{n}</div>
+            <div style={{ fontSize: 11, color: '#64748B' }}>{l}</div>
+          </div>
         ))}
       </div>
 
@@ -183,8 +196,9 @@ useEffect(() => {
                   </div>
                 </div>
               ))}
-        </div>
-      </section>
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Browse by Make */}
@@ -198,13 +212,13 @@ useEffect(() => {
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {MAKES.map(m => (
-  <button key={m} onClick={() => navigate(`/listings?make=${m}`)}
-    style={{ padding: '8px 16px', border: '1.5px solid #E2E8F0', borderRadius: 100, fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer', background: '#fff', fontFamily: 'DM Sans, sans-serif' }}
-    onMouseOver={e => { e.currentTarget.style.background='#0A2540'; e.currentTarget.style.color='#fff'; e.currentTarget.style.borderColor='#0A2540' }}
-    onMouseOut={e => { e.currentTarget.style.background='#fff'; e.currentTarget.style.color='#475569'; e.currentTarget.style.borderColor='#E2E8F0' }}>
-    {m}{makeCounts[m] ? <span style={{ fontSize:11, color:'#94A3B8', marginLeft:4 }}>({makeCounts[m]})</span> : ''}
-  </button>
-))}
+            <button key={m} onClick={() => navigate(`/listings?make=${m}`)}
+              style={{ padding: '8px 16px', border: '1.5px solid #E2E8F0', borderRadius: 100, fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer', background: '#fff', fontFamily: 'DM Sans, sans-serif' }}
+              onMouseOver={e => { e.currentTarget.style.background='#0A2540'; e.currentTarget.style.color='#fff'; e.currentTarget.style.borderColor='#0A2540' }}
+              onMouseOut={e => { e.currentTarget.style.background='#fff'; e.currentTarget.style.color='#475569'; e.currentTarget.style.borderColor='#E2E8F0' }}>
+              {m}{makeCounts[m] ? <span style={{ fontSize:11, color:'#94A3B8', marginLeft:4 }}>({makeCounts[m]})</span> : ''}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -216,7 +230,7 @@ useEffect(() => {
             <div key={b.t} onClick={() => navigate(`/listings?body=${b.t}`)}
               style={{ background: '#fff', border: '1.5px solid #E8EDF3', borderRadius: 12, padding: '18px 12px', textAlign: 'center', cursor: 'pointer' }}>
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#0A2540', marginBottom: 3 }}>{b.t}</div>
-              <div style={{ fontSize: 11, color: '#94A3B8' }}>{b.c} cars</div>
+              <div style={{ fontSize: 11, color: '#94A3B8' }}>{b.t in makeCounts ? makeCounts[b.t] : b.c} cars</div>
             </div>
           ))}
         </div>
