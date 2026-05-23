@@ -93,35 +93,57 @@ export default function ListingsPage({ user }) {
     ...(minKm > 0 || maxKm < 300000 ? [{ label: `${minKm.toLocaleString()} – ${maxKm.toLocaleString()} km`, clear: () => { setMinKm(0); setMaxKm(300000) } }] : []),
   ]
 
-  const SbSection = ({ title, items, filterKey }) => (
-    <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10, fontFamily: 'Outfit, sans-serif' }}>{title}</div>
-      {items.map(item => (
-        <div key={item} onClick={() => toggleCheck(filterKey, item)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, cursor: 'pointer' }}>
-          <div style={{ width: 14, height: 14, border: `1.5px solid ${checks[filterKey].has(item) ? '#1565C0' : '#CBD5E1'}`, borderRadius: 3, background: checks[filterKey].has(item) ? '#1565C0' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 9, color: '#fff' }}>
-            {checks[filterKey].has(item) ? '✓' : ''}
-          </div>
-          <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>{item}</span>
+  const SbSection = ({ title, items, filterKey }) => {
+  const [open, setOpen] = useState(false)
+  const activeCount = checks[filterKey].size
+  return (
+    <div style={{ borderTop: '1px solid #F5F7FA' }}>
+      <div onClick={() => setOpen(!open)}
+        style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif' }}>{title}</span>
+          {activeCount > 0 && (
+            <span style={{ background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 6px', fontSize: 9, fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>{activeCount}</span>
+          )}
         </div>
-      ))}
+        <span style={{ color: '#94A3B8', fontSize: 12, transition: 'transform .2s', display: 'inline-block', transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
+      </div>
+      {open && (
+        <div style={{ padding: '0 16px 12px' }}>
+          {items.map(item => (
+            <div key={item} onClick={() => toggleCheck(filterKey, item)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, cursor: 'pointer' }}>
+              <div style={{ width: 14, height: 14, border: `1.5px solid ${checks[filterKey].has(item) ? '#1565C0' : '#CBD5E1'}`, borderRadius: 3, background: checks[filterKey].has(item) ? '#1565C0' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 9, color: '#fff' }}>
+                {checks[filterKey].has(item) ? '✓' : ''}
+              </div>
+              <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
+}
 
   const RangeSection = ({ title, min, max, absMin, absMax, setMin, setMax, format }) => (
-    <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10, fontFamily: 'Outfit, sans-serif' }}>{title}</div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-        <input value={format ? format(min) : min} readOnly style={{ flex: 1, padding: '6px 8px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 11, fontWeight: 600, textAlign: 'center', background: '#F8FAFC', fontFamily: 'DM Sans, sans-serif' }} />
-        <span style={{ alignSelf: 'center', color: '#94A3B8', fontSize: 12 }}>–</span>
-        <input value={format ? format(max) : max} readOnly style={{ flex: 1, padding: '6px 8px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 11, fontWeight: 600, textAlign: 'center', background: '#F8FAFC', fontFamily: 'DM Sans, sans-serif' }} />
-      </div>
-      <input type="range" min={absMin} max={absMax} value={min} onChange={e => setMin(Math.min(Number(e.target.value), max - 1))} style={{ width: '100%', accentColor: '#1565C0', marginBottom: 4 }} />
-      <input type="range" min={absMin} max={absMax} value={max} onChange={e => setMax(Math.max(Number(e.target.value), min + 1))} style={{ width: '100%', accentColor: '#1565C0' }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94A3B8', marginTop: 4 }}>
-        <span>{format ? format(absMin) : absMin}</span><span>{format ? format(absMax) : absMax}</span>
-      </div>
+  <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+      <span style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif' }}>{title}</span>
+      <span style={{ fontSize: 11, fontWeight: 700, color: '#1565C0', fontFamily: 'Outfit, sans-serif' }}>
+        {format ? format(min) : min} – {format ? format(max) : max}
+      </span>
     </div>
-  )
+    <input type="range" min={absMin} max={absMax} value={min}
+      onChange={e => setMin(Math.min(Number(e.target.value), max - 1))}
+      style={{ width: '100%', accentColor: '#1565C0', marginBottom: 4 }} />
+    <input type="range" min={absMin} max={absMax} value={max}
+      onChange={e => setMax(Math.max(Number(e.target.value), min + 1))}
+      style={{ width: '100%', accentColor: '#1565C0' }} />
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#CBD5E1', marginTop: 4 }}>
+      <span>{format ? format(absMin) : absMin}</span>
+      <span>{format ? format(absMax) : absMax}</span>
+    </div>
+  </div>
+)
 
   return (
     <div style={{ fontFamily: 'DM Sans, sans-serif', background: '#F7F9FC', minHeight: '100vh' }}>
