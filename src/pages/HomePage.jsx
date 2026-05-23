@@ -14,8 +14,12 @@ export default function HomePage({ user }) {
   const [showMore, setShowMore]       = useState(false)
   const [transmission, setTransmission] = useState('')
   const [fuel, setFuel]               = useState('')
-  const [minYear, setMinYear]         = useState('')
-  const [maxKm, setMaxKm]             = useState('')
+  const [minYear, setMinYear] = useState(2000)
+const [maxYear, setMaxYear] = useState(2025)
+const [minKm, setMinKm] = useState(0)
+const [maxKm, setMaxKm] = useState(300000)
+const [minPrice, setMinPrice] = useState(0)
+const [maxPrice, setMaxPrice] = useState(20000000)
   const [featured, setFeatured]       = useState([])
   const [totalCars, setTotalCars]     = useState(0)
   const [makeCounts, setMakeCounts]   = useState({})
@@ -35,11 +39,15 @@ export default function HomePage({ user }) {
     const p = new URLSearchParams()
     if (make)         p.set('make', make)
     if (body)         p.set('body', body)
-    if (price)        p.set('maxPrice', price)
+    
     if (transmission) p.set('transmission', transmission)
     if (fuel)         p.set('fuel', fuel)
-    if (minYear)      p.set('minYear', minYear)
-    if (maxKm)        p.set('maxKm', maxKm)
+    if (minPrice > 0)    p.set('minPrice', minPrice)
+    if (maxPrice < 20000000) p.set('maxPrice', maxPrice)
+    if (minYear > 2000)  p.set('minYear', minYear)
+    if (maxYear < 2025)  p.set('maxYear', maxYear)
+    if (minKm > 0)       p.set('minKm', minKm)
+    if (maxKm < 300000)  p.set('maxKm', maxKm)
     navigate(`/listings?${p.toString()}`)
   }
 
@@ -85,7 +93,20 @@ export default function HomePage({ user }) {
                 <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Budget (KSH)</label>
                 <div style={{ paddingTop: 4 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#1565C0', marginBottom: 4 }}>
-                    {price ? `Up to KSH ${(Number(price)/1000000).toFixed(1)}M` : 'Any Price'}
+                    <div>
+  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>
+    Budget — <span style={{ color: '#1565C0' }}>KSH {(minPrice/1e6).toFixed(1)}M – {(maxPrice/1e6).toFixed(1)}M</span>
+  </label>
+  <input type="range" min={0} max={20000000} step={500000} value={minPrice}
+    onChange={e => setMinPrice(Math.min(Number(e.target.value), maxPrice - 500000))}
+    style={{ width: '100%', accentColor: '#1565C0', marginBottom: 2 }} />
+  <input type="range" min={0} max={20000000} step={500000} value={maxPrice}
+    onChange={e => setMaxPrice(Math.max(Number(e.target.value), minPrice + 500000))}
+    style={{ width: '100%', accentColor: '#1565C0' }} />
+  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#CBD5E1', marginTop: 2 }}>
+    <span>0</span><span>20M</span>
+  </div>
+</div>
                   </div>
                   <input type="range" min={0} max={20000000} step={500000} value={price || 0}
                     onChange={e => setPrice(e.target.value === '0' ? '' : e.target.value)}
@@ -129,10 +150,15 @@ export default function HomePage({ user }) {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>
-                    Min Year <span style={{ color: '#1565C0', fontWeight: 800 }}>{minYear || 2000}</span>
+                   <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>
+                    Year — <span style={{ color: '#1565C0' }}>{minYear} – {maxYear}</span>
                   </label>
-                  <input type="range" min={2000} max={2025} value={minYear || 2000}
-                    onChange={e => setMinYear(e.target.value)}
+                  <input type="range" min={2000} max={2025} value={minYear}
+                    onChange={e => setMinYear(Math.min(Number(e.target.value), maxYear - 1))}
+                    style={{ width: '100%', accentColor: '#1565C0', marginBottom: 2 }} />
+                  <input type="range" min={2000} max={2025} value={maxYear}
+                    onChange={e => setMaxYear(Math.max(Number(e.target.value), minYear + 1))}
                     style={{ width: '100%', accentColor: '#1565C0' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#CBD5E1', marginTop: 2 }}>
                     <span>2000</span><span>2025</span>
@@ -140,10 +166,13 @@ export default function HomePage({ user }) {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>
-                    Max Mileage <span style={{ color: '#1565C0', fontWeight: 800 }}>{maxKm ? `${Number(maxKm).toLocaleString()} km` : '300,000 km'}</span>
+                    Mileage — <span style={{ color: '#1565C0' }}>{minKm.toLocaleString()} – {maxKm.toLocaleString()} km</span>
                   </label>
-                  <input type="range" min={0} max={300000} step={5000} value={maxKm || 300000}
-                    onChange={e => setMaxKm(e.target.value)}
+                  <input type="range" min={0} max={300000} step={5000} value={minKm}
+                    onChange={e => setMinKm(Math.min(Number(e.target.value), maxKm - 5000))}
+                    style={{ width: '100%', accentColor: '#1565C0', marginBottom: 2 }} />
+                  <input type="range" min={0} max={300000} step={5000} value={maxKm}
+                    onChange={e => setMaxKm(Math.max(Number(e.target.value), minKm + 5000))}
                     style={{ width: '100%', accentColor: '#1565C0' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#CBD5E1', marginTop: 2 }}>
                     <span>0 km</span><span>300,000 km</span>
