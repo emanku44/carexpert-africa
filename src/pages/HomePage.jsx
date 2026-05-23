@@ -11,6 +11,11 @@ export default function HomePage({ user }) {
   const [make, setMake] = useState('')
   const [body, setBody] = useState('')
   const [price, setPrice] = useState('')
+  const [showMore, setShowMore] = useState(false)
+  const [transmission, setTransmission] = useState('')
+  const [fuel, setFuel] = useState('')
+  const [minYear, setMinYear] = useState('')
+  const [maxKm, setMaxKm] = useState('')
   const [featured, setFeatured] = useState([])
 
   const [totalCars, setTotalCars] = useState(0)
@@ -28,12 +33,16 @@ useEffect(() => {
 }, [])
 
   const search = () => {
-    const p = new URLSearchParams()
-    if (make)  p.set('make', make)
-    if (body)  p.set('body', body)
-    if (price) p.set('maxPrice', price)
-    navigate(`/listings?${p.toString()}`)
-  }
+  const p = new URLSearchParams()
+  if (make)         p.set('make', make)
+  if (body)         p.set('body', body)
+  if (price)        p.set('maxPrice', price)
+  if (transmission) p.set('transmission', transmission)
+  if (fuel)         p.set('fuel', fuel)
+  if (minYear)      p.set('minYear', minYear)
+  if (maxKm)        p.set('maxKm', maxKm)
+  navigate(`/listings?${p.toString()}`)
+}
 
   return (
     <div style={{ fontFamily: 'DM Sans, sans-serif', background: '#F7F9FC', minHeight: '100vh' }}>
@@ -84,6 +93,55 @@ useEffect(() => {
               <button onClick={search} style={{ background: '#1565C0', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>
   Search {totalCars > 0 ? `${totalCars} Cars` : ''} →
 </button>
+</div>
+
+  {/* More filters */}
+  <div onClick={() => setShowMore(!showMore)}
+    style={{ marginTop:12, display:'flex', alignItems:'center', gap:6, cursor:'pointer', width:'fit-content' }}>
+    <span style={{ fontSize:12, fontWeight:600, color:'#1565C0' }}>{showMore ? '▲ Hide filters' : '▼ More filters'}</span>
+  </div>
+
+  {showMore && (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:12, marginTop:14, paddingTop:14, borderTop:'1px solid #F0F4F8' }}>
+      <div>
+        <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Transmission</label>
+        <select value={transmission} onChange={e => setTransmission(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}>
+          <option value="">Any</option>
+          <option>Automatic</option>
+          <option>Manual</option>
+          <option>CVT</option>
+        </select>
+      </div>
+      <div>
+        <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Fuel Type</label>
+        <select value={fuel} onChange={e => setFuel(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}>
+          <option value="">Any</option>
+          <option>Petrol</option>
+          <option>Diesel</option>
+          <option>Hybrid</option>
+          <option>Electric</option>
+        </select>
+      </div>
+      <div>
+        <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Min Year</label>
+        <select value={minYear} onChange={e => setMinYear(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}>
+          <option value="">Any</option>
+          {[2024,2023,2022,2021,2020,2019,2018,2017,2016,2015,2014,2013,2012,2010].map(y => <option key={y}>{y}</option>)}
+        </select>
+      </div>
+      <div>
+        <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Max Mileage</label>
+        <select value={maxKm} onChange={e => setMaxKm(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC' }}>
+          <option value="">Any</option>
+          <option value="20000">Under 20,000 km</option>
+          <option value="50000">Under 50,000 km</option>
+          <option value="80000">Under 80,000 km</option>
+          <option value="100000">Under 100,000 km</option>
+          <option value="150000">Under 150,000 km</option>
+        </select>
+      </div>
+    </div>
+  )}
             </div>
           </div>
         </div>
