@@ -119,18 +119,14 @@ const clearAll = () => {
                 {checks[filterKey].has(item) ? '✓' : ''}
               </div>
               <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>
-  {item}
-  {(() => {
-    const fieldMap = { makes:'make', bodies:'body_type', fuels:'fuel_type', trans:'transmission', drives:'drive_type' }
-    <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>
-  {item}
-  {(() => {
-    const fieldMap = { makes:'make', bodies:'body_type', fuels:'fuel_type', trans:'transmission', drives:'drive_type' }
-    const field = fieldMap[filterKey]
-    const count = field ? listings.filter(l => l[field] === item).length : 0
-    return count > 0 ? <span style={{ color:'#94A3B8', fontSize:11, marginLeft:4 }}>({count})</span> : null
-  })()}
-</span>
+                {item}
+                {(() => {
+                  const fieldMap = { makes:'make', bodies:'body_type', fuels:'fuel_type', trans:'transmission', drives:'drive_type' }
+                  const field = fieldMap[filterKey]
+                  const count = field ? listings.filter(l => l[field] === item).length : 0
+                  return count > 0 ? <span style={{ color:'#94A3B8', fontSize:11, marginLeft:4 }}>({count})</span> : null
+                })()}
+              </span>
             </div>
           ))}
         </div>
