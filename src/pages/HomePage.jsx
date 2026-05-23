@@ -144,13 +144,13 @@ useEffect(() => {
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {MAKES.map(m => (
-            <button key={m}{makeCounts[m] ? <span style={{ fontSize:11, color:'#94A3B8', marginLeft:4 }}>({makeCounts[m]})</span> : ''} onClick={() => navigate(`/listings?make=${m}`)}
-              style={{ padding: '8px 16px', border: '1.5px solid #E2E8F0', borderRadius: 100, fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer', background: '#fff', fontFamily: 'DM Sans, sans-serif' }}
-              onMouseOver={e => { e.target.style.background='#0A2540'; e.target.style.color='#fff'; e.target.style.borderColor='#0A2540' }}
-              onMouseOut={e => { e.target.style.background='#fff'; e.target.style.color='#475569'; e.target.style.borderColor='#E2E8F0' }}>
-              {m}
-            </button>
-          ))}
+  <button key={m} onClick={() => navigate(`/listings?make=${m}`)}
+    style={{ padding: '8px 16px', border: '1.5px solid #E2E8F0', borderRadius: 100, fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer', background: '#fff', fontFamily: 'DM Sans, sans-serif' }}
+    onMouseOver={e => { e.currentTarget.style.background='#0A2540'; e.currentTarget.style.color='#fff'; e.currentTarget.style.borderColor='#0A2540' }}
+    onMouseOut={e => { e.currentTarget.style.background='#fff'; e.currentTarget.style.color='#475569'; e.currentTarget.style.borderColor='#E2E8F0' }}>
+    {m}{makeCounts[m] ? <span style={{ fontSize:11, color:'#94A3B8', marginLeft:4 }}>({makeCounts[m]})</span> : ''}
+  </button>
+))}
         </div>
       </div>
 
