@@ -182,7 +182,6 @@ const [maxPrice, setMaxPrice] = useState(20000000)
             )}
           </div>
         </div>
-      </div>
 
       {/* Stats bar */}
       <div style={{ background: '#EEF5FF', borderBottom: '1px solid #D9E8FA', padding: '14px 24px', display: 'flex', gap: 40 }}>
