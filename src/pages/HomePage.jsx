@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import { getFeaturedListings } from '../lib/supabase'
+import { getFeaturedListings, supabase } from '../lib/supabase'
 
 const MAKES = ['Toyota','Mercedes-Benz','Mazda','Audi','Volkswagen','Subaru','BMW','Lexus','Nissan','Mitsubishi','Porsche','Suzuki','Honda','Isuzu']
 const BODY_TYPES = [{ t:'SUV', c:58 },{ t:'Sedan', c:9 },{ t:'Hatchback', c:8 },{ t:'Minivan', c:5 },{ t:'Pickup', c:2 },{ t:'Coupe', c:2 }]
@@ -13,9 +14,19 @@ export default function HomePage({ user }) {
   const [price, setPrice] = useState('')
   const [featured, setFeatured] = useState([])
 
-  useEffect(() => {
-    getFeaturedListings().then(({ data }) => setFeatured(data || []))
-  }, [])
+  const [totalCars, setTotalCars] = useState(0)
+const [makeCounts, setMakeCounts] = useState({})
+
+useEffect(() => {
+  getFeaturedListings().then(({ data }) => setFeatured(data || []))
+  supabase.from('listings').select('make').eq('status', 'approved').then(({ data }) => {
+    if (!data) return
+    setTotalCars(data.length)
+    const counts = {}
+    data.forEach(l => { counts[l.make] = (counts[l.make] || 0) + 1 })
+    setMakeCounts(counts)
+  })
+}, [])
 
   const search = () => {
     const p = new URLSearchParams()
@@ -72,8 +83,8 @@ export default function HomePage({ user }) {
                 </select>
               </div>
               <button onClick={search} style={{ background: '#1565C0', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>
-                Search →
-              </button>
+  Search {totalCars > 0 ? `${totalCars} Cars` : ''} →
+</button>
             </div>
           </div>
         </div>
@@ -134,7 +145,7 @@ export default function HomePage({ user }) {
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {MAKES.map(m => (
-            <button key={m} onClick={() => navigate(`/listings?make=${m}`)}
+            <button key={m}{makeCounts[m] ? <span style={{ fontSize:11, color:'#94A3B8', marginLeft:4 }}>({makeCounts[m]})</span> : ''} onClick={() => navigate(`/listings?make=${m}`)}
               style={{ padding: '8px 16px', border: '1.5px solid #E2E8F0', borderRadius: 100, fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer', background: '#fff', fontFamily: 'DM Sans, sans-serif' }}
               onMouseOver={e => { e.target.style.background='#0A2540'; e.target.style.color='#fff'; e.target.style.borderColor='#0A2540' }}
               onMouseOut={e => { e.target.style.background='#fff'; e.target.style.color='#475569'; e.target.style.borderColor='#E2E8F0' }}>
