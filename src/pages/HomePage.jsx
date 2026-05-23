@@ -83,15 +83,17 @@ export default function HomePage({ user }) {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Budget (KSH)</label>
-                <select value={price} onChange={e => setPrice(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
-                  <option value="">Any Price</option>
-                  <option value="1000000">Under 1M</option>
-                  <option value="2000000">Under 2M</option>
-                  <option value="3000000">Under 3M</option>
-                  <option value="5000000">Under 5M</option>
-                  <option value="8000000">Under 8M</option>
-                  <option value="10000000">Under 10M</option>
-                </select>
+                <div style={{ paddingTop: 4 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#1565C0', marginBottom: 4 }}>
+                    {price ? `Up to KSH ${(Number(price)/1000000).toFixed(1)}M` : 'Any Price'}
+                  </div>
+                  <input type="range" min={0} max={20000000} step={500000} value={price || 0}
+                    onChange={e => setPrice(e.target.value === '0' ? '' : e.target.value)}
+                    style={{ width: '100%', accentColor: '#1565C0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#CBD5E1', marginTop: 2 }}>
+                    <span>0</span><span>20M</span>
+                  </div>
+                </div>
               </div>
               <button onClick={search} style={{ background: '#1565C0', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>
                 Search {totalCars > 0 ? `${totalCars} Cars` : ''} →
@@ -126,22 +128,26 @@ export default function HomePage({ user }) {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Min Year</label>
-                  <select value={minYear} onChange={e => setMinYear(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
-                    <option value="">Any</option>
-                    {[2024,2023,2022,2021,2020,2019,2018,2017,2016,2015,2014,2013,2012,2010].map(y => <option key={y}>{y}</option>)}
-                  </select>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>
+                    Min Year <span style={{ color: '#1565C0', fontWeight: 800 }}>{minYear || 2000}</span>
+                  </label>
+                  <input type="range" min={2000} max={2025} value={minYear || 2000}
+                    onChange={e => setMinYear(e.target.value)}
+                    style={{ width: '100%', accentColor: '#1565C0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#CBD5E1', marginTop: 2 }}>
+                    <span>2000</span><span>2025</span>
+                  </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>Max Mileage</label>
-                  <select value={maxKm} onChange={e => setMaxKm(e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
-                    <option value="">Any</option>
-                    <option value="20000">Under 20,000 km</option>
-                    <option value="50000">Under 50,000 km</option>
-                    <option value="80000">Under 80,000 km</option>
-                    <option value="100000">Under 100,000 km</option>
-                    <option value="150000">Under 150,000 km</option>
-                  </select>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 5 }}>
+                    Max Mileage <span style={{ color: '#1565C0', fontWeight: 800 }}>{maxKm ? `${Number(maxKm).toLocaleString()} km` : '300,000 km'}</span>
+                  </label>
+                  <input type="range" min={0} max={300000} step={5000} value={maxKm || 300000}
+                    onChange={e => setMaxKm(e.target.value)}
+                    style={{ width: '100%', accentColor: '#1565C0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#CBD5E1', marginTop: 2 }}>
+                    <span>0 km</span><span>300,000 km</span>
+                  </div>
                 </div>
               </div>
             )}
