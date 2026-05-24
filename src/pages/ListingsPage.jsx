@@ -496,8 +496,13 @@ export default function ListingsPage({ user }) {
                   🔖 Save Search
                 </button>
               )}
-              <select value={sort} onChange={e => setSort(e.target.value)} ...></div>
-          </div>
+              <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#fff' }}>
+  <option value="newest">Newest First</option>
+  <option value="price_asc">Price: Low → High</option>
+  <option value="price_desc">Price: High → Low</option>
+  <option value="mileage">Lowest Mileage</option>
+  <option value="year">Newest Year</option>
+</select>
 
           {/* Active filter tags */}
           {activeFiltersCount > 0 && (
