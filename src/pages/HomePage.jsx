@@ -110,7 +110,8 @@ export default function HomePage({ user }) {
   const [allListings, setAllListings]   = useState([])
   const [makeCounts, setMakeCounts]     = useState({})
   const [modelCounts, setModelCounts]   = useState({})
-
+  const [recentlyViewed, setRecentlyViewed] = useState([])
+  
   useEffect(() => {
     getFeaturedListings().then(({ data }) => setFeatured(data || []))
     supabase.from('listings').select('make,model,body_type,fuel_type,transmission,price,year,mileage').eq('status','approved').then(({ data }) => {
@@ -126,9 +127,9 @@ export default function HomePage({ user }) {
       })
       setMakeCounts(mc)
       setModelCounts(mdc)
-    const [recentlyViewed, setRecentlyViewed] = useState([])
+    
 
-useEffect(() => {
+  useEffect(() => {
   const ids = JSON.parse(localStorage.getItem('cea_recently_viewed') || '[]')
   if (ids.length === 0) return
   supabase
