@@ -95,7 +95,7 @@ export default function HomePage({ user }) {
   const [fuel, setFuel]                 = useState('')
   const [minPrice, setMinPrice]         = useState(0)
   const [maxPrice, setMaxPrice]         = useState(30000000)
-  const [minYear, setMinYear]           = useState(2000)
+  const [minYear, setMinYear]           = useState(1970)
   const [maxYear, setMaxYear]           = useState(2025)
   const [minKm, setMinKm]               = useState(0)
   const [maxKm, setMaxKm]               = useState(300000)

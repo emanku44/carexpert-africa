@@ -115,7 +115,7 @@ export default function ListingsPage({ user }) {
   })
   const [minPrice, setMinPrice] = useState(0)
   const [maxPrice, setMaxPrice] = useState(30000000)
-  const [minYear, setMinYear]   = useState(1990)
+  const [minYear, setMinYear]   = useState(1970)
   const [maxYear, setMaxYear]   = useState(2025)
   const [minKm, setMinKm]       = useState(0)
   const [maxKm, setMaxKm]       = useState(300000)
@@ -148,7 +148,7 @@ export default function ListingsPage({ user }) {
     setChecks({ makes: new Set(), bodies: new Set(), fuels: new Set(), trans: new Set(), drives: new Set() })
     setSelectedModel('')
     setMinPrice(0); setMaxPrice(30000000)
-    setMinYear(1990); setMaxYear(2025)
+    setMinYear(1970); setMaxYear(2025)
     setMinKm(0); setMaxKm(300000)
   }
 
@@ -182,7 +182,7 @@ export default function ListingsPage({ user }) {
     ...[...checks.trans].map(v => ({ label: v, clear: () => toggleCheck('trans', v) })),
     ...(selectedModel ? [{ label: selectedModel, clear: () => setSelectedModel('') }] : []),
     ...(minPrice > 0 || maxPrice < 30000000 ? [{ label: `KSH ${(minPrice/1e6).toFixed(1)}M – ${(maxPrice/1e6).toFixed(1)}M`, clear: () => { setMinPrice(0); setMaxPrice(30000000) } }] : []),
-    ...(minYear > 1990 || maxYear < 2025 ? [{ label: `${minYear} – ${maxYear}`, clear: () => { setMinYear(1990); setMaxYear(2025) } }] : []),
+    ...(minYear > 1970 || maxYear < 2025 ? [{ label: `${minYear} – ${maxYear}`, clear: () => { setMinYear(1990); setMaxYear(2025) } }] : []),
     ...(minKm > 0 || maxKm < 300000 ? [{ label: `${minKm.toLocaleString()} – ${maxKm.toLocaleString()} km`, clear: () => { setMinKm(0); setMaxKm(300000) } }] : []),
   ]
 
@@ -273,7 +273,7 @@ export default function ListingsPage({ user }) {
 
           <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 10 }}>Year</div>
-            <DualSlider minVal={minYear} maxVal={maxYear} absMin={1990} absMax={2025} step={1} setMin={setMinYear} setMax={setMaxYear} formatLabel={n => `${n}`} />
+            <DualSlider minVal={minYear} maxVal={maxYear} absMin={1970} absMax={2025} step={1} setMin={setMinYear} setMax={setMaxYear} formatLabel={n => `${n}`} />
           </div>
 
           <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
