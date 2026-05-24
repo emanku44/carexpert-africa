@@ -92,9 +92,9 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
       <div ref={trackRef} style={{ position:'relative', height:6, background:'#E2E8F0', borderRadius:100, cursor:'pointer', userSelect:'none', margin:'0 9px' }}>
         <div style={{ position:'absolute', left:`${minPct}%`, right:`${100-maxPct}%`, top:0, height:'100%', background:'#1565C0', borderRadius:100 }}/>
         <div onMouseDown={onMouseDown('min')} onTouchStart={onMouseDown('min')}
-          style={{ position:'absolute', left:`${minPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:18, height:18, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
+          style={{ position:'absolute', left:`${minPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:22, height:22, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
         <div onMouseDown={onMouseDown('max')} onTouchStart={onMouseDown('max')}
-          style={{ position:'absolute', left:`${maxPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:18, height:18, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
+          style={{ position:'absolute', left:`${maxPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:22, height:22, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
       </div>
       <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:6 }}>
         <span>{formatLabel(absMin)}</span><span>{formatLabel(absMax)}</span>
@@ -126,16 +126,25 @@ function CheckList({ items, selected, onToggle, counts }) {
     const isChecked = selected.has(item)
     return (
       <div key={item} onClick={() => onToggle(item)}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, cursor: 'pointer' }}>
-        <div style={{ width: 14, height: 14, border: `1.5px solid ${isChecked ? '#1565C0' : '#CBD5E1'}`, borderRadius: 3, background: isChecked ? '#1565C0' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 9, color: '#fff' }}>
+        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer', padding: '2px 0' }}>
+        <div style={{ width: 16, height: 16, border: `1.5px solid ${isChecked ? '#1565C0' : '#CBD5E1'}`, borderRadius: 3, background: isChecked ? '#1565C0' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: '#fff' }}>
           {isChecked ? '✓' : ''}
         </div>
-        <span style={{ fontSize: 12, color: isChecked ? '#1565C0' : '#475569', fontWeight: isChecked ? 600 : 500, flex: 1 }}>{item}</span>
-        {count > 0 && <span style={{ fontSize: 10, color: '#94A3B8' }}>({count})</span>}
+        <span style={{ fontSize: 13, color: isChecked ? '#1565C0' : '#475569', fontWeight: isChecked ? 600 : 500, flex: 1 }}>{item}</span>
+        {count > 0 && <span style={{ fontSize: 11, color: '#94A3B8' }}>({count})</span>}
       </div>
     )
   })
 }
+
+function Tag({ label, onClear }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#EEF4FF', border: '1px solid #BDD5FF', borderRadius: 100, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#1565C0' }}>
+      {label} <span onClick={onClear} style={{ cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</span>
+    </div>
+  )
+}
+
 function SavedSearchesQuickList({ user, onApply }) {
   const [searches, setSearches] = useState([])
   const [open, setOpen] = useState(false)
@@ -154,7 +163,7 @@ function SavedSearchesQuickList({ user, onApply }) {
       <div onClick={() => setOpen(!open)}
         style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: '#FFFBEB' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 12 }}>🔖</span>
+          <span style={{ fontSize: 13 }}>🔖</span>
           <span style={{ fontSize: 11, fontWeight: 700, color: '#92400E', fontFamily: 'Outfit, sans-serif' }}>Saved Searches</span>
           <span style={{ background: '#F59E0B', color: '#fff', borderRadius: 100, padding: '1px 6px', fontSize: 9, fontWeight: 700 }}>{searches.length}</span>
         </div>
@@ -164,22 +173,15 @@ function SavedSearchesQuickList({ user, onApply }) {
         <div style={{ padding: '4px 10px 10px' }}>
           {searches.map(s => (
             <button key={s.id} onClick={() => { onApply(s.filters); setOpen(false) }}
-              style={{ width: '100%', textAlign: 'left', background: '#fff', border: '1.5px solid #E2E8F0', borderRadius: 7, padding: '7px 10px', marginBottom: 6, cursor: 'pointer', fontSize: 11, fontFamily: 'DM Sans, sans-serif' }}>
+              style={{ width: '100%', textAlign: 'left', background: '#fff', border: '1.5px solid #E2E8F0', borderRadius: 7, padding: '9px 12px', marginBottom: 6, cursor: 'pointer', fontSize: 12, fontFamily: 'DM Sans, sans-serif' }}>
               <div style={{ fontWeight: 700, color: '#0A2540', marginBottom: 2 }}>{s.name}</div>
-              <div style={{ color: '#94A3B8', fontSize: 10 }}>
+              <div style={{ color: '#94A3B8', fontSize: 11 }}>
                 {[s.filters.make, s.filters.model, s.filters.maxPrice < 30000000 && `Up to ${(s.filters.maxPrice/1e6).toFixed(1)}M`].filter(Boolean).join(' · ')}
               </div>
             </button>
           ))}
         </div>
       )}
-    </div>
-  )
-}
-function Tag({ label, onClear }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#EEF4FF', border: '1px solid #BDD5FF', borderRadius: 100, padding: '3px 10px', fontSize: 11, fontWeight: 600, color: '#1565C0' }}>
-      {label} <span onClick={onClear} style={{ cursor: 'pointer', fontSize: 14 }}>×</span>
     </div>
   )
 }
@@ -194,8 +196,8 @@ export default function ListingsPage({ user }) {
   const [saveSearchOpen, setSaveSearchOpen] = useState(false)
   const [searchName, setSearchName] = useState('')
   const [saveMsg, setSaveMsg] = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(false) // mobile sidebar
 
-  // Filters
   const [search, setSearch] = useState(searchParams.get('q') || '')
   const [selectedMake, setSelectedMake] = useState(searchParams.get('make') || '')
   const [selectedModel, setSelectedModel] = useState(searchParams.get('model') || '')
@@ -213,9 +215,7 @@ export default function ListingsPage({ user }) {
   const [maxKm, setMaxKm]         = useState(300000)
   const [sort, setSort]           = useState('newest')
 
-  useEffect(() => {
-    fetchListings()
-  }, [])
+  useEffect(() => { fetchListings() }, [])
 
   const fetchListings = async () => {
     setLoading(true)
@@ -225,8 +225,6 @@ export default function ListingsPage({ user }) {
       .order('featured', { ascending: false })
       .order('created_at', { ascending: false })
     if (!error) setListings(data || [])
-
-    // load saved listings for logged in user
     const { data: { user: u } } = await supabase.auth.getUser()
     if (u) {
       const { data: savedData } = await supabase.from('saved_listings').select('listing_id').eq('user_id', u.id)
@@ -324,150 +322,197 @@ export default function ListingsPage({ user }) {
     minPrice > 0, maxPrice < 30000000, minYear > 1970, maxYear < 2025, minKm > 0, maxKm < 300000
   ].filter(Boolean).length
 
-  return (
-    <div style={{ fontFamily: 'DM Sans, sans-serif', background: '#F7F9FC', minHeight: '100vh' }}>
-      <Navbar user={user} />
-      <div style={{ background: '#fff', borderBottom: '1px solid #E8EDF3', padding: '10px 24px', fontSize: 12, color: '#94A3B8' }}>
-        <Link to="/" style={{ color: '#1565C0', textDecoration: 'none' }}>Home</Link> / All Listings
+  const applySearch = (filters) => {
+    if (filters.make) setSelectedMake(filters.make)
+    if (filters.model) setSelectedModel(filters.model)
+    if (filters.search) setSearch(filters.search)
+    if (filters.location) setSelectedLocation(filters.location)
+    if (filters.minPrice) setMinPrice(filters.minPrice)
+    if (filters.maxPrice) setMaxPrice(filters.maxPrice)
+    if (filters.minYear) setMinYear(filters.minYear)
+    if (filters.maxYear) setMaxYear(filters.maxYear)
+    if (filters.minKm) setMinKm(filters.minKm)
+    if (filters.maxKm) setMaxKm(filters.maxKm)
+    if (filters.bodies?.length) setBodies(new Set(filters.bodies))
+    if (filters.fuels?.length) setFuels(new Set(filters.fuels))
+    if (filters.trans?.length) setTrans(new Set(filters.trans))
+  }
+
+  const SidebarContent = () => (
+    <>
+      <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F0F4F8', position: 'sticky', top: 0, background: '#fff', zIndex: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#0A2540' }}>Filters</span>
+          {activeFiltersCount > 0 && <span style={{ background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 7px', fontSize: 9, fontWeight: 700 }}>{activeFiltersCount}</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button onClick={clearAll} style={{ fontSize: 12, color: '#EF4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear all</button>
+          <button onClick={() => setSidebarOpen(false)} style={{ display: 'none', fontSize: 20, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }} className="sidebar-close">×</button>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '268px 1fr', minHeight: 'calc(100vh - 96px)' }}>
+      <div style={{ padding: '10px 16px', background: '#F8FAFC', borderBottom: '1px solid #F0F4F8', textAlign: 'center' }}>
+        <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 14, fontWeight: 800, color: '#1565C0' }}>{loading ? '...' : filtered.length}</span>
+        <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 4 }}>cars match</span>
+      </div>
 
-        {/* SIDEBAR */}
-        <aside style={{ background: '#fff', borderRight: '1px solid #E8EDF3', overflowY: 'auto' }}>
-          <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F0F4F8', position: 'sticky', top: 0, background: '#fff', zIndex: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#0A2540' }}>Filters</span>
-              {activeFiltersCount > 0 && <span style={{ background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 7px', fontSize: 9, fontWeight: 700 }}>{activeFiltersCount}</span>}
-            </div>
-            <button onClick={clearAll} style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear all</button>
-          </div>
+      <SavedSearchesQuickList user={user} onApply={filters => { applySearch(filters); setSidebarOpen(false) }} />
 
-          <div style={{ padding: '10px 16px', background: '#F8FAFC', borderBottom: '1px solid #F0F4F8', textAlign: 'center' }}>
-            <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 14, fontWeight: 800, color: '#1565C0' }}>{loading ? '...' : filtered.length}</span>
-            <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 4 }}>cars match</span>
-          </div>
+      {/* Search */}
+      <div style={{ padding: '12px 16px', borderTop: '1px solid #F5F7FA' }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 8 }}>Search</div>
+        <div style={{ position: 'relative' }}>
+          <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#94A3B8' }}>🔍</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder='e.g. "Land Cruiser 100"'
+            style={{ width: '100%', padding: '10px 10px 10px 32px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC', boxSizing: 'border-box' }} />
+          {search && <span onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#94A3B8', fontSize: 18 }}>×</span>}
+        </div>
+      </div>
 
-          {user && <SavedSearchesQuickList user={user} onApply={(filters) => {
-            if (filters.make) setSelectedMake(filters.make)
-            if (filters.model) setSelectedModel(filters.model)
-            if (filters.search) setSearch(filters.search)
-            if (filters.location) setSelectedLocation(filters.location)
-            if (filters.minPrice) setMinPrice(filters.minPrice)
-            if (filters.maxPrice) setMaxPrice(filters.maxPrice)
-            if (filters.minYear) setMinYear(filters.minYear)
-            if (filters.maxYear) setMaxYear(filters.maxYear)
-            if (filters.minKm) setMinKm(filters.minKm)
-            if (filters.maxKm) setMaxKm(filters.maxKm)
-            if (filters.bodies?.length) setBodies(new Set(filters.bodies))
-            if (filters.fuels?.length) setFuels(new Set(filters.fuels))
-            if (filters.trans?.length) setTrans(new Set(filters.trans))
-          }} />}
-
-          {/* Search */}
-          <div style={{ padding: '12px 16px', borderTop: '1px solid #F5F7FA' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 8 }}>Search</div>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#94A3B8' }}>🔍</span>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder='e.g. "Land Cruiser 100"'
-                style={{ width: '100%', padding: '8px 10px 8px 30px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }} />
-              {search && <span onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#94A3B8', fontSize: 14 }}>×</span>}
-            </div>
-          </div>
-
-          {/* Make + Model */}
-          <FilterSection title="Make" activeCount={selectedMake ? 1 : 0}>
-            <select value={selectedMake} onChange={e => { setSelectedMake(e.target.value); setSelectedModel('') }}
-              style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC', marginBottom: 8 }}>
-              <option value="">Any Make ({listings.length})</option>
-              {MAKES.map(m => <option key={m} value={m}>{m}{makeCounts[m] > 0 ? ` (${makeCounts[m]})` : ''}</option>)}
+      <FilterSection title="Make" activeCount={selectedMake ? 1 : 0}>
+        <select value={selectedMake} onChange={e => { setSelectedMake(e.target.value); setSelectedModel('') }}
+          style={{ width: '100%', padding: '10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC', marginBottom: 8 }}>
+          <option value="">Any Make ({listings.length})</option>
+          {MAKES.map(m => <option key={m} value={m}>{m}{makeCounts[m] > 0 ? ` (${makeCounts[m]})` : ''}</option>)}
+        </select>
+        {selectedMake && availableModels.length > 0 && (
+          <>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 6 }}>Model</div>
+            <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
+              style={{ width: '100%', padding: '10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+              <option value="">All {selectedMake} ({listings.filter(l => l.make === selectedMake).length})</option>
+              {availableModels.map(m => <option key={m} value={m}>{m}{modelCounts[m] > 0 ? ` (${modelCounts[m]})` : ''}</option>)}
             </select>
-            {selectedMake && availableModels.length > 0 && (
-              <>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 6, marginTop: 4 }}>Model</div>
-                <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
-                  style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
-                  <option value="">All {selectedMake} ({listings.filter(l => l.make === selectedMake).length})</option>
-                  {availableModels.map(m => <option key={m} value={m}>{m}{modelCounts[m] > 0 ? ` (${modelCounts[m]})` : ''}</option>)}
-                </select>
-              </>
-            )}
-          </FilterSection>
+          </>
+        )}
+      </FilterSection>
 
-          <FilterSection title="Location" activeCount={selectedLocation ? 1 : 0}>
-            <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)}
-              style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
-              <option value="">Any Location</option>
-              {LOCATIONS.map(l => <option key={l} value={l}>{l}{locCounts[l] > 0 ? ` (${locCounts[l]})` : ''}</option>)}
-            </select>
-          </FilterSection>
+      <FilterSection title="Location" activeCount={selectedLocation ? 1 : 0}>
+        <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)}
+          style={{ width: '100%', padding: '10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+          <option value="">Any Location</option>
+          {LOCATIONS.map(l => <option key={l} value={l}>{l}{locCounts[l] > 0 ? ` (${locCounts[l]})` : ''}</option>)}
+        </select>
+      </FilterSection>
 
-          <FilterSection title="Price (KSH)" activeCount={minPrice > 0 || maxPrice < 30000000 ? 1 : 0}>
-            <DualSlider minVal={minPrice} maxVal={maxPrice} absMin={0} absMax={30000000} step={500000} setMin={setMinPrice} setMax={setMaxPrice} formatLabel={n => `${(n/1e6).toFixed(1)}M`} />
-          </FilterSection>
+      <FilterSection title="Price (KSH)" activeCount={minPrice > 0 || maxPrice < 30000000 ? 1 : 0}>
+        <DualSlider minVal={minPrice} maxVal={maxPrice} absMin={0} absMax={30000000} step={500000} setMin={setMinPrice} setMax={setMaxPrice} formatLabel={n => `${(n/1e6).toFixed(1)}M`} />
+      </FilterSection>
 
-          <FilterSection title="Year" activeCount={minYear > 1970 || maxYear < 2025 ? 1 : 0}>
-            <DualSlider minVal={minYear} maxVal={maxYear} absMin={1970} absMax={2025} step={1} setMin={setMinYear} setMax={setMaxYear} formatLabel={n => `${n}`} />
-          </FilterSection>
+      <FilterSection title="Year" activeCount={minYear > 1970 || maxYear < 2025 ? 1 : 0}>
+        <DualSlider minVal={minYear} maxVal={maxYear} absMin={1970} absMax={2025} step={1} setMin={setMinYear} setMax={setMaxYear} formatLabel={n => `${n}`} />
+      </FilterSection>
 
-          <FilterSection title="Odometer (km)" activeCount={minKm > 0 || maxKm < 300000 ? 1 : 0}>
-            <DualSlider minVal={minKm} maxVal={maxKm} absMin={0} absMax={300000} step={5000} setMin={setMinKm} setMax={setMaxKm} formatLabel={n => `${(n/1000).toFixed(0)}k`} />
-          </FilterSection>
+      <FilterSection title="Odometer (km)" activeCount={minKm > 0 || maxKm < 300000 ? 1 : 0}>
+        <DualSlider minVal={minKm} maxVal={maxKm} absMin={0} absMax={300000} step={5000} setMin={setMinKm} setMax={setMaxKm} formatLabel={n => `${(n/1000).toFixed(0)}k`} />
+      </FilterSection>
 
-          <FilterSection title="Transmission" activeCount={trans.size}>
-            <CheckList items={TRANS} selected={trans} onToggle={toggle(setTrans)} counts={transCounts} />
-          </FilterSection>
+      <FilterSection title="Transmission" activeCount={trans.size}>
+        <CheckList items={TRANS} selected={trans} onToggle={toggle(setTrans)} counts={transCounts} />
+      </FilterSection>
 
-          <FilterSection title="Body Type" activeCount={bodies.size}>
-            <CheckList items={BODIES} selected={bodies} onToggle={toggle(setBodies)} counts={bodyCounts} />
-          </FilterSection>
+      <FilterSection title="Body Type" activeCount={bodies.size}>
+        <CheckList items={BODIES} selected={bodies} onToggle={toggle(setBodies)} counts={bodyCounts} />
+      </FilterSection>
 
-          <FilterSection title="Condition" activeCount={conditions.size}>
-            <CheckList items={CONDITIONS} selected={conditions} onToggle={toggle(setConditions)} counts={condCounts} />
-          </FilterSection>
+      <FilterSection title="Condition" activeCount={conditions.size}>
+        <CheckList items={CONDITIONS} selected={conditions} onToggle={toggle(setConditions)} counts={condCounts} />
+      </FilterSection>
 
-          <FilterSection title="Fuel Type" activeCount={fuels.size}>
-            <CheckList items={FUELS} selected={fuels} onToggle={toggle(setFuels)} counts={fuelCounts} />
-          </FilterSection>
+      <FilterSection title="Fuel Type" activeCount={fuels.size}>
+        <CheckList items={FUELS} selected={fuels} onToggle={toggle(setFuels)} counts={fuelCounts} />
+      </FilterSection>
 
-          <FilterSection title="Drive Type" activeCount={drives.size}>
-            <CheckList items={DRIVES} selected={drives} onToggle={toggle(setDrives)} counts={driveCounts} />
-          </FilterSection>
+      <FilterSection title="Drive Type" activeCount={drives.size}>
+        <CheckList items={DRIVES} selected={drives} onToggle={toggle(setDrives)} counts={driveCounts} />
+      </FilterSection>
 
-          <div style={{ height: 24 }} />
+      <div style={{ height: 32 }} />
+    </>
+  )
+
+  return (
+    <div style={{ fontFamily: 'DM Sans, sans-serif', background: '#F7F9FC', minHeight: '100vh' }}>
+      <style>{`
+        .listings-layout { display: grid; grid-template-columns: 268px 1fr; min-height: calc(100vh - 96px); }
+        .listings-sidebar { background: #fff; border-right: 1px solid #E8EDF3; overflow-y: auto; }
+        .listings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .mobile-filter-btn { display: none !important; }
+        .mobile-sidebar-overlay { display: none; }
+        @media (max-width: 768px) {
+          .listings-layout { grid-template-columns: 1fr; }
+          .listings-sidebar { display: none; }
+          .listings-grid { grid-template-columns: 1fr; gap: 12px; }
+          .mobile-filter-btn { display: flex !important; }
+          .mobile-sidebar-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; }
+          .mobile-sidebar-drawer { display: block; position: fixed; left: 0; top: 0; bottom: 0; width: 85%; max-width: 340px; background: #fff; z-index: 201; overflow-y: auto; }
+          .sidebar-close { display: flex !important; }
+        }
+      `}</style>
+
+      <Navbar user={user} />
+
+      <div style={{ background: '#fff', borderBottom: '1px solid #E8EDF3', padding: '10px 16px', fontSize: 12, color: '#94A3B8', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Link to="/" style={{ color: '#1565C0', textDecoration: 'none' }}>Home</Link>
+        <span>/</span>
+        <span>All Listings</span>
+      </div>
+
+      <div className="listings-layout">
+
+        {/* Desktop sidebar */}
+        <aside className="listings-sidebar">
+          <SidebarContent />
         </aside>
 
-        {/* MAIN */}
-        <main style={{ padding: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 18, fontWeight: 700, color: '#0A2540' }}>
-              {loading ? 'Loading...' : (
-                <><span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars
-                  {activeFiltersCount > 0 && listings.length > 0 && <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 400, marginLeft: 8 }}>of {listings.length} total</span>}
-                </>
-              )}
-              <span style={{ color: '#94A3B8', fontSize: 13, fontWeight: 400, fontFamily: 'DM Sans, sans-serif', marginLeft: 6 }}>in Kenya</span>
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <>
+            <div className="mobile-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+            <div className="mobile-sidebar-drawer">
+              <SidebarContent />
+            </div>
+          </>
+        )}
+
+        {/* Main */}
+        <main style={{ padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Mobile filter button */}
+              <button className="mobile-filter-btn"
+                onClick={() => setSidebarOpen(true)}
+                style={{ background: '#0A2540', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', alignItems: 'center', gap: 6 }}>
+                ⚙ Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+              </button>
+              <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 700, color: '#0A2540' }}>
+                {loading ? 'Loading...' : (
+                  <><span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars
+                    {activeFiltersCount > 0 && listings.length > 0 && <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 400, marginLeft: 6 }}>of {listings.length}</span>}
+                  </>
+                )}
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               {user && (
                 <button onClick={() => setSaveSearchOpen(true)}
-                  style={{ background: '#EEF5FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
-                  🔖 Save Search
+                  style={{ background: '#EEF5FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '7px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>
+                  🔖 Save
                 </button>
               )}
-              <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#fff' }}>
-                <option value="newest">Newest First</option>
-                <option value="price_asc">Price: Low → High</option>
-                <option value="price_desc">Price: High → Low</option>
-                <option value="mileage">Lowest Mileage</option>
-                <option value="year">Newest Year</option>
+              <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#fff' }}>
+                <option value="newest">Newest</option>
+                <option value="price_asc">Price ↑</option>
+                <option value="price_desc">Price ↓</option>
+                <option value="mileage">Mileage ↑</option>
+                <option value="year">Year ↓</option>
               </select>
             </div>
           </div>
 
           {/* Active tags */}
           {activeFiltersCount > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
               {search && <Tag label={`"${search}"`} onClear={() => setSearch('')} />}
               {selectedMake && <Tag label={selectedMake} onClear={() => { setSelectedMake(''); setSelectedModel('') }} />}
               {selectedModel && <Tag label={selectedModel} onClear={() => setSelectedModel('')} />}
@@ -489,21 +534,21 @@ export default function ListingsPage({ user }) {
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 700, color: '#0A2540' }}>Loading listings...</div>
             </div>
           ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 60, color: '#94A3B8' }}>
+            <div style={{ textAlign: 'center', padding: 48, color: '#94A3B8' }}>
               <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 700, color: '#0A2540', marginBottom: 6 }}>
                 {listings.length === 0 ? 'No listings yet' : 'No cars match your filters'}
               </div>
               <div style={{ fontSize: 13, marginBottom: 16 }}>
-                {listings.length === 0 ? 'Be the first to list a car on CarExpert Africa.' : 'Try adjusting or clearing your filters'}
+                {listings.length === 0 ? 'Be the first to list a car.' : 'Try adjusting your filters'}
               </div>
               {listings.length === 0
                 ? <Link to="/list-car" style={{ background: '#1565C0', color: '#fff', padding: '10px 24px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', fontFamily: 'Outfit, sans-serif' }}>List a Car</Link>
-                : <button onClick={clearAll} style={{ background: '#1565C0', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Clear All Filters</button>
+                : <button onClick={clearAll} style={{ background: '#1565C0', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Clear Filters</button>
               }
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="listings-grid">
               {filtered.map(car => (
                 <div key={car.id} style={{ background: '#fff', border: '1.5px solid #E8EDF3', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', transition: 'all .2s' }}
                   onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.1)' }}
@@ -511,29 +556,29 @@ export default function ListingsPage({ user }) {
                   <div style={{ height: 180, background: '#EEF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                     {car.featured && <span style={{ position: 'absolute', top: 8, left: 8, background: '#1565C0', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 100, textTransform: 'uppercase', fontFamily: 'Outfit, sans-serif', zIndex: 1 }}>⭐ Featured</span>}
                     <button onClick={e => handleSaveCar(e, car)}
-                      style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, background: saved.has(car.id) ? '#EF4444' : 'rgba(255,255,255,.92)', borderRadius: '50%', border: 'none', cursor: 'pointer', fontSize: 16, color: saved.has(car.id) ? '#fff' : '#94A3B8', zIndex: 1, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      style={{ position: 'absolute', top: 8, right: 8, width: 34, height: 34, background: saved.has(car.id) ? '#EF4444' : 'rgba(255,255,255,.92)', borderRadius: '50%', border: 'none', cursor: 'pointer', fontSize: 18, color: saved.has(car.id) ? '#fff' : '#94A3B8', zIndex: 1, display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {saved.has(car.id) ? '♥' : '♡'}
                     </button>
                     {car.listing_photos?.[0]?.url
                       ? <img src={car.listing_photos[0].url} alt={`${car.year} ${car.make} ${car.model}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}><span style={{ fontSize: 40 }}>🚗</span><span style={{ fontSize: 11, color: '#94A3B8' }}>No photos yet</span></div>
+                      : <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}><span style={{ fontSize: 40 }}>🚗</span><span style={{ fontSize: 11, color: '#94A3B8' }}>No photos</span></div>
                     }
                   </div>
                   <div style={{ padding: 12 }}>
-                    <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 17, fontWeight: 800, color: '#0A2540', marginBottom: 2 }}>{fmt(car.price)}</div>
+                    <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 800, color: '#0A2540', marginBottom: 2 }}>{fmt(car.price)}</div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 8 }}>{car.year} {car.make} {car.model}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-                      {[car.mileage && `${Number(car.mileage).toLocaleString()} km`, car.fuel_type, car.transmission, car.engine_cc && `${car.engine_cc}cc`, car.body_type, car.condition].filter(Boolean).map((s, i) => (
+                      {[car.mileage && `${Number(car.mileage).toLocaleString()} km`, car.fuel_type, car.transmission, car.body_type].filter(Boolean).map((s, i) => (
                         <span key={i} style={{ fontSize: 10, color: '#94A3B8', padding: '2px 6px', background: '#F8FAFC', borderRadius: 100, border: '1px solid #E8EDF3' }}>{s}</span>
                       ))}
                     </div>
-                    <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 8 }}>📍 {car.location}</div>
+                    {car.location && <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 8 }}>📍 {car.location}</div>}
                     <div style={{ display: 'flex', gap: 6 }}>
                       <a href={`https://wa.me/${(car.phone||'').replace(/\D/g,'')}?text=Hi, I'm interested in your ${car.year} ${car.make} ${car.model} on CarExpert Africa`}
                         target="_blank" rel="noopener noreferrer"
-                        style={{ flex: 1, background: '#25D366', color: '#fff', border: 'none', padding: '7px 0', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}
+                        style={{ flex: 1, background: '#25D366', color: '#fff', border: 'none', padding: '9px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}
                         onClick={e => e.stopPropagation()}>WhatsApp</a>
-                      <Link to={`/listings/${car.id}`} style={{ flex: 1, background: '#F0F6FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '7px 0', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}>View Details</Link>
+                      <Link to={`/listings/${car.id}`} style={{ flex: 1, background: '#F0F6FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '9px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}>View →</Link>
                     </div>
                   </div>
                 </div>
@@ -545,36 +590,26 @@ export default function ListingsPage({ user }) {
 
       {/* Save Search Modal */}
       {saveSearchOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: 400, boxShadow: '0 20px 60px rgba(0,0,0,.2)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,.2)' }}>
             <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 18, fontWeight: 800, color: '#0A2540', marginBottom: 6 }}>🔖 Save This Search</div>
-            <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 18 }}>
-              Give this search a name. You can re-run it anytime from your dashboard.
-            </div>
+            <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 16 }}>Give this search a name to re-run it from your dashboard.</div>
             {activeFiltersCount > 0 && (
               <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 11, color: '#64748B' }}>
                 {activeFiltersCount} filter{activeFiltersCount > 1 ? 's' : ''} will be saved
-                {selectedMake && ` · ${selectedMake}`}
-                {selectedModel && ` ${selectedModel}`}
-                {(minPrice > 0 || maxPrice < 30000000) && ` · KSH ${(minPrice/1e6).toFixed(1)}M–${(maxPrice/1e6).toFixed(1)}M`}
+                {selectedMake && ` · ${selectedMake}`}{selectedModel && ` ${selectedModel}`}
               </div>
             )}
-            <input
-              value={searchName}
-              onChange={e => setSearchName(e.target.value)}
+            <input value={searchName} onChange={e => setSearchName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSaveSearch()}
-              placeholder="e.g. Toyota SUVs under 5M"
-              autoFocus
-              style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', marginBottom: 16 }}
-            />
-            {saveMsg && (
-              <div style={{ background: '#DCFCE7', color: '#16A34A', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, marginBottom: 12, textAlign: 'center' }}>{saveMsg}</div>
-            )}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              placeholder="e.g. Toyota SUVs under 5M" autoFocus
+              style={{ width: '100%', padding: '12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: 'DM Sans, sans-serif', outline: 'none', marginBottom: 14, boxSizing: 'border-box' }} />
+            {saveMsg && <div style={{ background: '#DCFCE7', color: '#16A34A', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, marginBottom: 12, textAlign: 'center' }}>{saveMsg}</div>}
+            <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => { setSaveSearchOpen(false); setSearchName(''); setSaveMsg('') }}
-                style={{ background: '#F8FAFC', color: '#64748B', border: '1.5px solid #E2E8F0', padding: '9px 18px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+                style={{ flex: 1, background: '#F8FAFC', color: '#64748B', border: '1.5px solid #E2E8F0', padding: '11px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
               <button onClick={handleSaveSearch} disabled={!searchName.trim()}
-                style={{ background: searchName.trim() ? '#1565C0' : '#94A3B8', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: searchName.trim() ? 'pointer' : 'default', fontFamily: 'Outfit, sans-serif' }}>
+                style={{ flex: 1, background: searchName.trim() ? '#1565C0' : '#94A3B8', color: '#fff', border: 'none', padding: '11px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: searchName.trim() ? 'pointer' : 'default', fontFamily: 'Outfit, sans-serif' }}>
                 Save Search
               </button>
             </div>
