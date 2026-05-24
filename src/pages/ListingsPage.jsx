@@ -1,16 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { supabase } from '../lib/supabase'
 
 const MAKES = ['Toyota','Mercedes-Benz','Mazda','Audi','Volkswagen','Subaru','BMW','Lexus','Nissan','Mitsubishi','Porsche','Land Rover','Suzuki','Honda','Hyundai','Kia','Ford','Isuzu']
-const BODIES = ['SUV','Sedan','Hatchback','Minivan','Pickup','Coupe','Wagon','Truck']
+const BODIES = ['SUV','Sedan','Hatchback','Minivan','Pickup','Coupe','Wagon','Truck','Bus']
 const FUELS = ['Petrol','Diesel','Hybrid','Electric','LPG']
-const TRANS = ['Automatic','Manual','CVT']
+const TRANS = ['Automatic','Manual','CVT','Semi-Automatic']
 const DRIVES = ['AWD','4WD','FWD','RWD','4x4']
+const ENGINE_TYPES = ['Petrol Inline-4','Petrol V6','Petrol V8','Diesel Inline-4','Diesel V6','Hybrid','Electric','Turbocharged','Naturally Aspirated']
+const CONDITIONS = ['New','Used — Excellent','Used — Good','Used — Fair','Foreign Used — Excellent','Foreign Used — Good']
+const LOCATIONS = ['Nairobi — Westlands','Nairobi — CBD','Nairobi — Karen','Nairobi — Langata','Nairobi — Eastlands','Mombasa','Kisumu','Nakuru','Eldoret','Thika','Meru','Nyeri','Machakos','Kitale','Malindi']
 
 const CAR_MODELS = {
-  Toyota: ['Allion','Alphard','Camry','Corolla','Crown','Fielder','Fortuner','Harrier','Hiace','Hilux','Land Cruiser 200','Land Cruiser 300','Land Cruiser Prado 120','Land Cruiser Prado 150','Mark X','Noah','Premio','Probox','RAV4','Rush','Succeed','Vanguard','Vellfire','Voxy','Wish'],
+  Toyota: ['Allion','Alphard','Camry','Corolla','Crown','Fielder','Fortuner','Harrier','Hiace','Hilux','Land Cruiser 70 Series','Land Cruiser 80 Series','Land Cruiser 100 Series','Land Cruiser 200','Land Cruiser 300','Land Cruiser Prado 90','Land Cruiser Prado 120','Land Cruiser Prado 150','Mark X','Noah','Premio','Probox','RAV4','Rush','Succeed','Vanguard','Vellfire','Voxy','Wish'],
   Nissan: ['Caravan','Elgrand','Juke','March','Murano','Navara','Note','Patrol','Qashqai','Serena','Sylphy','Teana','Tiida','Urvan','X-Trail'],
   Mazda: ['Atenza','Axela','BT-50','CX-3','CX-5','CX-7','CX-9','Demio','MPV'],
   Subaru: ['Forester','Impreza','Legacy','Outback','Tribeca','WRX','XV'],
@@ -101,18 +104,57 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
   )
 }
 
+function FilterSection({ title, activeCount, children }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ borderTop: '1px solid #F5F7FA' }}>
+      <div onClick={() => setOpen(!open)}
+        style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif' }}>{title}</span>
+          {activeCount > 0 && <span style={{ background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 6px', fontSize: 9, fontWeight: 700 }}>{activeCount}</span>}
+        </div>
+        <span style={{ color: '#94A3B8', fontSize: 12, display: 'inline-block', transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
+      </div>
+      {open && <div style={{ padding: '0 16px 12px' }}>{children}</div>}
+    </div>
+  )
+}
+
+function CheckList({ items, selected, onToggle, counts }) {
+  return items.map(item => {
+    const count = counts?.[item] || 0
+    const isChecked = selected.has(item)
+    return (
+      <div key={item} onClick={() => onToggle(item)}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, cursor: 'pointer' }}>
+        <div style={{ width: 14, height: 14, border: `1.5px solid ${isChecked ? '#1565C0' : '#CBD5E1'}`, borderRadius: 3, background: isChecked ? '#1565C0' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 9, color: '#fff' }}>
+          {isChecked ? '✓' : ''}
+        </div>
+        <span style={{ fontSize: 12, color: isChecked ? '#1565C0' : '#475569', fontWeight: isChecked ? 600 : 500, flex: 1 }}>{item}</span>
+        {count > 0 && <span style={{ fontSize: 10, color: '#94A3B8' }}>({count})</span>}
+      </div>
+    )
+  })
+}
+
 export default function ListingsPage({ user }) {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
   const [listings, setListings] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const [checks, setChecks] = useState({
-    makes: searchParams.get('make') ? new Set([searchParams.get('make')]) : new Set(),
-    bodies: searchParams.get('body') ? new Set([searchParams.get('body')]) : new Set(),
-    fuels: new Set(), trans: new Set(), drives: new Set()
-  })
+  // Filters
+  const [search, setSearch] = useState(searchParams.get('q') || '')
+  const [selectedMake, setSelectedMake] = useState(searchParams.get('make') || '')
+  const [selectedModel, setSelectedModel] = useState(searchParams.get('model') || '')
+  const [selectedLocation, setSelectedLocation] = useState('')
+  const [bodies, setBodies]   = useState(new Set())
+  const [fuels, setFuels]     = useState(new Set())
+  const [trans, setTrans]     = useState(new Set())
+  const [drives, setDrives]   = useState(new Set())
+  const [engines, setEngines] = useState(new Set())
+  const [conditions, setConditions] = useState(new Set())
   const [minPrice, setMinPrice] = useState(0)
   const [maxPrice, setMaxPrice] = useState(30000000)
   const [minYear, setMinYear]   = useState(1970)
@@ -120,7 +162,6 @@ export default function ListingsPage({ user }) {
   const [minKm, setMinKm]       = useState(0)
   const [maxKm, setMaxKm]       = useState(300000)
   const [sort, setSort]         = useState('newest')
-  const [selectedModel, setSelectedModel] = useState('')
   const [saved, setSaved]       = useState(new Set())
 
   useEffect(() => { fetchListings() }, [])
@@ -136,36 +177,42 @@ export default function ListingsPage({ user }) {
     setLoading(false)
   }
 
-  const toggleCheck = (key, val) => {
-    setChecks(prev => {
-      const next = new Set(prev[key])
-      next.has(val) ? next.delete(val) : next.add(val)
-      return { ...prev, [key]: next }
-    })
-  }
+  const toggle = (setter) => (val) => setter(prev => {
+    const next = new Set(prev)
+    next.has(val) ? next.delete(val) : next.add(val)
+    return next
+  })
 
   const clearAll = () => {
-    setChecks({ makes: new Set(), bodies: new Set(), fuels: new Set(), trans: new Set(), drives: new Set() })
-    setSelectedModel('')
+    setSearch(''); setSelectedMake(''); setSelectedModel(''); setSelectedLocation('')
+    setBodies(new Set()); setFuels(new Set()); setTrans(new Set())
+    setDrives(new Set()); setEngines(new Set()); setConditions(new Set())
     setMinPrice(0); setMaxPrice(30000000)
     setMinYear(1970); setMaxYear(2025)
     setMinKm(0); setMaxKm(300000)
   }
 
-  const countFor = (field, val) => listings.filter(l => l[field] === val).length
-  const countForMake = make => listings.filter(l => l.make === make).length
-  const countForModel = (make, model) => listings.filter(l => l.make === make && l.model === model).length
+  // Wildcard search: splits query into tokens and checks all text fields
+  const matchesSearch = (car) => {
+    if (!search.trim()) return true
+    const tokens = search.toLowerCase().split(/\s+/).filter(Boolean)
+    const haystack = [car.make, car.model, car.body_type, car.fuel_type, car.transmission, car.location, car.description, String(car.year), String(car.engine_cc)].filter(Boolean).join(' ').toLowerCase()
+    return tokens.every(t => haystack.includes(t))
+  }
 
   const filtered = listings.filter(c => {
-    if (checks.makes.size  && !checks.makes.has(c.make))        return false
+    if (!matchesSearch(c))                                       return false
+    if (selectedMake && c.make !== selectedMake)                 return false
     if (selectedModel && c.model !== selectedModel)              return false
-    if (checks.bodies.size && !checks.bodies.has(c.body_type))  return false
-    if (checks.fuels.size  && !checks.fuels.has(c.fuel_type))   return false
-    if (checks.trans.size  && !checks.trans.has(c.transmission)) return false
-    if (checks.drives.size && !checks.drives.has(c.drive_type)) return false
-    if (c.price < minPrice || c.price > maxPrice) return false
-    if (c.year  < minYear  || c.year  > maxYear)  return false
-    if (c.mileage < minKm  || c.mileage > maxKm)  return false
+    if (selectedLocation && c.location !== selectedLocation)     return false
+    if (bodies.size && !bodies.has(c.body_type))                 return false
+    if (fuels.size && !fuels.has(c.fuel_type))                   return false
+    if (trans.size && !trans.has(c.transmission))                return false
+    if (drives.size && !drives.has(c.drive_type))                return false
+    if (conditions.size && !conditions.has(c.condition))         return false
+    if (c.price < minPrice || c.price > maxPrice)                return false
+    if (c.year < minYear   || c.year > maxYear)                  return false
+    if (c.mileage < minKm  || c.mileage > maxKm)                 return false
     return true
   }).sort((a, b) => {
     if (sort === 'price_asc')  return a.price - b.price
@@ -175,55 +222,23 @@ export default function ListingsPage({ user }) {
     return new Date(b.created_at) - new Date(a.created_at)
   })
 
-  const activeTags = [
-    ...[...checks.makes].map(v => ({ label: v, clear: () => toggleCheck('makes', v) })),
-    ...[...checks.bodies].map(v => ({ label: v, clear: () => toggleCheck('bodies', v) })),
-    ...[...checks.fuels].map(v => ({ label: v, clear: () => toggleCheck('fuels', v) })),
-    ...[...checks.trans].map(v => ({ label: v, clear: () => toggleCheck('trans', v) })),
-    ...(selectedModel ? [{ label: selectedModel, clear: () => setSelectedModel('') }] : []),
-    ...(minPrice > 0 || maxPrice < 30000000 ? [{ label: `KSH ${(minPrice/1e6).toFixed(1)}M – ${(maxPrice/1e6).toFixed(1)}M`, clear: () => { setMinPrice(0); setMaxPrice(30000000) } }] : []),
-    ...(minYear > 1970 || maxYear < 2025 ? [{ label: `${minYear} – ${maxYear}`, clear: () => { setMinYear(1990); setMaxYear(2025) } }] : []),
-    ...(minKm > 0 || maxKm < 300000 ? [{ label: `${minKm.toLocaleString()} – ${maxKm.toLocaleString()} km`, clear: () => { setMinKm(0); setMaxKm(300000) } }] : []),
-  ]
+  // Count helpers
+  const cnt = (field, val) => listings.filter(l => l[field] === val).length
+  const makeCounts = Object.fromEntries(MAKES.map(m => [m, listings.filter(l => l.make === m).length]))
+  const modelCounts = Object.fromEntries((CAR_MODELS[selectedMake] || []).map(m => [m, listings.filter(l => l.make === selectedMake && l.model === m).length]))
+  const bodyCounts = Object.fromEntries(BODIES.map(b => [b, cnt('body_type', b)]))
+  const fuelCounts = Object.fromEntries(FUELS.map(f => [f, cnt('fuel_type', f)]))
+  const transCounts = Object.fromEntries(TRANS.map(t => [t, cnt('transmission', t)]))
+  const driveCounts = Object.fromEntries(DRIVES.map(d => [d, cnt('drive_type', d)]))
+  const condCounts = Object.fromEntries(CONDITIONS.map(c => [c, cnt('condition', c)]))
+  const locCounts = Object.fromEntries(LOCATIONS.map(l => [l, cnt('location', l)]))
 
-  const SbSection = ({ title, items, filterKey }) => {
-    const [open, setOpen] = useState(false)
-    const activeCount = checks[filterKey].size
-    const fieldMap = { makes:'make', bodies:'body_type', fuels:'fuel_type', trans:'transmission', drives:'drive_type' }
-    return (
-      <div style={{ borderTop: '1px solid #F5F7FA' }}>
-        <div onClick={() => setOpen(!open)}
-          style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif' }}>{title}</span>
-            {activeCount > 0 && <span style={{ background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 6px', fontSize: 9, fontWeight: 700 }}>{activeCount}</span>}
-          </div>
-          <span style={{ color: '#94A3B8', fontSize: 12, display: 'inline-block', transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
-        </div>
-        {open && (
-          <div style={{ padding: '0 16px 12px' }}>
-            {items.map(item => {
-              const field = fieldMap[filterKey]
-              const count = field ? countFor(field, item) : 0
-              const isChecked = checks[filterKey].has(item)
-              return (
-                <div key={item} onClick={() => toggleCheck(filterKey, item)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, cursor: 'pointer' }}>
-                  <div style={{ width: 14, height: 14, border: `1.5px solid ${isChecked ? '#1565C0' : '#CBD5E1'}`, borderRadius: 3, background: isChecked ? '#1565C0' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 9, color: '#fff' }}>
-                    {isChecked ? '✓' : ''}
-                  </div>
-                  <span style={{ fontSize: 12, color: '#475569', fontWeight: 500, flex: 1 }}>{item}</span>
-                  {count > 0 && <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>({count})</span>}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    )
-  }
+  const activeFiltersCount = [
+    search, selectedMake, selectedModel, selectedLocation,
+    ...bodies, ...fuels, ...trans, ...drives, ...conditions,
+    minPrice > 0, maxPrice < 30000000, minYear > 1970, maxYear < 2025, minKm > 0, maxKm < 300000
+  ].filter(Boolean).length
 
-  const selectedMake = checks.makes.size === 1 ? [...checks.makes][0] : null
   const availableModels = selectedMake && CAR_MODELS[selectedMake] ? CAR_MODELS[selectedMake] : []
 
   return (
@@ -233,63 +248,123 @@ export default function ListingsPage({ user }) {
         <Link to="/" style={{ color: '#1565C0', textDecoration: 'none' }}>Home</Link> / All Listings
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '252px 1fr', minHeight: 'calc(100vh - 96px)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '268px 1fr', minHeight: 'calc(100vh - 96px)' }}>
+
+        {/* ── SIDEBAR ── */}
         <aside style={{ background: '#fff', borderRight: '1px solid #E8EDF3', overflowY: 'auto' }}>
+
+          {/* Header */}
           <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F0F4F8', position: 'sticky', top: 0, background: '#fff', zIndex: 2 }}>
-            <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#0A2540' }}>Filters</span>
-              {activeTags.length > 0 && <span style={{ marginLeft: 6, background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 7px', fontSize: 9, fontWeight: 700 }}>{activeTags.length}</span>}
+              {activeFiltersCount > 0 && <span style={{ background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 7px', fontSize: 9, fontWeight: 700 }}>{activeFiltersCount}</span>}
             </div>
             <button onClick={clearAll} style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear all</button>
           </div>
 
+          {/* Live match count */}
           <div style={{ padding: '10px 16px', background: '#F8FAFC', borderBottom: '1px solid #F0F4F8', textAlign: 'center' }}>
             <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 14, fontWeight: 800, color: '#1565C0' }}>{loading ? '...' : filtered.length}</span>
             <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 4 }}>cars match</span>
           </div>
 
-          <SbSection title="Make" items={MAKES} filterKey="makes" />
-
-          {selectedMake && availableModels.length > 0 && (
-            <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, fontFamily: 'Outfit, sans-serif' }}>Model</div>
-              <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
-                <option value="">All {selectedMake} ({countForMake(selectedMake)})</option>
-                {availableModels.map(m => {
-                  const count = countForModel(selectedMake, m)
-                  return <option key={m} value={m}>{m}{count > 0 ? ` (${count})` : ''}</option>
-                })}
-              </select>
+          {/* ── Wildcard search ── */}
+          <div style={{ padding: '12px 16px', borderTop: '1px solid #F5F7FA' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 8 }}>Search</div>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#94A3B8' }}>🔍</span>
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder='e.g. "Land Cruiser 100"'
+                style={{ width: '100%', padding: '8px 10px 8px 30px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}
+              />
+              {search && <span onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#94A3B8', fontSize: 14 }}>×</span>}
             </div>
-          )}
+          </div>
 
-          <SbSection title="Body Type" items={BODIES} filterKey="bodies" />
+          {/* ── Make ── */}
+          <FilterSection title="Make" activeCount={selectedMake ? 1 : 0}>
+            <select value={selectedMake} onChange={e => { setSelectedMake(e.target.value); setSelectedModel('') }}
+              style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC', marginBottom: 8 }}>
+              <option value="">Any Make ({listings.length})</option>
+              {MAKES.map(m => <option key={m} value={m}>{m}{makeCounts[m] > 0 ? ` (${makeCounts[m]})` : ''}</option>)}
+            </select>
 
-          <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 10 }}>Budget (KSH)</div>
+            {/* Model — shown when make selected */}
+            {selectedMake && availableModels.length > 0 && (
+              <>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 6, marginTop: 4 }}>Model</div>
+                <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+                  <option value="">All {selectedMake} ({listings.filter(l => l.make === selectedMake).length})</option>
+                  {availableModels.map(m => <option key={m} value={m}>{m}{modelCounts[m] > 0 ? ` (${modelCounts[m]})` : ''}</option>)}
+                </select>
+              </>
+            )}
+          </FilterSection>
+
+          {/* ── Location ── */}
+          <FilterSection title="Location" activeCount={selectedLocation ? 1 : 0}>
+            <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)}
+              style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+              <option value="">Any Location</option>
+              {LOCATIONS.map(l => <option key={l} value={l}>{l}{locCounts[l] > 0 ? ` (${locCounts[l]})` : ''}</option>)}
+            </select>
+          </FilterSection>
+
+          {/* ── Price ── */}
+          <FilterSection title="Price (KSH)" activeCount={minPrice > 0 || maxPrice < 30000000 ? 1 : 0}>
             <DualSlider minVal={minPrice} maxVal={maxPrice} absMin={0} absMax={30000000} step={500000} setMin={setMinPrice} setMax={setMaxPrice} formatLabel={n => `${(n/1e6).toFixed(1)}M`} />
-          </div>
+          </FilterSection>
 
-          <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 10 }}>Year</div>
+          {/* ── Year ── */}
+          <FilterSection title="Year" activeCount={minYear > 1970 || maxYear < 2025 ? 1 : 0}>
             <DualSlider minVal={minYear} maxVal={maxYear} absMin={1970} absMax={2025} step={1} setMin={setMinYear} setMax={setMaxYear} formatLabel={n => `${n}`} />
-          </div>
+          </FilterSection>
 
-          <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 10 }}>Mileage (km)</div>
+          {/* ── Odometer ── */}
+          <FilterSection title="Odometer (km)" activeCount={minKm > 0 || maxKm < 300000 ? 1 : 0}>
             <DualSlider minVal={minKm} maxVal={maxKm} absMin={0} absMax={300000} step={5000} setMin={setMinKm} setMax={setMaxKm} formatLabel={n => `${(n/1000).toFixed(0)}k`} />
-          </div>
+          </FilterSection>
 
-          <SbSection title="Fuel Type"    items={FUELS}  filterKey="fuels" />
-          <SbSection title="Transmission" items={TRANS}  filterKey="trans" />
-          <SbSection title="Drive Type"   items={DRIVES} filterKey="drives" />
+          {/* ── Transmission ── */}
+          <FilterSection title="Transmission" activeCount={trans.size}>
+            <CheckList items={TRANS} selected={trans} onToggle={toggle(setTrans)} counts={transCounts} />
+          </FilterSection>
+
+          {/* ── Body Type ── */}
+          <FilterSection title="Body Type" activeCount={bodies.size}>
+            <CheckList items={BODIES} selected={bodies} onToggle={toggle(setBodies)} counts={bodyCounts} />
+          </FilterSection>
+
+          {/* ── New / Used ── */}
+          <FilterSection title="Condition" activeCount={conditions.size}>
+            <CheckList items={CONDITIONS} selected={conditions} onToggle={toggle(setConditions)} counts={condCounts} />
+          </FilterSection>
+
+          {/* ── Fuel Type ── */}
+          <FilterSection title="Fuel Type" activeCount={fuels.size}>
+            <CheckList items={FUELS} selected={fuels} onToggle={toggle(setFuels)} counts={fuelCounts} />
+          </FilterSection>
+
+          {/* ── Drive Type ── */}
+          <FilterSection title="Drive Type" activeCount={drives.size}>
+            <CheckList items={DRIVES} selected={drives} onToggle={toggle(setDrives)} counts={driveCounts} />
+          </FilterSection>
+
+          <div style={{ height: 24 }} />
         </aside>
 
+        {/* ── MAIN ── */}
         <main style={{ padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 18, fontWeight: 700, color: '#0A2540' }}>
-              {loading ? 'Loading...' : <><span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars{activeTags.length > 0 && listings.length > 0 && <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 400, marginLeft: 8 }}>of {listings.length} total</span>}</>}
+              {loading ? 'Loading...' : (
+                <><span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars
+                  {activeFiltersCount > 0 && listings.length > 0 && <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 400, marginLeft: 8 }}>of {listings.length} total</span>}
+                </>
+              )}
               <span style={{ color: '#94A3B8', fontSize: 13, fontWeight: 400, fontFamily: 'DM Sans, sans-serif', marginLeft: 6 }}>in Kenya</span>
             </div>
             <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#fff' }}>
@@ -301,13 +376,21 @@ export default function ListingsPage({ user }) {
             </select>
           </div>
 
-          {activeTags.length > 0 && (
+          {/* Active filter tags */}
+          {activeFiltersCount > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-              {activeTags.map((t, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#EEF4FF', border: '1px solid #BDD5FF', borderRadius: 100, padding: '3px 10px', fontSize: 11, fontWeight: 600, color: '#1565C0' }}>
-                  {t.label} <span onClick={t.clear} style={{ cursor: 'pointer', fontSize: 14 }}>×</span>
-                </div>
-              ))}
+              {search && <Tag label={`"${search}"`} onClear={() => setSearch('')} />}
+              {selectedMake && <Tag label={selectedMake} onClear={() => { setSelectedMake(''); setSelectedModel('') }} />}
+              {selectedModel && <Tag label={selectedModel} onClear={() => setSelectedModel('')} />}
+              {selectedLocation && <Tag label={selectedLocation} onClear={() => setSelectedLocation('')} />}
+              {[...bodies].map(v => <Tag key={v} label={v} onClear={() => toggle(setBodies)(v)} />)}
+              {[...fuels].map(v => <Tag key={v} label={v} onClear={() => toggle(setFuels)(v)} />)}
+              {[...trans].map(v => <Tag key={v} label={v} onClear={() => toggle(setTrans)(v)} />)}
+              {[...drives].map(v => <Tag key={v} label={v} onClear={() => toggle(setDrives)(v)} />)}
+              {[...conditions].map(v => <Tag key={v} label={v} onClear={() => toggle(setConditions)(v)} />)}
+              {(minPrice > 0 || maxPrice < 30000000) && <Tag label={`KSH ${(minPrice/1e6).toFixed(1)}M–${(maxPrice/1e6).toFixed(1)}M`} onClear={() => { setMinPrice(0); setMaxPrice(30000000) }} />}
+              {(minYear > 1970 || maxYear < 2025) && <Tag label={`${minYear}–${maxYear}`} onClear={() => { setMinYear(1970); setMaxYear(2025) }} />}
+              {(minKm > 0 || maxKm < 300000) && <Tag label={`${(minKm/1000).toFixed(0)}k–${(maxKm/1000).toFixed(0)}k km`} onClear={() => { setMinKm(0); setMaxKm(300000) }} />}
             </div>
           )}
 
@@ -351,7 +434,7 @@ export default function ListingsPage({ user }) {
                     <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 17, fontWeight: 800, color: '#0A2540', marginBottom: 2 }}>{fmt(car.price)}</div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 8 }}>{car.year} {car.make} {car.model}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-                      {[car.mileage && `${Number(car.mileage).toLocaleString()} km`, car.fuel_type, car.transmission, car.engine_cc && `${car.engine_cc}cc`, car.body_type].filter(Boolean).map((s, i) => (
+                      {[car.mileage && `${Number(car.mileage).toLocaleString()} km`, car.fuel_type, car.transmission, car.engine_cc && `${car.engine_cc}cc`, car.body_type, car.condition].filter(Boolean).map((s, i) => (
                         <span key={i} style={{ fontSize: 10, color: '#94A3B8', padding: '2px 6px', background: '#F8FAFC', borderRadius: 100, border: '1px solid #E8EDF3' }}>{s}</span>
                       ))}
                     </div>
@@ -370,6 +453,14 @@ export default function ListingsPage({ user }) {
           )}
         </main>
       </div>
+    </div>
+  )
+}
+
+function Tag({ label, onClear }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#EEF4FF', border: '1px solid #BDD5FF', borderRadius: 100, padding: '3px 10px', fontSize: 11, fontWeight: 600, color: '#1565C0' }}>
+      {label} <span onClick={onClear} style={{ cursor: 'pointer', fontSize: 14 }}>×</span>
     </div>
   )
 }
