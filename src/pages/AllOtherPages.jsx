@@ -963,12 +963,12 @@ export function DashboardPage({ user }) {
     }, [user])
 
   const NAV_ITEMS = [
-    { id:'overview', label:'Overview', icon:'⊞' },
-    { id:'listings', label:'My Listings', icon:'🚗', badge: myListings.length },
-    { id:'saved', label:'Saved Cars', icon:'❤️', badge: savedCars.length },
-    { id:'leads', label:'Leads', icon:'💬' },
-    { id:'alerts', label:'Alerts', icon:'🔔' },
-  ]
+  { id:'overview', label:'Overview', icon:'⊞' },
+  { id:'listings', label:'My Listings', icon:'🚗', badge: myListings.length },
+  { id:'saved', label:'Saved Cars', icon:'❤️', badge: savedCars.length },
+  { id:'searches', label:'Saved Searches', icon:'🔖' },
+  { id:'leads', label:'Leads', icon:'💬' },
+]
 
   const approvedListings = myListings.filter(l => l.status === 'approved')
   const totalViews = myListings.reduce((a, l) => a + (l.views || 0), 0)
@@ -1138,10 +1138,10 @@ export function DashboardPage({ user }) {
             </div>
           )}
 
-          {tab === 'alerts' && (
+          {tab === 'searches' && (
   <div>
     <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540', marginBottom:16 }}>
-      Saved Searches <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}></span>
+      Saved Searches
     </div>
     <SavedSearchesList user={user} />
   </div>
