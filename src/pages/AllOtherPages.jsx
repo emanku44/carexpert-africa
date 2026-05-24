@@ -37,7 +37,10 @@ export function CarDetailPage({ user }) {
         setLoading(false)
       })
   }, [id])
-
+      // Save to recently viewed
+  const ids = JSON.parse(localStorage.getItem('cea_recently_viewed') || '[]')
+  const updated = [id, ...ids.filter(i => i !== id)].slice(0, 5)
+  localStorage.setItem('cea_recently_viewed', JSON.stringify(updated))  
   const monthly = () => {
     if (!car) return 0
     const principal = car.price - deposit
@@ -956,10 +959,7 @@ export function DashboardPage({ user }) {
       .eq('user_id', user.id)
       .then(({ data }) => { setSavedCars((data || []).map(s => s.listings).filter(Boolean)); setLoadingSaved(false) })
  
-      // Save to recently viewed
-const ids = JSON.parse(localStorage.getItem('cea_recently_viewed') || '[]')
-const updated = [id, ...ids.filter(i => i !== id)].slice(0, 5)
-localStorage.setItem('cea_recently_viewed', JSON.stringify(updated))
+
     }, [user])
 
   const NAV_ITEMS = [
