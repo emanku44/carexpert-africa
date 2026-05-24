@@ -309,6 +309,22 @@ export default function ListingsPage({ user }) {
             <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 4 }}>cars match</span>
           </div>
 
+          {user && <SavedSearchesQuickList user={user} onApply={(filters) => {
+            if (filters.make) setSelectedMake(filters.make)
+            if (filters.model) setSelectedModel(filters.model)
+            if (filters.search) setSearch(filters.search)
+            if (filters.location) setSelectedLocation(filters.location)
+            if (filters.minPrice) setMinPrice(filters.minPrice)
+            if (filters.maxPrice) setMaxPrice(filters.maxPrice)
+            if (filters.minYear) setMinYear(filters.minYear)
+            if (filters.maxYear) setMaxYear(filters.maxYear)
+            if (filters.minKm) setMinKm(filters.minKm)
+            if (filters.maxKm) setMaxKm(filters.maxKm)
+            if (filters.bodies?.length) setBodies(new Set(filters.bodies))
+            if (filters.fuels?.length) setFuels(new Set(filters.fuels))
+            if (filters.trans?.length) setTrans(new Set(filters.trans))
+          }} />}
+
           {/* Search */}
           <div style={{ padding: '12px 16px', borderTop: '1px solid #F5F7FA' }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 8 }}>Search</div>
