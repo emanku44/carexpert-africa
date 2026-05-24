@@ -968,6 +968,7 @@ export function DashboardPage({ user }) {
   { id:'saved', label:'Saved Cars', icon:'❤️', badge: savedCars.length },
   { id:'searches', label:'Saved Searches', icon:'🔖' },
   { id:'leads', label:'Leads', icon:'💬' },
+  { id:'alerts', label:'Alerts', icon:'🔔' },
 ]
 
   const approvedListings = myListings.filter(l => l.status === 'approved')
@@ -1144,6 +1145,13 @@ export function DashboardPage({ user }) {
       Saved Searches
     </div>
     <SavedSearchesList user={user} />
+  </div>
+)}
+{tab === 'alerts' && (
+  <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+    <div style={{ fontSize:32, marginBottom:12 }}>🔔</div>
+    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540', marginBottom:6 }}>Alerts coming soon</div>
+    <div style={{ fontSize:13, color:'#94A3B8' }}>Get notified on price drops, sold listings, and new matches for your saved searches.</div>
   </div>
 )}
         </main>
