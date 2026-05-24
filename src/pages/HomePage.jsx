@@ -1,27 +1,117 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Navbar from '../components/Navbar'
 import { getFeaturedListings, supabase } from '../lib/supabase'
 
 const MAKES = ['Toyota','Mercedes-Benz','Mazda','Audi','Volkswagen','Subaru','BMW','Lexus','Nissan','Mitsubishi','Porsche','Suzuki','Honda','Isuzu']
-const BODY_TYPES = [{ t:'SUV', c:58 },{ t:'Sedan', c:9 },{ t:'Hatchback', c:8 },{ t:'Minivan', c:5 },{ t:'Pickup', c:2 },{ t:'Coupe', c:2 }]
+const BODY_TYPES = [{ t:'SUV' },{ t:'Sedan' },{ t:'Hatchback' },{ t:'Minivan' },{ t:'Pickup' },{ t:'Coupe' }]
+
+const CAR_MODELS = {
+  Toyota: ['Allion','Alphard','Camry','Corolla','Crown','Fielder','Fortuner','Harrier','Hiace','Hilux','Land Cruiser 200','Land Cruiser 300','Land Cruiser Prado 120','Land Cruiser Prado 150','Mark X','Noah','Premio','Probox','RAV4','Rush','Succeed','Vanguard','Vellfire','Voxy','Wish'],
+  Nissan: ['Caravan','Elgrand','Juke','March','Murano','Navara','Note','Patrol','Qashqai','Serena','Sylphy','Teana','Tiida','Urvan','X-Trail'],
+  Mazda: ['Atenza','Axela','BT-50','CX-3','CX-5','CX-7','CX-9','Demio','MPV'],
+  Subaru: ['Forester','Impreza','Legacy','Outback','Tribeca','WRX','XV'],
+  Mitsubishi: ['Colt','Eclipse Cross','Galant','L200','Lancer','Montero','Outlander','Pajero','Pajero Mini'],
+  BMW: ['1 Series','2 Series','3 Series','5 Series','7 Series','X1','X3','X5','X6'],
+  'Mercedes-Benz': ['A-Class','B-Class','C-Class','E-Class','GLC','GLE','GLS','GL','ML','S-Class'],
+  Audi: ['A3','A4','A6','Q3','Q5','Q7','TT'],
+  Volkswagen: ['Amarok','Golf','Passat','Polo','Tiguan','Touareg','Transporter'],
+  Honda: ['Accord','CR-V','Civic','Fit','Freed','HR-V','Jazz','Odyssey','Pilot','StepWagon','Stream'],
+  Hyundai: ['Creta','Elantra','Santa Fe','Tucson','i10','i20','ix35'],
+  Kia: ['Carnival','Cerato','Picanto','Rio','Sorento','Sportage'],
+  Ford: ['EcoSport','Everest','Explorer','Fusion','Mustang','Ranger'],
+  'Land Rover': ['Defender','Discovery','Discovery Sport','Freelander','Range Rover','Range Rover Evoque','Range Rover Sport'],
+  Lexus: ['GS','GX','IS','LS','LX','NX','RX','UX'],
+  Isuzu: ['D-Max','MU-X','Trooper'],
+  Suzuki: ['Alto','Baleno','Ertiga','Escudo','Grand Vitara','Jimny','Swift','Vitara'],
+  Porsche: ['911','Cayenne','Macan','Panamera'],
+}
+
+const MAX_PRICE = 20000000
+
+function PriceRangeSlider({ minPrice, maxPrice, setMinPrice, setMaxPrice }) {
+  const trackRef = useRef(null)
+  const dragging = useRef(null)
+
+  const toPercent = v => (v / MAX_PRICE) * 100
+
+  const fromPercent = pct => Math.round((pct / 100) * MAX_PRICE / 500000) * 500000
+
+  const getPercFromEvent = e => {
+    const track = trackRef.current
+    if (!track) return 0
+    const rect = track.getBoundingClientRect()
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX
+    return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100))
+  }
+
+  const onMouseDown = (handle) => (e) => {
+    e.preventDefault()
+    dragging.current = handle
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    window.addEventListener('touchmove', onMove)
+    window.addEventListener('touchend', onUp)
+  }
+
+  const onMove = (e) => {
+    const pct = getPercFromEvent(e)
+    const val = fromPercent(pct)
+    if (dragging.current === 'min') setMinPrice(Math.min(val, maxPrice - 500000))
+    if (dragging.current === 'max') setMaxPrice(Math.max(val, minPrice + 500000))
+  }
+
+  const onUp = () => {
+    dragging.current = null
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+    window.removeEventListener('touchmove', onMove)
+    window.removeEventListener('touchend', onUp)
+  }
+
+  const minPct = toPercent(minPrice)
+  const maxPct = toPercent(maxPrice)
+
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+        <span style={{ fontSize:11, fontWeight:700, color:'#1565C0' }}>KSH {(minPrice/1e6).toFixed(1)}M</span>
+        <span style={{ fontSize:11, fontWeight:700, color:'#1565C0' }}>KSH {(maxPrice/1e6).toFixed(1)}M</span>
+      </div>
+      <div ref={trackRef} style={{ position:'relative', height:6, background:'#E2E8F0', borderRadius:100, cursor:'pointer', userSelect:'none' }}>
+        {/* filled range */}
+        <div style={{ position:'absolute', left:`${minPct}%`, right:`${100-maxPct}%`, top:0, height:'100%', background:'#1565C0', borderRadius:100 }}/>
+        {/* min handle */}
+        <div onMouseDown={onMouseDown('min')} onTouchStart={onMouseDown('min')}
+          style={{ position:'absolute', left:`${minPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:18, height:18, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
+        {/* max handle */}
+        <div onMouseDown={onMouseDown('max')} onTouchStart={onMouseDown('max')}
+          style={{ position:'absolute', left:`${maxPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:18, height:18, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
+      </div>
+      <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:4 }}>
+        <span>0</span><span>20M</span>
+      </div>
+    </div>
+  )
+}
 
 export default function HomePage({ user }) {
   const navigate = useNavigate()
-  const [make, setMake]                   = useState('')
-  const [body, setBody]                   = useState('')
-  const [showMore, setShowMore]           = useState(false)
-  const [transmission, setTransmission]   = useState('')
-  const [fuel, setFuel]                   = useState('')
-  const [minPrice, setMinPrice]           = useState(0)
-  const [maxPrice, setMaxPrice]           = useState(20000000)
-  const [minYear, setMinYear]             = useState(2000)
-  const [maxYear, setMaxYear]             = useState(2025)
-  const [minKm, setMinKm]                 = useState(0)
-  const [maxKm, setMaxKm]                 = useState(300000)
-  const [featured, setFeatured]           = useState([])
-  const [totalCars, setTotalCars]         = useState(0)
-  const [makeCounts, setMakeCounts]       = useState({})
+  const [make, setMake]                 = useState('')
+  const [model, setModel]               = useState('')
+  const [body, setBody]                 = useState('')
+  const [showMore, setShowMore]         = useState(false)
+  const [transmission, setTransmission] = useState('')
+  const [fuel, setFuel]                 = useState('')
+  const [minPrice, setMinPrice]         = useState(0)
+  const [maxPrice, setMaxPrice]         = useState(MAX_PRICE)
+  const [minYear, setMinYear]           = useState(2000)
+  const [maxYear, setMaxYear]           = useState(2025)
+  const [minKm, setMinKm]               = useState(0)
+  const [maxKm, setMaxKm]               = useState(300000)
+  const [featured, setFeatured]         = useState([])
+  const [totalCars, setTotalCars]       = useState(0)
+  const [makeCounts, setMakeCounts]     = useState({})
 
   useEffect(() => {
     getFeaturedListings().then(({ data }) => setFeatured(data || []))
@@ -37,11 +127,12 @@ export default function HomePage({ user }) {
   const search = () => {
     const p = new URLSearchParams()
     if (make)                p.set('make', make)
+    if (model)               p.set('model', model)
     if (body)                p.set('body', body)
     if (transmission)        p.set('transmission', transmission)
     if (fuel)                p.set('fuel', fuel)
     if (minPrice > 0)        p.set('minPrice', minPrice)
-    if (maxPrice < 20000000) p.set('maxPrice', maxPrice)
+    if (maxPrice < MAX_PRICE) p.set('maxPrice', maxPrice)
     if (minYear > 2000)      p.set('minYear', minYear)
     if (maxYear < 2025)      p.set('maxYear', maxYear)
     if (minKm > 0)           p.set('minKm', minKm)
@@ -49,23 +140,10 @@ export default function HomePage({ user }) {
     navigate(`/listings?${p.toString()}`)
   }
 
-  const SliderRange = ({ label, minVal, maxVal, absMin, absMax, step=1, setMin, setMax, format }) => (
-    <div>
-      <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>
-        {label} — <span style={{ color:'#1565C0' }}>{format ? format(minVal) : minVal} – {format ? format(maxVal) : maxVal}</span>
-      </label>
-      <input type="range" min={absMin} max={absMax} step={step} value={minVal}
-        onChange={e => setMin(Math.min(Number(e.target.value), maxVal - step))}
-        style={{ width:'100%', accentColor:'#1565C0', marginBottom:2 }} />
-      <input type="range" min={absMin} max={absMax} step={step} value={maxVal}
-        onChange={e => setMax(Math.max(Number(e.target.value), minVal + step))}
-        style={{ width:'100%', accentColor:'#1565C0' }} />
-      <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:2 }}>
-        <span>{format ? format(absMin) : absMin}</span>
-        <span>{format ? format(absMax) : absMax}</span>
-      </div>
-    </div>
-  )
+  const models = make && CAR_MODELS[make] ? CAR_MODELS[make] : []
+
+  const inp = { width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans, sans-serif', outline:'none', background:'#F8FAFC' }
+  const lbl = { display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }
 
   return (
     <div style={{ fontFamily:'DM Sans, sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
@@ -77,7 +155,7 @@ export default function HomePage({ user }) {
         backgroundSize:'cover', backgroundPosition:'center', backgroundRepeat:'no-repeat',
         padding:'80px 24px 0'
       }}>
-        <div style={{ maxWidth:900, margin:'0 auto' }}>
+        <div style={{ maxWidth:960, margin:'0 auto' }}>
           <div style={{ color:'#4DA6FF', fontSize:11, fontWeight:700, letterSpacing:'1.8px', textTransform:'uppercase', marginBottom:12 }}>Kenya's #1 Car Platform</div>
           <h1 style={{ fontFamily:'Outfit, sans-serif', fontSize:52, fontWeight:800, color:'#fff', lineHeight:1.08, marginBottom:14, letterSpacing:-1 }}>
             Find Your <span style={{ color:'#4DA6FF' }}>Perfect</span><br />Car in Kenya
@@ -89,45 +167,49 @@ export default function HomePage({ user }) {
           {/* Search box */}
           <div style={{ background:'#fff', borderRadius:'14px 14px 0 0', padding:24 }}>
 
-            {/* Main row */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr auto', gap:12, alignItems:'end' }}>
+            {/* Main row: Make, Model, Body, Price, Search */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1.4fr auto', gap:12, alignItems:'end' }}>
               <div>
-                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Make</label>
-                <select value={make} onChange={e => setMake(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans, sans-serif', outline:'none', background:'#F8FAFC' }}>
+                <label style={lbl}>Make</label>
+                <select value={make} onChange={e => { setMake(e.target.value); setModel('') }} style={inp}>
                   <option value="">Any Make</option>
                   {MAKES.map(m => <option key={m}>{m}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Body Type</label>
-                <select value={body} onChange={e => setBody(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans, sans-serif', outline:'none', background:'#F8FAFC' }}>
+                <label style={lbl}>Model</label>
+                <select value={model} onChange={e => setModel(e.target.value)} style={inp} disabled={!make}>
+                  <option value="">{make ? `All ${make} Models` : 'Select make first'}</option>
+                  {models.map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Body Style</label>
+                <select value={body} onChange={e => setBody(e.target.value)} style={inp}>
                   <option value="">Any Body</option>
                   {BODY_TYPES.map(b => <option key={b.t}>{b.t}</option>)}
                 </select>
               </div>
-              <SliderRange
-                label="Budget (KSH)"
-                minVal={minPrice} maxVal={maxPrice}
-                absMin={0} absMax={20000000} step={500000}
-                setMin={setMinPrice} setMax={setMaxPrice}
-                format={n => `${(n/1e6).toFixed(1)}M`}
-              />
-              <button onClick={search} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'11px 24px', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Outfit, sans-serif', whiteSpace:'nowrap' }}>
-                Search {totalCars > 0 ? `${totalCars} Cars` : ''} →
+              <div>
+                <label style={lbl}>Price Range (KSH)</label>
+                <PriceRangeSlider minPrice={minPrice} maxPrice={maxPrice} setMinPrice={setMinPrice} setMaxPrice={setMaxPrice} />
+              </div>
+              <button onClick={search} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'11px 20px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit, sans-serif', whiteSpace:'nowrap' }}>
+                Search {totalCars > 0 ? `${totalCars}` : ''} Cars →
               </button>
             </div>
 
             {/* More filters toggle */}
             <div onClick={() => setShowMore(!showMore)}
-              style={{ marginTop:12, display:'flex', alignItems:'center', gap:6, cursor:'pointer', width:'fit-content' }}>
-              <span style={{ fontSize:12, fontWeight:600, color:'#1565C0' }}>{showMore ? '▲ Hide filters' : '▼ More filters'}</span>
+              style={{ marginTop:14, display:'flex', alignItems:'center', gap:6, cursor:'pointer', width:'fit-content' }}>
+              <span style={{ fontSize:12, fontWeight:600, color:'#1565C0' }}>{showMore ? '▲ Hide filters' : '▼ More filters (year, mileage, fuel, transmission)'}</span>
             </div>
 
             {showMore && (
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:16, marginTop:14, paddingTop:14, borderTop:'1px solid #F0F4F8' }}>
                 <div>
-                  <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Transmission</label>
-                  <select value={transmission} onChange={e => setTransmission(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans, sans-serif', outline:'none', background:'#F8FAFC' }}>
+                  <label style={lbl}>Transmission</label>
+                  <select value={transmission} onChange={e => setTransmission(e.target.value)} style={inp}>
                     <option value="">Any</option>
                     <option>Automatic</option>
                     <option>Manual</option>
@@ -135,8 +217,8 @@ export default function HomePage({ user }) {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }}>Fuel Type</label>
-                  <select value={fuel} onChange={e => setFuel(e.target.value)} style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans, sans-serif', outline:'none', background:'#F8FAFC' }}>
+                  <label style={lbl}>Fuel Type</label>
+                  <select value={fuel} onChange={e => setFuel(e.target.value)} style={inp}>
                     <option value="">Any</option>
                     <option>Petrol</option>
                     <option>Diesel</option>
@@ -144,19 +226,30 @@ export default function HomePage({ user }) {
                     <option>Electric</option>
                   </select>
                 </div>
-                <SliderRange
-                  label="Year"
-                  minVal={minYear} maxVal={maxYear}
-                  absMin={2000} absMax={2025} step={1}
-                  setMin={setMinYear} setMax={setMaxYear}
-                />
-                <SliderRange
-                  label="Mileage"
-                  minVal={minKm} maxVal={maxKm}
-                  absMin={0} absMax={300000} step={5000}
-                  setMin={setMinKm} setMax={setMaxKm}
-                  format={n => `${n.toLocaleString()}km`}
-                />
+                <div>
+                  <label style={lbl}>Year — <span style={{ color:'#1565C0' }}>{minYear} – {maxYear}</span></label>
+                  <input type="range" min={2000} max={2025} value={minYear}
+                    onChange={e => setMinYear(Math.min(Number(e.target.value), maxYear - 1))}
+                    style={{ width:'100%', accentColor:'#1565C0', marginBottom:2 }} />
+                  <input type="range" min={2000} max={2025} value={maxYear}
+                    onChange={e => setMaxYear(Math.max(Number(e.target.value), minYear + 1))}
+                    style={{ width:'100%', accentColor:'#1565C0' }} />
+                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:2 }}>
+                    <span>2000</span><span>2025</span>
+                  </div>
+                </div>
+                <div>
+                  <label style={lbl}>Mileage — <span style={{ color:'#1565C0' }}>{minKm.toLocaleString()} – {maxKm.toLocaleString()} km</span></label>
+                  <input type="range" min={0} max={300000} step={5000} value={minKm}
+                    onChange={e => setMinKm(Math.min(Number(e.target.value), maxKm - 5000))}
+                    style={{ width:'100%', accentColor:'#1565C0', marginBottom:2 }} />
+                  <input type="range" min={0} max={300000} step={5000} value={maxKm}
+                    onChange={e => setMaxKm(Math.max(Number(e.target.value), minKm + 5000))}
+                    style={{ width:'100%', accentColor:'#1565C0' }} />
+                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:2 }}>
+                    <span>0 km</span><span>300,000 km</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -167,7 +260,7 @@ export default function HomePage({ user }) {
       <div style={{ background:'#EEF5FF', borderBottom:'1px solid #D9E8FA', padding:'14px 24px', display:'flex', gap:40 }}>
         {[
           [totalCars > 0 ? `${totalCars}+` : '0', 'Active Listings'],
-          [Object.keys(makeCounts).length || '19', 'Car Makes'],
+          [Object.keys(makeCounts).length || '14', 'Car Makes'],
           ['100%', 'Verified Sellers'],
           ['7 Days', 'Support']
         ].map(([n,l]) => (
@@ -243,7 +336,6 @@ export default function HomePage({ user }) {
             <div key={b.t} onClick={() => navigate(`/listings?body=${b.t}`)}
               style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:'18px 12px', textAlign:'center', cursor:'pointer' }}>
               <div style={{ fontFamily:'Outfit, sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{b.t}</div>
-              <div style={{ fontSize:11, color:'#94A3B8' }}>{b.c} cars</div>
             </div>
           ))}
         </div>
