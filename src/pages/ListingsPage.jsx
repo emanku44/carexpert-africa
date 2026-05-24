@@ -581,6 +581,39 @@ export default function ListingsPage({ user }) {
           )}
         </main>
       </div>
+
+      {/* Save Search Modal */}
+      {saveSearchOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: 400, boxShadow: '0 20px 60px rgba(0,0,0,.2)' }}>
+            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 18, fontWeight: 800, color: '#0A2540', marginBottom: 6 }}>🔖 Save This Search</div>
+            <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 18 }}>Give this search a name. You can re-run it anytime from your dashboard.</div>
+            {activeFiltersCount > 0 && (
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 11, color: '#64748B' }}>
+                {activeFiltersCount} filter{activeFiltersCount > 1 ? 's' : ''} will be saved
+                {selectedMake && ` · ${selectedMake}`}
+                {selectedModel && ` ${selectedModel}`}
+                {(minPrice > 0 || maxPrice < 30000000) && ` · KSH ${(minPrice/1e6).toFixed(1)}M–${(maxPrice/1e6).toFixed(1)}M`}
+              </div>
+            )}
+            <input value={searchName} onChange={e => setSearchName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSaveSearch()}
+              placeholder="e.g. Toyota SUVs under 5M" autoFocus
+              style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', marginBottom: 16 }} />
+            {saveMsg && (
+              <div style={{ background: '#DCFCE7', color: '#16A34A', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, marginBottom: 12, textAlign: 'center' }}>{saveMsg}</div>
+            )}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => { setSaveSearchOpen(false); setSearchName(''); setSaveMsg('') }}
+                style={{ background: '#F8FAFC', color: '#64748B', border: '1.5px solid #E2E8F0', padding: '9px 18px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+              <button onClick={handleSaveSearch} disabled={!searchName.trim()}
+                style={{ background: searchName.trim() ? '#1565C0' : '#94A3B8', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: searchName.trim() ? 'pointer' : 'default', fontFamily: 'Outfit, sans-serif' }}>
+                Save Search
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
