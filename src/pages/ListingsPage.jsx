@@ -35,6 +35,11 @@ const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
 function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, formatLabel }) {
   const trackRef = useRef(null)
   const dragging = useRef(null)
+  const minValRef = useRef(minVal)
+  const maxValRef = useRef(maxVal)
+
+  useEffect(() => { minValRef.current = minVal }, [minVal])
+  useEffect(() => { maxValRef.current = maxVal }, [maxVal])
 
   const toPercent = v => ((v - absMin) / (absMax - absMin)) * 100
   const fromPercent = pct => Math.round((absMin + (pct / 100) * (absMax - absMin)) / step) * step
@@ -47,28 +52,30 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
     return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100))
   }
 
+  const onMoveRef = useRef(null)
+  onMoveRef.current = e => {
+    if (e.cancelable) e.preventDefault()
+    const val = fromPercent(getPercFromEvent(e))
+    if (dragging.current === 'min') setMin(Math.min(val, maxValRef.current - step))
+    if (dragging.current === 'max') setMax(Math.max(val, minValRef.current + step))
+  }
+
+  const stableOnMove = useRef(e => onMoveRef.current(e)).current
+  const stableOnUp = useRef(() => {
+    dragging.current = null
+    window.removeEventListener('mousemove', stableOnMove)
+    window.removeEventListener('mouseup', stableOnUp)
+    window.removeEventListener('touchmove', stableOnMove)
+    window.removeEventListener('touchend', stableOnUp)
+  }).current
+
   const onMouseDown = handle => e => {
     e.preventDefault()
     dragging.current = handle
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-    window.addEventListener('touchmove', onMove, { passive: false })
-    window.addEventListener('touchend', onUp)
-  }
-
-  const onMove = e => {
-    if (e.cancelable) e.preventDefault()
-    const val = fromPercent(getPercFromEvent(e))
-    if (dragging.current === 'min') setMin(Math.min(val, maxVal - step))
-    if (dragging.current === 'max') setMax(Math.max(val, minVal + step))
-  }
-
-  const onUp = () => {
-    dragging.current = null
-    window.removeEventListener('mousemove', onMove)
-    window.removeEventListener('mouseup', onUp)
-    window.removeEventListener('touchmove', onMove)
-    window.removeEventListener('touchend', onUp)
+    window.addEventListener('mousemove', stableOnMove)
+    window.addEventListener('mouseup', stableOnUp)
+    window.addEventListener('touchmove', stableOnMove, { passive: false })
+    window.addEventListener('touchend', stableOnUp)
   }
 
   const minPct = toPercent(minVal)
@@ -104,9 +111,7 @@ export default function ListingsPage({ user }) {
   const [checks, setChecks] = useState({
     makes: searchParams.get('make') ? new Set([searchParams.get('make')]) : new Set(),
     bodies: searchParams.get('body') ? new Set([searchParams.get('body')]) : new Set(),
-    fuels: new Set(),
-    trans: new Set(),
-    drives: new Set()
+    fuels: new Set(), trans: new Set(), drives: new Set()
   })
   const [minPrice, setMinPrice] = useState(0)
   const [maxPrice, setMaxPrice] = useState(30000000)
@@ -123,8 +128,7 @@ export default function ListingsPage({ user }) {
   const fetchListings = async () => {
     setLoading(true)
     const { data, error } = await supabase
-      .from('listings')
-      .select('*, listing_photos(*)')
+      .from('listings').select('*, listing_photos(*)')
       .eq('status', 'approved')
       .order('featured', { ascending: false })
       .order('created_at', { ascending: false })
@@ -148,18 +152,17 @@ export default function ListingsPage({ user }) {
     setMinKm(0); setMaxKm(300000)
   }
 
-  // count helpers
   const countFor = (field, val) => listings.filter(l => l[field] === val).length
   const countForMake = make => listings.filter(l => l.make === make).length
   const countForModel = (make, model) => listings.filter(l => l.make === make && l.model === model).length
 
   const filtered = listings.filter(c => {
-    if (checks.makes.size  && !checks.makes.has(c.make))         return false
-    if (selectedModel && c.model !== selectedModel)               return false
-    if (checks.bodies.size && !checks.bodies.has(c.body_type))   return false
-    if (checks.fuels.size  && !checks.fuels.has(c.fuel_type))    return false
-    if (checks.trans.size  && !checks.trans.has(c.transmission))  return false
-    if (checks.drives.size && !checks.drives.has(c.drive_type))  return false
+    if (checks.makes.size  && !checks.makes.has(c.make))        return false
+    if (selectedModel && c.model !== selectedModel)              return false
+    if (checks.bodies.size && !checks.bodies.has(c.body_type))  return false
+    if (checks.fuels.size  && !checks.fuels.has(c.fuel_type))   return false
+    if (checks.trans.size  && !checks.trans.has(c.transmission)) return false
+    if (checks.drives.size && !checks.drives.has(c.drive_type)) return false
     if (c.price < minPrice || c.price > maxPrice) return false
     if (c.year  < minYear  || c.year  > maxYear)  return false
     if (c.mileage < minKm  || c.mileage > maxKm)  return false
@@ -193,9 +196,7 @@ export default function ListingsPage({ user }) {
           style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif' }}>{title}</span>
-            {activeCount > 0 && (
-              <span style={{ background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 6px', fontSize: 9, fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>{activeCount}</span>
-            )}
+            {activeCount > 0 && <span style={{ background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 6px', fontSize: 9, fontWeight: 700 }}>{activeCount}</span>}
           </div>
           <span style={{ color: '#94A3B8', fontSize: 12, display: 'inline-block', transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
         </div>
@@ -222,13 +223,6 @@ export default function ListingsPage({ user }) {
     )
   }
 
-  const RangeSection = ({ title, children }) => (
-    <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 10 }}>{title}</div>
-      {children}
-    </div>
-  )
-
   const selectedMake = checks.makes.size === 1 ? [...checks.makes][0] : null
   const availableModels = selectedMake && CAR_MODELS[selectedMake] ? CAR_MODELS[selectedMake] : []
 
@@ -240,27 +234,22 @@ export default function ListingsPage({ user }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '252px 1fr', minHeight: 'calc(100vh - 96px)' }}>
-        {/* Sidebar */}
         <aside style={{ background: '#fff', borderRight: '1px solid #E8EDF3', overflowY: 'auto' }}>
           <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F0F4F8', position: 'sticky', top: 0, background: '#fff', zIndex: 2 }}>
             <div>
               <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#0A2540' }}>Filters</span>
-              {activeTags.length > 0 && (
-                <span style={{ marginLeft: 6, background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 7px', fontSize: 9, fontWeight: 700 }}>{activeTags.length}</span>
-              )}
+              {activeTags.length > 0 && <span style={{ marginLeft: 6, background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 7px', fontSize: 9, fontWeight: 700 }}>{activeTags.length}</span>}
             </div>
             <button onClick={clearAll} style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear all</button>
           </div>
 
-          {/* Results count in sidebar */}
           <div style={{ padding: '10px 16px', background: '#F8FAFC', borderBottom: '1px solid #F0F4F8', textAlign: 'center' }}>
-            <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 14, fontWeight: 800, color: '#1565C0' }}>{filtered.length}</span>
+            <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 14, fontWeight: 800, color: '#1565C0' }}>{loading ? '...' : filtered.length}</span>
             <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 4 }}>cars match</span>
           </div>
 
           <SbSection title="Make" items={MAKES} filterKey="makes" />
 
-          {/* Model — only when 1 make selected */}
           {selectedMake && availableModels.length > 0 && (
             <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, fontFamily: 'Outfit, sans-serif' }}>Model</div>
@@ -277,50 +266,30 @@ export default function ListingsPage({ user }) {
 
           <SbSection title="Body Type" items={BODIES} filterKey="bodies" />
 
-          <RangeSection title="Budget (KSH)">
-            <DualSlider
-              minVal={minPrice} maxVal={maxPrice}
-              absMin={0} absMax={30000000} step={500000}
-              setMin={setMinPrice} setMax={setMaxPrice}
-              formatLabel={n => `${(n/1e6).toFixed(1)}M`}
-            />
-          </RangeSection>
+          <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 10 }}>Budget (KSH)</div>
+            <DualSlider minVal={minPrice} maxVal={maxPrice} absMin={0} absMax={30000000} step={500000} setMin={setMinPrice} setMax={setMaxPrice} formatLabel={n => `${(n/1e6).toFixed(1)}M`} />
+          </div>
 
-          <RangeSection title="Year">
-            <DualSlider
-              minVal={minYear} maxVal={maxYear}
-              absMin={1990} absMax={2025} step={1}
-              setMin={setMinYear} setMax={setMaxYear}
-              formatLabel={n => `${n}`}
-            />
-          </RangeSection>
+          <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 10 }}>Year</div>
+            <DualSlider minVal={minYear} maxVal={maxYear} absMin={1990} absMax={2025} step={1} setMin={setMinYear} setMax={setMaxYear} formatLabel={n => `${n}`} />
+          </div>
 
-          <RangeSection title="Mileage (km)">
-            <DualSlider
-              minVal={minKm} maxVal={maxKm}
-              absMin={0} absMax={300000} step={5000}
-              setMin={setMinKm} setMax={setMaxKm}
-              formatLabel={n => `${(n/1000).toFixed(0)}k km`}
-            />
-          </RangeSection>
+          <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 10 }}>Mileage (km)</div>
+            <DualSlider minVal={minKm} maxVal={maxKm} absMin={0} absMax={300000} step={5000} setMin={setMinKm} setMax={setMaxKm} formatLabel={n => `${(n/1000).toFixed(0)}k`} />
+          </div>
 
           <SbSection title="Fuel Type"    items={FUELS}  filterKey="fuels" />
           <SbSection title="Transmission" items={TRANS}  filterKey="trans" />
           <SbSection title="Drive Type"   items={DRIVES} filterKey="drives" />
         </aside>
 
-        {/* Main */}
         <main style={{ padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 18, fontWeight: 700, color: '#0A2540' }}>
-              {loading ? 'Loading...' : (
-                <>
-                  <span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars
-                  {activeTags.length > 0 && listings.length > 0 && (
-                    <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 400, marginLeft: 8 }}>of {listings.length} total</span>
-                  )}
-                </>
-              )}
+              {loading ? 'Loading...' : <><span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars{activeTags.length > 0 && listings.length > 0 && <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 400, marginLeft: 8 }}>of {listings.length} total</span>}</>}
               <span style={{ color: '#94A3B8', fontSize: 13, fontWeight: 400, fontFamily: 'DM Sans, sans-serif', marginLeft: 6 }}>in Kenya</span>
             </div>
             <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#fff' }}>
@@ -368,31 +337,21 @@ export default function ListingsPage({ user }) {
                   onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.1)' }}
                   onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
                   <div style={{ height: 180, background: '#EEF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                    {car.featured && (
-                      <span style={{ position: 'absolute', top: 8, left: 8, background: '#1565C0', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 100, textTransform: 'uppercase', fontFamily: 'Outfit, sans-serif', zIndex: 1 }}>⭐ Featured</span>
-                    )}
+                    {car.featured && <span style={{ position: 'absolute', top: 8, left: 8, background: '#1565C0', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 100, textTransform: 'uppercase', fontFamily: 'Outfit, sans-serif', zIndex: 1 }}>⭐ Featured</span>}
                     <button onClick={e => { e.stopPropagation(); setSaved(prev => { const n = new Set(prev); n.has(car.id) ? n.delete(car.id) : n.add(car.id); return n }) }}
                       style={{ position: 'absolute', top: 8, right: 8, width: 28, height: 28, background: 'rgba(255,255,255,.92)', borderRadius: '50%', border: 'none', cursor: 'pointer', fontSize: 14, color: saved.has(car.id) ? '#EF4444' : '#94A3B8', zIndex: 1 }}>
                       {saved.has(car.id) ? '♥' : '♡'}
                     </button>
                     {car.listing_photos?.[0]?.url
                       ? <img src={car.listing_photos[0].url} alt={`${car.year} ${car.make} ${car.model}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 40 }}>🚗</span>
-                          <span style={{ fontSize: 11, color: '#94A3B8' }}>No photos yet</span>
-                        </div>
+                      : <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}><span style={{ fontSize: 40 }}>🚗</span><span style={{ fontSize: 11, color: '#94A3B8' }}>No photos yet</span></div>
                     }
                   </div>
                   <div style={{ padding: 12 }}>
                     <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 17, fontWeight: 800, color: '#0A2540', marginBottom: 2 }}>{fmt(car.price)}</div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 8 }}>{car.year} {car.make} {car.model}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-                      {[
-                        car.mileage && `${Number(car.mileage).toLocaleString()} km`,
-                        car.fuel_type, car.transmission,
-                        car.engine_cc && `${car.engine_cc}cc`,
-                        car.body_type
-                      ].filter(Boolean).map((s, i) => (
+                      {[car.mileage && `${Number(car.mileage).toLocaleString()} km`, car.fuel_type, car.transmission, car.engine_cc && `${car.engine_cc}cc`, car.body_type].filter(Boolean).map((s, i) => (
                         <span key={i} style={{ fontSize: 10, color: '#94A3B8', padding: '2px 6px', background: '#F8FAFC', borderRadius: 100, border: '1px solid #E8EDF3' }}>{s}</span>
                       ))}
                     </div>
@@ -401,12 +360,8 @@ export default function ListingsPage({ user }) {
                       <a href={`https://wa.me/${(car.phone||'').replace(/\D/g,'')}?text=Hi, I'm interested in your ${car.year} ${car.make} ${car.model} on CarExpert Africa`}
                         target="_blank" rel="noopener noreferrer"
                         style={{ flex: 1, background: '#25D366', color: '#fff', border: 'none', padding: '7px 0', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}
-                        onClick={e => e.stopPropagation()}>
-                        WhatsApp
-                      </a>
-                      <Link to={`/listings/${car.id}`} style={{ flex: 1, background: '#F0F6FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '7px 0', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}>
-                        View Details
-                      </Link>
+                        onClick={e => e.stopPropagation()}>WhatsApp</a>
+                      <Link to={`/listings/${car.id}`} style={{ flex: 1, background: '#F0F6FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '7px 0', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}>View Details</Link>
                     </div>
                   </div>
                 </div>
