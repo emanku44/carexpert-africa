@@ -371,20 +371,121 @@ export default function HomePage({ user }) {
         <div style={{ fontFamily:'Outfit, sans-serif', fontSize:24, fontWeight:700, color:'#0A2540', marginBottom:20 }}>Browse by Body Style</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(6, 1fr)', gap:12 }}>
           {[
-            { t:'SUV', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M10 38 L10 28 L22 12 L88 12 L108 28 L108 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="8" y="28" width="104" height="14" rx="3" fill="#1565C0" opacity=".12"/><circle cx="28" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="28" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="90" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="90" cy="46" r="4" fill="#1565C0" opacity=".4"/><path d="M22 12 L30 24 L82 24 L88 12" stroke="#1565C0" strokeWidth="1.5" fill="#EEF5FF"/><line x1="55" y1="12" x2="55" y2="24" stroke="#1565C0" strokeWidth="1" opacity=".4"/></svg> },
-            { t:'Sedan', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M8 38 L8 32 L28 18 L72 16 L108 30 L108 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="6" y="30" width="106" height="10" rx="2" fill="#1565C0" opacity=".12"/><circle cx="28" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="28" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="90" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="90" cy="46" r="4" fill="#1565C0" opacity=".4"/><path d="M30 18 L34 28 L78 28 L72 16" stroke="#1565C0" strokeWidth="1.5" fill="#EEF5FF"/><line x1="54" y1="17" x2="54" y2="28" stroke="#1565C0" strokeWidth="1" opacity=".4"/></svg> },
-            { t:'Hatchback', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M10 38 L10 30 L30 14 L82 14 L106 30 L106 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="8" y="29" width="100" height="11" rx="2" fill="#1565C0" opacity=".12"/><circle cx="28" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="28" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="88" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="88" cy="46" r="4" fill="#1565C0" opacity=".4"/><path d="M30 14 L32 26 L82 26 L82 14" stroke="#1565C0" strokeWidth="1.5" fill="#EEF5FF"/><line x1="56" y1="14" x2="56" y2="26" stroke="#1565C0" strokeWidth="1" opacity=".4"/></svg> },
-            { t:'Minivan', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M8 38 L8 18 L20 12 L98 12 L110 22 L110 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="6" y="22" width="106" height="18" rx="2" fill="#1565C0" opacity=".1"/><circle cx="26" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="26" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="92" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="92" cy="46" r="4" fill="#1565C0" opacity=".4"/><line x1="20" y1="12" x2="20" y2="22" stroke="#1565C0" strokeWidth="1.5" opacity=".5"/><line x1="50" y1="12" x2="50" y2="22" stroke="#1565C0" strokeWidth="1" opacity=".4"/><line x1="75" y1="12" x2="75" y2="22" stroke="#1565C0" strokeWidth="1" opacity=".4"/></svg> },
-            { t:'Pickup', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M8 38 L8 28 L18 14 L58 14 L58 28 L108 28 L108 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="58" y="22" width="50" height="8" rx="1" fill="#1565C0" opacity=".08"/><path d="M18 14 L20 26 L56 26 L56 14" stroke="#1565C0" strokeWidth="1.5" fill="#EEF5FF"/><line x1="36" y1="14" x2="36" y2="26" stroke="#1565C0" strokeWidth="1" opacity=".4"/><circle cx="26" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="26" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="90" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="90" cy="46" r="4" fill="#1565C0" opacity=".4"/></svg> },
-            { t:'Coupe', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M6 38 L6 33 L30 16 L78 14 L110 32 L110 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="4" y="31" width="108" height="9" rx="2" fill="#1565C0" opacity=".12"/><circle cx="26" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="26" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="92" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="92" cy="46" r="4" fill="#1565C0" opacity=".4"/><path d="M32 16 L36 28 L76 28 L78 14" stroke="#1565C0" strokeWidth="1.5" fill="#EEF5FF"/></svg> },
+            { t:'SUV', svg:(
+              <svg viewBox="0 0 200 90" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:70}}>
+                <path d="M12 62 L12 38 Q12 35 15 33 L38 16 Q41 14 46 14 L148 14 Q153 14 157 17 L178 33 Q182 35 188 37 L188 62 Z" fill="#DBEAFE" stroke="#1565C0" strokeWidth="2" strokeLinejoin="round"/>
+                <path d="M46 14 L48 32 L148 32 L148 14 Z" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5" strokeLinejoin="round"/>
+                <line x1="97" y1="14" x2="97" y2="32" stroke="#93C5FD" strokeWidth="1.5"/>
+                <rect x="10" y="38" width="180" height="3" rx="1.5" fill="#93C5FD" opacity=".5"/>
+                <path d="M12 62 Q12 66 14 68 L186 68 Q188 66 188 62" fill="#DBEAFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="47" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="47" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="47" cy="70" r="3" fill="#1565C0"/>
+                <circle cx="153" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="153" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="153" cy="70" r="3" fill="#1565C0"/>
+                <rect x="10" y="55" width="10" height="7" rx="1" fill="#FCD34D" opacity=".8"/>
+                <rect x="180" y="55" width="10" height="7" rx="1" fill="#FCA5A5" opacity=".8"/>
+                <line x1="0" y1="86" x2="200" y2="86" stroke="#E2E8F0" strokeWidth="1.5"/>
+              </svg>
+            )},
+            { t:'Sedan', svg:(
+              <svg viewBox="0 0 200 90" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:70}}>
+                <path d="M8 62 L8 46 Q8 43 11 41 L32 28 Q38 22 55 20 L135 19 Q145 19 155 25 L182 42 Q187 44 192 47 L192 62 Z" fill="#DBEAFE" stroke="#1565C0" strokeWidth="2" strokeLinejoin="round"/>
+                <path d="M55 20 L58 35 L138 35 L135 19 Z" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5" strokeLinejoin="round"/>
+                <line x1="96" y1="19" x2="96" y2="35" stroke="#93C5FD" strokeWidth="1.5"/>
+                <rect x="6" y="44" width="188" height="3" rx="1.5" fill="#93C5FD" opacity=".5"/>
+                <circle cx="50" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="50" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="50" cy="70" r="3" fill="#1565C0"/>
+                <circle cx="152" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="152" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="152" cy="70" r="3" fill="#1565C0"/>
+                <rect x="8" y="54" width="10" height="7" rx="1" fill="#FCD34D" opacity=".8"/>
+                <rect x="182" y="54" width="10" height="7" rx="1" fill="#FCA5A5" opacity=".8"/>
+                <line x1="0" y1="86" x2="200" y2="86" stroke="#E2E8F0" strokeWidth="1.5"/>
+              </svg>
+            )},
+            { t:'Hatchback', svg:(
+              <svg viewBox="0 0 200 90" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:70}}>
+                <path d="M10 62 L10 42 Q10 39 13 37 L40 20 Q44 17 50 17 L148 17 Q153 17 158 21 L178 38 Q183 40 190 43 L190 62 Z" fill="#DBEAFE" stroke="#1565C0" strokeWidth="2" strokeLinejoin="round"/>
+                <path d="M50 17 L52 34 L150 34 L148 17 Z" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5" strokeLinejoin="round"/>
+                <line x1="100" y1="17" x2="100" y2="34" stroke="#93C5FD" strokeWidth="1.5"/>
+                <rect x="8" y="40" width="184" height="3" rx="1.5" fill="#93C5FD" opacity=".5"/>
+                <circle cx="50" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="50" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="50" cy="70" r="3" fill="#1565C0"/>
+                <circle cx="150" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="150" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="150" cy="70" r="3" fill="#1565C0"/>
+                <rect x="10" y="54" width="10" height="7" rx="1" fill="#FCD34D" opacity=".8"/>
+                <rect x="180" y="54" width="10" height="7" rx="1" fill="#FCA5A5" opacity=".8"/>
+                <line x1="0" y1="86" x2="200" y2="86" stroke="#E2E8F0" strokeWidth="1.5"/>
+              </svg>
+            )},
+            { t:'Minivan', svg:(
+              <svg viewBox="0 0 200 90" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:70}}>
+                <path d="M10 62 L10 22 Q10 18 14 16 L32 12 Q36 11 42 11 L158 11 Q164 11 170 14 L184 22 Q190 25 190 30 L190 62 Z" fill="#DBEAFE" stroke="#1565C0" strokeWidth="2" strokeLinejoin="round"/>
+                <path d="M38 11 L38 28 L168 28 L168 11" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5" strokeLinejoin="round"/>
+                <line x1="80" y1="11" x2="80" y2="28" stroke="#93C5FD" strokeWidth="1.5"/>
+                <line x1="122" y1="11" x2="122" y2="28" stroke="#93C5FD" strokeWidth="1.5"/>
+                <rect x="8" y="32" width="184" height="3" rx="1.5" fill="#93C5FD" opacity=".5"/>
+                <circle cx="48" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="48" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="48" cy="70" r="3" fill="#1565C0"/>
+                <circle cx="152" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="152" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="152" cy="70" r="3" fill="#1565C0"/>
+                <rect x="10" y="52" width="10" height="8" rx="1" fill="#FCD34D" opacity=".8"/>
+                <rect x="180" y="52" width="10" height="8" rx="1" fill="#FCA5A5" opacity=".8"/>
+                <line x1="0" y1="86" x2="200" y2="86" stroke="#E2E8F0" strokeWidth="1.5"/>
+              </svg>
+            )},
+            { t:'Pickup', svg:(
+              <svg viewBox="0 0 200 90" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:70}}>
+                <path d="M10 62 L10 38 Q10 35 13 33 L30 20 Q34 17 40 17 L98 17 L98 38 L190 38 L190 62 Z" fill="#DBEAFE" stroke="#1565C0" strokeWidth="2" strokeLinejoin="round"/>
+                <path d="M40 17 L42 34 L96 34 L96 17 Z" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5" strokeLinejoin="round"/>
+                <line x1="68" y1="17" x2="68" y2="34" stroke="#93C5FD" strokeWidth="1.5"/>
+                <rect x="100" y="20" width="88" height="3" rx="1.5" fill="#93C5FD" opacity=".4"/>
+                <rect x="100" y="38" width="2" height="24" fill="#1565C0" opacity=".3"/>
+                <rect x="190" y="20" width="2" height="42" fill="#1565C0" opacity=".3"/>
+                <rect x="100" y="20" width="92" height="2" fill="#1565C0" opacity=".3"/>
+                <circle cx="46" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="46" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="46" cy="70" r="3" fill="#1565C0"/>
+                <circle cx="156" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="156" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="156" cy="70" r="3" fill="#1565C0"/>
+                <rect x="10" y="52" width="10" height="7" rx="1" fill="#FCD34D" opacity=".8"/>
+                <rect x="180" y="52" width="10" height="7" rx="1" fill="#FCA5A5" opacity=".8"/>
+                <line x1="0" y1="86" x2="200" y2="86" stroke="#E2E8F0" strokeWidth="1.5"/>
+              </svg>
+            )},
+            { t:'Coupe', svg:(
+              <svg viewBox="0 0 200 90" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:70}}>
+                <path d="M8 62 L8 50 Q8 47 10 45 L28 35 Q34 26 55 22 L125 20 Q140 20 155 26 L180 40 Q188 44 192 48 L192 62 Z" fill="#DBEAFE" stroke="#1565C0" strokeWidth="2" strokeLinejoin="round"/>
+                <path d="M55 22 L60 37 L140 37 L125 20 Z" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5" strokeLinejoin="round"/>
+                <line x1="97" y1="20" x2="100" y2="37" stroke="#93C5FD" strokeWidth="1.5"/>
+                <rect x="6" y="47" width="188" height="3" rx="1.5" fill="#93C5FD" opacity=".5"/>
+                <circle cx="50" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="50" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="50" cy="70" r="3" fill="#1565C0"/>
+                <circle cx="152" cy="70" r="16" fill="#EFF6FF" stroke="#1565C0" strokeWidth="2.5"/>
+                <circle cx="152" cy="70" r="8" fill="#BFDBFE" stroke="#1565C0" strokeWidth="1.5"/>
+                <circle cx="152" cy="70" r="3" fill="#1565C0"/>
+                <rect x="8" y="55" width="10" height="6" rx="1" fill="#FCD34D" opacity=".8"/>
+                <rect x="182" y="55" width="10" height="6" rx="1" fill="#FCA5A5" opacity=".8"/>
+                <line x1="0" y1="86" x2="200" y2="86" stroke="#E2E8F0" strokeWidth="1.5"/>
+              </svg>
+            )},
           ].map(b => {
             const count = allListings.filter(l => l.body_type === b.t).length
             return (
               <div key={b.t} onClick={() => navigate(`/listings?body=${b.t}`)}
-                style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:'20px 12px 14px', textAlign:'center', cursor:'pointer', transition:'all .2s' }}
-                onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.12)' }}
-                onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
-                <div style={{ marginBottom:10 }}>{b.svg}</div>
+                style={{ background:'#F8FBFF', border:'1.5px solid #E8EDF3', borderRadius:14, padding:'18px 10px 14px', textAlign:'center', cursor:'pointer', transition:'all .2s' }}
+                onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.background='#EEF5FF'; e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.12)' }}
+                onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.background='#F8FBFF'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
+                <div style={{ marginBottom:8 }}>{b.svg}</div>
                 <div style={{ fontFamily:'Outfit, sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{b.t}</div>
                 <div style={{ fontSize:11, color:'#94A3B8' }}>{count > 0 ? `${count} cars` : 'Browse'}</div>
               </div>
