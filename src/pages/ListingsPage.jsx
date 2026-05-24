@@ -581,6 +581,7 @@ export default function ListingsPage({ user }) {
           )}
         </main>
       </div>
+      </div>
 
       {/* Save Search Modal */}
       {saveSearchOpen && (
