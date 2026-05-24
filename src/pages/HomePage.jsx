@@ -26,6 +26,11 @@ const CAR_MODELS = {
 function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, formatLabel }) {
   const trackRef = useRef(null)
   const dragging = useRef(null)
+  const minValRef = useRef(minVal)
+  const maxValRef = useRef(maxVal)
+
+  useEffect(() => { minValRef.current = minVal }, [minVal])
+  useEffect(() => { maxValRef.current = maxVal }, [maxVal])
 
   const toPercent = v => ((v - absMin) / (absMax - absMin)) * 100
   const fromPercent = pct => Math.round((absMin + (pct / 100) * (absMax - absMin)) / step) * step
@@ -38,28 +43,30 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
     return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100))
   }
 
+  const onMoveRef = useRef(null)
+  onMoveRef.current = e => {
+    if (e.cancelable) e.preventDefault()
+    const val = fromPercent(getPercFromEvent(e))
+    if (dragging.current === 'min') setMin(Math.min(val, maxValRef.current - step))
+    if (dragging.current === 'max') setMax(Math.max(val, minValRef.current + step))
+  }
+
+  const stableOnMove = useRef(e => onMoveRef.current(e)).current
+  const stableOnUp = useRef(() => {
+    dragging.current = null
+    window.removeEventListener('mousemove', stableOnMove)
+    window.removeEventListener('mouseup', stableOnUp)
+    window.removeEventListener('touchmove', stableOnMove)
+    window.removeEventListener('touchend', stableOnUp)
+  }).current
+
   const onMouseDown = handle => e => {
     e.preventDefault()
     dragging.current = handle
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-    window.addEventListener('touchmove', onMove, { passive: false })
-    window.addEventListener('touchend', onUp)
-  }
-
-  const onMove = e => {
-    if (e.cancelable) e.preventDefault()
-    const val = fromPercent(getPercFromEvent(e))
-    if (dragging.current === 'min') setMin(Math.min(val, maxVal - step))
-    if (dragging.current === 'max') setMax(Math.max(val, minVal + step))
-  }
-
-  const onUp = () => {
-    dragging.current = null
-    window.removeEventListener('mousemove', onMove)
-    window.removeEventListener('mouseup', onUp)
-    window.removeEventListener('touchmove', onMove)
-    window.removeEventListener('touchend', onUp)
+    window.addEventListener('mousemove', stableOnMove)
+    window.addEventListener('mouseup', stableOnUp)
+    window.addEventListener('touchmove', stableOnMove, { passive: false })
+    window.addEventListener('touchend', stableOnUp)
   }
 
   const minPct = toPercent(minVal)
@@ -84,93 +91,7 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
     </div>
   )
 }
-function DealersBar() {
-  const [dealers, setDealers] = useState([])
 
-  useEffect(() => {
-    supabase
-      .from('dealers')
-      .select('name, location')
-      .order('created_at', { ascending: true })
-      .then(({ data }) => setDealers(data || []))
-  }, [])
-
-  if (dealers.length === 0) return null
-
-  const items = [...dealers, ...dealers, ...dealers]
-
-  return (
-    <div style={{ background: '#0A2540', padding: '20px 0', overflow: 'hidden', marginTop: 48 }}>
-      <div style={{ textAlign: 'center', fontFamily: 'Outfit, sans-serif', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 14 }}>
-        Dealers We Work With
-      </div>
-      <div style={{ overflow: 'hidden', position: 'relative' }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to right, #0A2540, transparent)', zIndex: 2 }}/>
-        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to left, #0A2540, transparent)', zIndex: 2 }}/>
-        <div style={{ display: 'flex', animation: 'scroll-dealers 30s linear infinite', width: 'max-content' }}>
-          {items.map((d, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 32px', borderRight: '1px solid rgba(255,255,255,.08)', whiteSpace: 'nowrap' }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(77,166,255,.15)', border: '1px solid rgba(77,166,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Outfit, sans-serif', fontSize: 10, fontWeight: 800, color: '#4DA6FF', flexShrink: 0 }}>
-                {d.name[0]}
-              </div>
-              <div>
-                <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 700, color: '#fff' }}>{d.name}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)' }}>📍 {d.location}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <style>{`
-        @keyframes scroll-dealers {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-33.333%); }
-        }
-      `}</style>
-    </div>
-  )
-}
-  // Duplicate for seamless loop
-  const items = [...displayDealers, ...displayDealers, ...displayDealers]
-
-  return (
-    <div style={{ background: '#0A2540', padding: '20px 0', overflow: 'hidden', marginTop: 48 }}>
-      <div style={{ textAlign: 'center', fontFamily: 'Outfit, sans-serif', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 14 }}>
-        Dealers We Work With
-      </div>
-      <div style={{ overflow: 'hidden', position: 'relative' }}>
-        {/* Fade edges */}
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to right, #0A2540, transparent)', zIndex: 2 }}/>
-        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to left, #0A2540, transparent)', zIndex: 2 }}/>
-        <div style={{
-          display: 'flex', gap: 0,
-          animation: 'scroll-dealers 30s linear infinite',
-          width: 'max-content'
-        }}>
-          {items.map((d, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 32, padding: '0 32px', borderRight: '1px solid rgba(255,255,255,.08)', whiteSpace: 'nowrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(77,166,255,.15)', border: '1px solid rgba(77,166,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Outfit, sans-serif', fontSize: 10, fontWeight: 800, color: '#4DA6FF', flexShrink: 0 }}>
-                  {d.name[0]}
-                </div>
-                <div>
-                  <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 700, color: '#fff' }}>{d.name}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)' }}>📍 {d.location}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <style>{`
-        @keyframes scroll-dealers {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-33.333%); }
-        }
-      `}</style>
-    </div>
-  )
-}
 export default function HomePage({ user }) {
   const navigate = useNavigate()
   const [make, setMake]                 = useState('')
@@ -180,8 +101,8 @@ export default function HomePage({ user }) {
   const [transmission, setTransmission] = useState('')
   const [fuel, setFuel]                 = useState('')
   const [minPrice, setMinPrice]         = useState(0)
-  const [maxPrice, setMaxPrice]         = useState(30000000)
-  const [minYear, setMinYear]           = useState(1970)
+  const [maxPrice, setMaxPrice]         = useState(20000000)
+  const [minYear, setMinYear]           = useState(2000)
   const [maxYear, setMaxYear]           = useState(2025)
   const [minKm, setMinKm]               = useState(0)
   const [maxKm, setMaxKm]               = useState(300000)
@@ -231,8 +152,8 @@ export default function HomePage({ user }) {
     if (transmission)        p.set('transmission', transmission)
     if (fuel)                p.set('fuel', fuel)
     if (minPrice > 0)        p.set('minPrice', minPrice)
-    if (maxPrice < 30000000) p.set('maxPrice', maxPrice)
-    if (minYear > 1970)      p.set('minYear', minYear)
+    if (maxPrice < 20000000) p.set('maxPrice', maxPrice)
+    if (minYear > 2000)      p.set('minYear', minYear)
     if (maxYear < 2025)      p.set('maxYear', maxYear)
     if (minKm > 0)           p.set('minKm', minKm)
     if (maxKm < 300000)      p.set('maxKm', maxKm)
@@ -306,7 +227,7 @@ export default function HomePage({ user }) {
                 <label style={lbl}>Price Range (KSH)</label>
                 <DualSlider
                   minVal={minPrice} maxVal={maxPrice}
-                  absMin={0} absMax={30000000} step={500000}
+                  absMin={0} absMax={20000000} step={500000}
                   setMin={setMinPrice} setMax={setMaxPrice}
                   formatLabel={n => `${(n/1e6).toFixed(1)}M`}
                 />
@@ -353,7 +274,7 @@ export default function HomePage({ user }) {
                   <label style={lbl}>Year</label>
                   <DualSlider
                     minVal={minYear} maxVal={maxYear}
-                    absMin={1970} absMax={2025} step={1}
+                    absMin={2000} absMax={2025} step={1}
                     setMin={setMinYear} setMax={setMaxYear}
                     formatLabel={n => `${n}`}
                   />
@@ -449,19 +370,28 @@ export default function HomePage({ user }) {
       <div style={{ maxWidth:1200, margin:'0 auto', padding:'48px 24px 0' }}>
         <div style={{ fontFamily:'Outfit, sans-serif', fontSize:24, fontWeight:700, color:'#0A2540', marginBottom:20 }}>Browse by Body Style</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(6, 1fr)', gap:12 }}>
-          {BODY_TYPES.map(b => (
-            <div key={b.t} onClick={() => navigate(`/listings?body=${b.t}`)}
-              style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:'18px 12px', textAlign:'center', cursor:'pointer' }}>
-              <div style={{ fontFamily:'Outfit, sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{b.t}</div>
-              {allListings.filter(l => l.body_type === b.t).length > 0 &&
-                <div style={{ fontSize:11, color:'#94A3B8' }}>{allListings.filter(l => l.body_type === b.t).length} cars</div>
-              }
-            </div>
-          ))}
+          {[
+            { t:'SUV', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M10 38 L10 28 L22 12 L88 12 L108 28 L108 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="8" y="28" width="104" height="14" rx="3" fill="#1565C0" opacity=".12"/><circle cx="28" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="28" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="90" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="90" cy="46" r="4" fill="#1565C0" opacity=".4"/><path d="M22 12 L30 24 L82 24 L88 12" stroke="#1565C0" strokeWidth="1.5" fill="#EEF5FF"/><line x1="55" y1="12" x2="55" y2="24" stroke="#1565C0" strokeWidth="1" opacity=".4"/></svg> },
+            { t:'Sedan', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M8 38 L8 32 L28 18 L72 16 L108 30 L108 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="6" y="30" width="106" height="10" rx="2" fill="#1565C0" opacity=".12"/><circle cx="28" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="28" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="90" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="90" cy="46" r="4" fill="#1565C0" opacity=".4"/><path d="M30 18 L34 28 L78 28 L72 16" stroke="#1565C0" strokeWidth="1.5" fill="#EEF5FF"/><line x1="54" y1="17" x2="54" y2="28" stroke="#1565C0" strokeWidth="1" opacity=".4"/></svg> },
+            { t:'Hatchback', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M10 38 L10 30 L30 14 L82 14 L106 30 L106 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="8" y="29" width="100" height="11" rx="2" fill="#1565C0" opacity=".12"/><circle cx="28" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="28" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="88" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="88" cy="46" r="4" fill="#1565C0" opacity=".4"/><path d="M30 14 L32 26 L82 26 L82 14" stroke="#1565C0" strokeWidth="1.5" fill="#EEF5FF"/><line x1="56" y1="14" x2="56" y2="26" stroke="#1565C0" strokeWidth="1" opacity=".4"/></svg> },
+            { t:'Minivan', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M8 38 L8 18 L20 12 L98 12 L110 22 L110 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="6" y="22" width="106" height="18" rx="2" fill="#1565C0" opacity=".1"/><circle cx="26" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="26" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="92" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="92" cy="46" r="4" fill="#1565C0" opacity=".4"/><line x1="20" y1="12" x2="20" y2="22" stroke="#1565C0" strokeWidth="1.5" opacity=".5"/><line x1="50" y1="12" x2="50" y2="22" stroke="#1565C0" strokeWidth="1" opacity=".4"/><line x1="75" y1="12" x2="75" y2="22" stroke="#1565C0" strokeWidth="1" opacity=".4"/></svg> },
+            { t:'Pickup', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M8 38 L8 28 L18 14 L58 14 L58 28 L108 28 L108 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="58" y="22" width="50" height="8" rx="1" fill="#1565C0" opacity=".08"/><path d="M18 14 L20 26 L56 26 L56 14" stroke="#1565C0" strokeWidth="1.5" fill="#EEF5FF"/><line x1="36" y1="14" x2="36" y2="26" stroke="#1565C0" strokeWidth="1" opacity=".4"/><circle cx="26" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="26" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="90" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="90" cy="46" r="4" fill="#1565C0" opacity=".4"/></svg> },
+            { t:'Coupe', svg: <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:60}}><path d="M6 38 L6 33 L30 16 L78 14 L110 32 L110 38" stroke="#1565C0" strokeWidth="2.5" strokeLinejoin="round" fill="#EEF5FF"/><rect x="4" y="31" width="108" height="9" rx="2" fill="#1565C0" opacity=".12"/><circle cx="26" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="26" cy="46" r="4" fill="#1565C0" opacity=".4"/><circle cx="92" cy="46" r="9" fill="#1565C0" opacity=".2" stroke="#1565C0" strokeWidth="2"/><circle cx="92" cy="46" r="4" fill="#1565C0" opacity=".4"/><path d="M32 16 L36 28 L76 28 L78 14" stroke="#1565C0" strokeWidth="1.5" fill="#EEF5FF"/></svg> },
+          ].map(b => {
+            const count = allListings.filter(l => l.body_type === b.t).length
+            return (
+              <div key={b.t} onClick={() => navigate(`/listings?body=${b.t}`)}
+                style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:'20px 12px 14px', textAlign:'center', cursor:'pointer', transition:'all .2s' }}
+                onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.12)' }}
+                onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
+                <div style={{ marginBottom:10 }}>{b.svg}</div>
+                <div style={{ fontFamily:'Outfit, sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{b.t}</div>
+                <div style={{ fontSize:11, color:'#94A3B8' }}>{count > 0 ? `${count} cars` : 'Browse'}</div>
+              </div>
+            )
+          })}
         </div>
       </div>
-{/* Revolving Dealers Bar */}
-<DealersBar />
 
       {/* Dealer CTA */}
       <div style={{ maxWidth:1200, margin:'48px auto', padding:'0 24px' }}>
