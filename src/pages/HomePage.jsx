@@ -94,7 +94,7 @@ export default function HomePage({ user }) {
   const [transmission, setTransmission] = useState('')
   const [fuel, setFuel]                 = useState('')
   const [minPrice, setMinPrice]         = useState(0)
-  const [maxPrice, setMaxPrice]         = useState(20000000)
+  const [maxPrice, setMaxPrice]         = useState(30000000)
   const [minYear, setMinYear]           = useState(2000)
   const [maxYear, setMaxYear]           = useState(2025)
   const [minKm, setMinKm]               = useState(0)
@@ -145,8 +145,8 @@ export default function HomePage({ user }) {
     if (transmission)        p.set('transmission', transmission)
     if (fuel)                p.set('fuel', fuel)
     if (minPrice > 0)        p.set('minPrice', minPrice)
-    if (maxPrice < 20000000) p.set('maxPrice', maxPrice)
-    if (minYear > 2000)      p.set('minYear', minYear)
+    if (maxPrice < 30000000) p.set('maxPrice', maxPrice)
+    if (minYear > 1970)      p.set('minYear', minYear)
     if (maxYear < 2025)      p.set('maxYear', maxYear)
     if (minKm > 0)           p.set('minKm', minKm)
     if (maxKm < 300000)      p.set('maxKm', maxKm)
@@ -220,7 +220,7 @@ export default function HomePage({ user }) {
                 <label style={lbl}>Price Range (KSH)</label>
                 <DualSlider
                   minVal={minPrice} maxVal={maxPrice}
-                  absMin={0} absMax={20000000} step={500000}
+                  absMin={0} absMax={30000000} step={500000}
                   setMin={setMinPrice} setMax={setMaxPrice}
                   formatLabel={n => `${(n/1e6).toFixed(1)}M`}
                 />
@@ -267,7 +267,7 @@ export default function HomePage({ user }) {
                   <label style={lbl}>Year</label>
                   <DualSlider
                     minVal={minYear} maxVal={maxYear}
-                    absMin={2000} absMax={2025} step={1}
+                    absMin={1970} absMax={2025} step={1}
                     setMin={setMinYear} setMax={setMaxYear}
                     formatLabel={n => `${n}`}
                   />
