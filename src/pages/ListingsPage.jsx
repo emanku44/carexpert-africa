@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { supabase } from '../lib/supabase'
@@ -9,7 +9,90 @@ const FUELS = ['Petrol','Diesel','Hybrid','Electric','LPG']
 const TRANS = ['Automatic','Manual','CVT']
 const DRIVES = ['AWD','4WD','FWD','RWD','4x4']
 
+const CAR_MODELS = {
+  Toyota: ['Allion','Alphard','Camry','Corolla','Crown','Fielder','Fortuner','Harrier','Hiace','Hilux','Land Cruiser 200','Land Cruiser 300','Land Cruiser Prado 120','Land Cruiser Prado 150','Mark X','Noah','Premio','Probox','RAV4','Rush','Succeed','Vanguard','Vellfire','Voxy','Wish'],
+  Nissan: ['Caravan','Elgrand','Juke','March','Murano','Navara','Note','Patrol','Qashqai','Serena','Sylphy','Teana','Tiida','Urvan','X-Trail'],
+  Mazda: ['Atenza','Axela','BT-50','CX-3','CX-5','CX-7','CX-9','Demio','MPV'],
+  Subaru: ['Forester','Impreza','Legacy','Outback','Tribeca','WRX','XV'],
+  Mitsubishi: ['Colt','Eclipse Cross','Galant','L200','Lancer','Montero','Outlander','Pajero','Pajero Mini'],
+  BMW: ['1 Series','2 Series','3 Series','5 Series','7 Series','X1','X3','X5','X6'],
+  'Mercedes-Benz': ['A-Class','B-Class','C-Class','E-Class','GLC','GLE','GLS','GL','ML','S-Class'],
+  Audi: ['A3','A4','A6','Q3','Q5','Q7','TT'],
+  Volkswagen: ['Amarok','Golf','Passat','Polo','Tiguan','Touareg','Transporter'],
+  Honda: ['Accord','CR-V','Civic','Fit','Freed','HR-V','Jazz','Odyssey','Pilot','StepWagon','Stream'],
+  Hyundai: ['Creta','Elantra','Santa Fe','Tucson','i10','i20','ix35'],
+  Kia: ['Carnival','Cerato','Picanto','Rio','Sorento','Sportage'],
+  Ford: ['EcoSport','Everest','Explorer','Fusion','Mustang','Ranger'],
+  'Land Rover': ['Defender','Discovery','Discovery Sport','Freelander','Range Rover','Range Rover Evoque','Range Rover Sport'],
+  Lexus: ['GS','GX','IS','LS','LX','NX','RX','UX'],
+  Isuzu: ['D-Max','MU-X','Trooper'],
+  Suzuki: ['Alto','Baleno','Ertiga','Escudo','Grand Vitara','Jimny','Swift','Vitara'],
+  Porsche: ['911','Cayenne','Macan','Panamera'],
+}
+
 const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
+
+function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, formatLabel }) {
+  const trackRef = useRef(null)
+  const dragging = useRef(null)
+
+  const toPercent = v => ((v - absMin) / (absMax - absMin)) * 100
+  const fromPercent = pct => Math.round((absMin + (pct / 100) * (absMax - absMin)) / step) * step
+
+  const getPercFromEvent = e => {
+    const track = trackRef.current
+    if (!track) return 0
+    const rect = track.getBoundingClientRect()
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX
+    return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100))
+  }
+
+  const onMouseDown = handle => e => {
+    e.preventDefault()
+    dragging.current = handle
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onUp)
+  }
+
+  const onMove = e => {
+    if (e.cancelable) e.preventDefault()
+    const val = fromPercent(getPercFromEvent(e))
+    if (dragging.current === 'min') setMin(Math.min(val, maxVal - step))
+    if (dragging.current === 'max') setMax(Math.max(val, minVal + step))
+  }
+
+  const onUp = () => {
+    dragging.current = null
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+    window.removeEventListener('touchmove', onMove)
+    window.removeEventListener('touchend', onUp)
+  }
+
+  const minPct = toPercent(minVal)
+  const maxPct = toPercent(maxVal)
+
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+        <span style={{ fontSize:11, fontWeight:700, color:'#1565C0' }}>{formatLabel(minVal)}</span>
+        <span style={{ fontSize:11, fontWeight:700, color:'#1565C0' }}>{formatLabel(maxVal)}</span>
+      </div>
+      <div ref={trackRef} style={{ position:'relative', height:6, background:'#E2E8F0', borderRadius:100, cursor:'pointer', userSelect:'none', margin:'0 9px' }}>
+        <div style={{ position:'absolute', left:`${minPct}%`, right:`${100-maxPct}%`, top:0, height:'100%', background:'#1565C0', borderRadius:100 }}/>
+        <div onMouseDown={onMouseDown('min')} onTouchStart={onMouseDown('min')}
+          style={{ position:'absolute', left:`${minPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:18, height:18, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
+        <div onMouseDown={onMouseDown('max')} onTouchStart={onMouseDown('max')}
+          style={{ position:'absolute', left:`${maxPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:18, height:18, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
+      </div>
+      <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:6 }}>
+        <span>{formatLabel(absMin)}</span><span>{formatLabel(absMax)}</span>
+      </div>
+    </div>
+  )
+}
 
 export default function ListingsPage({ user }) {
   const navigate = useNavigate()
@@ -35,9 +118,7 @@ export default function ListingsPage({ user }) {
   const [selectedModel, setSelectedModel] = useState('')
   const [saved, setSaved]       = useState(new Set())
 
-  useEffect(() => {
-    fetchListings()
-  }, [])
+  useEffect(() => { fetchListings() }, [])
 
   const fetchListings = async () => {
     setLoading(true)
@@ -59,21 +140,26 @@ export default function ListingsPage({ user }) {
     })
   }
 
-const clearAll = () => {
-  setChecks({ makes: new Set(), bodies: new Set(), fuels: new Set(), trans: new Set(), drives: new Set() })
-  setSelectedModel('')
-  setMinPrice(0); setMaxPrice(30000000)
-  setMinYear(1990); setMaxYear(2025)
-  setMinKm(0); setMaxKm(300000)
-}
+  const clearAll = () => {
+    setChecks({ makes: new Set(), bodies: new Set(), fuels: new Set(), trans: new Set(), drives: new Set() })
+    setSelectedModel('')
+    setMinPrice(0); setMaxPrice(30000000)
+    setMinYear(1990); setMaxYear(2025)
+    setMinKm(0); setMaxKm(300000)
+  }
+
+  // count helpers
+  const countFor = (field, val) => listings.filter(l => l[field] === val).length
+  const countForMake = make => listings.filter(l => l.make === make).length
+  const countForModel = (make, model) => listings.filter(l => l.make === make && l.model === model).length
 
   const filtered = listings.filter(c => {
-    if (checks.makes.size  && !checks.makes.has(c.make))       return false
-    if (selectedModel && c.model !== selectedModel) return false
-    if (checks.bodies.size && !checks.bodies.has(c.body_type)) return false
-    if (checks.fuels.size  && !checks.fuels.has(c.fuel_type))  return false
-    if (checks.trans.size  && !checks.trans.has(c.transmission)) return false
-    if (checks.drives.size && !checks.drives.has(c.drive_type)) return false
+    if (checks.makes.size  && !checks.makes.has(c.make))         return false
+    if (selectedModel && c.model !== selectedModel)               return false
+    if (checks.bodies.size && !checks.bodies.has(c.body_type))   return false
+    if (checks.fuels.size  && !checks.fuels.has(c.fuel_type))    return false
+    if (checks.trans.size  && !checks.trans.has(c.transmission))  return false
+    if (checks.drives.size && !checks.drives.has(c.drive_type))  return false
     if (c.price < minPrice || c.price > maxPrice) return false
     if (c.year  < minYear  || c.year  > maxYear)  return false
     if (c.mileage < minKm  || c.mileage > maxKm)  return false
@@ -91,70 +177,60 @@ const clearAll = () => {
     ...[...checks.bodies].map(v => ({ label: v, clear: () => toggleCheck('bodies', v) })),
     ...[...checks.fuels].map(v => ({ label: v, clear: () => toggleCheck('fuels', v) })),
     ...[...checks.trans].map(v => ({ label: v, clear: () => toggleCheck('trans', v) })),
+    ...(selectedModel ? [{ label: selectedModel, clear: () => setSelectedModel('') }] : []),
     ...(minPrice > 0 || maxPrice < 30000000 ? [{ label: `KSH ${(minPrice/1e6).toFixed(1)}M – ${(maxPrice/1e6).toFixed(1)}M`, clear: () => { setMinPrice(0); setMaxPrice(30000000) } }] : []),
     ...(minYear > 1990 || maxYear < 2025 ? [{ label: `${minYear} – ${maxYear}`, clear: () => { setMinYear(1990); setMaxYear(2025) } }] : []),
     ...(minKm > 0 || maxKm < 300000 ? [{ label: `${minKm.toLocaleString()} – ${maxKm.toLocaleString()} km`, clear: () => { setMinKm(0); setMaxKm(300000) } }] : []),
   ]
 
   const SbSection = ({ title, items, filterKey }) => {
-  const [open, setOpen] = useState(false)
-  const activeCount = checks[filterKey].size
-  return (
-    <div style={{ borderTop: '1px solid #F5F7FA' }}>
-      <div onClick={() => setOpen(!open)}
-        style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif' }}>{title}</span>
-          {activeCount > 0 && (
-            <span style={{ background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 6px', fontSize: 9, fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>{activeCount}</span>
-          )}
+    const [open, setOpen] = useState(false)
+    const activeCount = checks[filterKey].size
+    const fieldMap = { makes:'make', bodies:'body_type', fuels:'fuel_type', trans:'transmission', drives:'drive_type' }
+    return (
+      <div style={{ borderTop: '1px solid #F5F7FA' }}>
+        <div onClick={() => setOpen(!open)}
+          style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif' }}>{title}</span>
+            {activeCount > 0 && (
+              <span style={{ background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 6px', fontSize: 9, fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>{activeCount}</span>
+            )}
+          </div>
+          <span style={{ color: '#94A3B8', fontSize: 12, display: 'inline-block', transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
         </div>
-        <span style={{ color: '#94A3B8', fontSize: 12, transition: 'transform .2s', display: 'inline-block', transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
+        {open && (
+          <div style={{ padding: '0 16px 12px' }}>
+            {items.map(item => {
+              const field = fieldMap[filterKey]
+              const count = field ? countFor(field, item) : 0
+              const isChecked = checks[filterKey].has(item)
+              return (
+                <div key={item} onClick={() => toggleCheck(filterKey, item)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, cursor: 'pointer' }}>
+                  <div style={{ width: 14, height: 14, border: `1.5px solid ${isChecked ? '#1565C0' : '#CBD5E1'}`, borderRadius: 3, background: isChecked ? '#1565C0' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 9, color: '#fff' }}>
+                    {isChecked ? '✓' : ''}
+                  </div>
+                  <span style={{ fontSize: 12, color: '#475569', fontWeight: 500, flex: 1 }}>{item}</span>
+                  {count > 0 && <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>({count})</span>}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
-      {open && (
-        <div style={{ padding: '0 16px 12px' }}>
-          {items.map(item => (
-            <div key={item} onClick={() => toggleCheck(filterKey, item)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, cursor: 'pointer' }}>
-              <div style={{ width: 14, height: 14, border: `1.5px solid ${checks[filterKey].has(item) ? '#1565C0' : '#CBD5E1'}`, borderRadius: 3, background: checks[filterKey].has(item) ? '#1565C0' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 9, color: '#fff' }}>
-                {checks[filterKey].has(item) ? '✓' : ''}
-              </div>
-              <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>
-                {item}
-                {(() => {
-                  const fieldMap = { makes:'make', bodies:'body_type', fuels:'fuel_type', trans:'transmission', drives:'drive_type' }
-                  const field = fieldMap[filterKey]
-                  const count = field ? listings.filter(l => l[field] === item).length : 0
-                  return count > 0 ? <span style={{ color:'#94A3B8', fontSize:11, marginLeft:4 }}>({count})</span> : null
-                })()}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+    )
+  }
+
+  const RangeSection = ({ title, children }) => (
+    <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 10 }}>{title}</div>
+      {children}
     </div>
   )
-}
 
-  const RangeSection = ({ title, min, max, absMin, absMax, setMin, setMax, format }) => (
-  <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
-    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-      <span style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif' }}>{title}</span>
-      <span style={{ fontSize: 11, fontWeight: 700, color: '#1565C0', fontFamily: 'Outfit, sans-serif' }}>
-        {format ? format(min) : min} – {format ? format(max) : max}
-      </span>
-    </div>
-    <input type="range" min={absMin} max={absMax} value={min}
-      onChange={e => setMin(Math.min(Number(e.target.value), max - 1))}
-      style={{ width: '100%', accentColor: '#1565C0', marginBottom: 4 }} />
-    <input type="range" min={absMin} max={absMax} value={max}
-      onChange={e => setMax(Math.max(Number(e.target.value), min + 1))}
-      style={{ width: '100%', accentColor: '#1565C0' }} />
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#CBD5E1', marginTop: 4 }}>
-      <span>{format ? format(absMin) : absMin}</span>
-      <span>{format ? format(absMax) : absMax}</span>
-    </div>
-  </div>
-)
+  const selectedMake = checks.makes.size === 1 ? [...checks.makes][0] : null
+  const availableModels = selectedMake && CAR_MODELS[selectedMake] ? CAR_MODELS[selectedMake] : []
 
   return (
     <div style={{ fontFamily: 'DM Sans, sans-serif', background: '#F7F9FC', minHeight: '100vh' }}>
@@ -167,55 +243,67 @@ const clearAll = () => {
         {/* Sidebar */}
         <aside style={{ background: '#fff', borderRight: '1px solid #E8EDF3', overflowY: 'auto' }}>
           <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F0F4F8', position: 'sticky', top: 0, background: '#fff', zIndex: 2 }}>
-            <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#0A2540' }}>Filters</span>
-            <button onClick={clearAll} style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>✕ Clear all</button>
+            <div>
+              <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#0A2540' }}>Filters</span>
+              {activeTags.length > 0 && (
+                <span style={{ marginLeft: 6, background: '#1565C0', color: '#fff', borderRadius: 100, padding: '1px 7px', fontSize: 9, fontWeight: 700 }}>{activeTags.length}</span>
+              )}
+            </div>
+            <button onClick={clearAll} style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear all</button>
           </div>
+
+          {/* Results count in sidebar */}
+          <div style={{ padding: '10px 16px', background: '#F8FAFC', borderBottom: '1px solid #F0F4F8', textAlign: 'center' }}>
+            <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 14, fontWeight: 800, color: '#1565C0' }}>{filtered.length}</span>
+            <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 4 }}>cars match</span>
+          </div>
+
           <SbSection title="Make" items={MAKES} filterKey="makes" />
 
-{checks.makes.size === 1 && (() => {
-  const selectedMake = [...checks.makes][0]
-  const CAR_MODELS = {
-    Toyota: ['Allion','Alphard','Camry','Corolla','Crown','Fielder','Fortuner','Harrier','Hiace','Hilux','Land Cruiser 200','Land Cruiser 300','Land Cruiser Prado 120','Land Cruiser Prado 150','Mark X','Noah','Premio','Probox','RAV4','Rush','Succeed','Vanguard','Vellfire','Voxy','Wish'],
-    Nissan: ['Caravan','Elgrand','Juke','March','Murano','Navara','Note','Patrol','Qashqai','Serena','Sylphy','Teana','Tiida','Urvan','X-Trail'],
-    Mazda: ['Atenza','Axela','BT-50','CX-3','CX-5','CX-7','CX-9','Demio','MPV'],
-    Subaru: ['Forester','Impreza','Legacy','Outback','Tribeca','WRX','XV'],
-    Mitsubishi: ['Colt','Eclipse Cross','Galant','L200','Lancer','Montero','Outlander','Pajero','Pajero Mini'],
-    BMW: ['1 Series','2 Series','3 Series','5 Series','7 Series','X1','X3','X5','X6'],
-    'Mercedes-Benz': ['A-Class','B-Class','C-Class','E-Class','GLC','GLE','GLS','GL','ML','S-Class'],
-    Audi: ['A3','A4','A6','Q3','Q5','Q7','TT'],
-    Volkswagen: ['Amarok','Golf','Passat','Polo','Tiguan','Touareg','Transporter'],
-    Honda: ['Accord','CR-V','Civic','Fit','Freed','HR-V','Jazz','Odyssey','Pilot','StepWagon','Stream'],
-    Hyundai: ['Creta','Elantra','Santa Fe','Tucson','i10','i20','ix35'],
-    Kia: ['Carnival','Cerato','Picanto','Rio','Sorento','Sportage'],
-    Ford: ['EcoSport','Everest','Explorer','Fusion','Mustang','Ranger'],
-    'Land Rover': ['Defender','Discovery','Discovery Sport','Freelander','Range Rover','Range Rover Evoque','Range Rover Sport'],
-    Lexus: ['GS','GX','IS','LS','LX','NX','RX','UX'],
-    Isuzu: ['D-Max','MU-X','Trooper'],
-    Suzuki: ['Alto','Baleno','Ertiga','Escudo','Grand Vitara','Jimny','Swift','Vitara'],
-    Porsche: ['911','Cayenne','Macan','Panamera'],
-  }
-  const allModels = CAR_MODELS[selectedMake] || []
-  const liveCounts = {}
-  listings.filter(l => l.make === selectedMake).forEach(l => {
-    if (l.model) liveCounts[l.model] = (liveCounts[l.model] || 0) + 1
-  })
-  return (
-    <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, fontFamily: 'Outfit, sans-serif' }}>Model</div>
-      <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
-        style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
-        <option value="">All {selectedMake} Models</option>
-        {allModels.map(m => (
-          <option key={m} value={m}>{m}{liveCounts[m] ? ` (${liveCounts[m]})` : ''}</option>
-        ))}
-      </select>
-    </div>
-  )
-})()}
-          <SbSection title="Body Type"    items={BODIES} filterKey="bodies" />
-          <RangeSection title="Budget (KSH)" min={minPrice} max={maxPrice} absMin={0} absMax={30000000} setMin={setMinPrice} setMax={setMaxPrice} format={n => `${(n/1e6).toFixed(1)}M`} />
-          <RangeSection title="Year"      min={minYear}  max={maxYear}  absMin={1990} absMax={2025} setMin={setMinYear}  setMax={setMaxYear} />
-          <RangeSection title="Mileage (km)" min={minKm} max={maxKm} absMin={0} absMax={300000} setMin={setMinKm} setMax={setMaxKm} format={n => n.toLocaleString()} />
+          {/* Model — only when 1 make selected */}
+          {selectedMake && availableModels.length > 0 && (
+            <div style={{ borderTop: '1px solid #F5F7FA', padding: '12px 16px' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 8, fontFamily: 'Outfit, sans-serif' }}>Model</div>
+              <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+                <option value="">All {selectedMake} ({countForMake(selectedMake)})</option>
+                {availableModels.map(m => {
+                  const count = countForModel(selectedMake, m)
+                  return <option key={m} value={m}>{m}{count > 0 ? ` (${count})` : ''}</option>
+                })}
+              </select>
+            </div>
+          )}
+
+          <SbSection title="Body Type" items={BODIES} filterKey="bodies" />
+
+          <RangeSection title="Budget (KSH)">
+            <DualSlider
+              minVal={minPrice} maxVal={maxPrice}
+              absMin={0} absMax={30000000} step={500000}
+              setMin={setMinPrice} setMax={setMaxPrice}
+              formatLabel={n => `${(n/1e6).toFixed(1)}M`}
+            />
+          </RangeSection>
+
+          <RangeSection title="Year">
+            <DualSlider
+              minVal={minYear} maxVal={maxYear}
+              absMin={1990} absMax={2025} step={1}
+              setMin={setMinYear} setMax={setMaxYear}
+              formatLabel={n => `${n}`}
+            />
+          </RangeSection>
+
+          <RangeSection title="Mileage (km)">
+            <DualSlider
+              minVal={minKm} maxVal={maxKm}
+              absMin={0} absMax={300000} step={5000}
+              setMin={setMinKm} setMax={setMaxKm}
+              formatLabel={n => `${(n/1000).toFixed(0)}k km`}
+            />
+          </RangeSection>
+
           <SbSection title="Fuel Type"    items={FUELS}  filterKey="fuels" />
           <SbSection title="Transmission" items={TRANS}  filterKey="trans" />
           <SbSection title="Drive Type"   items={DRIVES} filterKey="drives" />
@@ -225,7 +313,15 @@ const clearAll = () => {
         <main style={{ padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 18, fontWeight: 700, color: '#0A2540' }}>
-              {loading ? 'Loading...' : `${filtered.length} Cars`} <span style={{ color: '#94A3B8', fontSize: 13, fontWeight: 400, fontFamily: 'DM Sans, sans-serif' }}>in Kenya</span>
+              {loading ? 'Loading...' : (
+                <>
+                  <span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars
+                  {activeTags.length > 0 && listings.length > 0 && (
+                    <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 400, marginLeft: 8 }}>of {listings.length} total</span>
+                  )}
+                </>
+              )}
+              <span style={{ color: '#94A3B8', fontSize: 13, fontWeight: 400, fontFamily: 'DM Sans, sans-serif', marginLeft: 6 }}>in Kenya</span>
             </div>
             <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#fff' }}>
               <option value="newest">Newest First</option>
@@ -271,8 +367,6 @@ const clearAll = () => {
                 <div key={car.id} style={{ background: '#fff', border: '1.5px solid #E8EDF3', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', transition: 'all .2s' }}
                   onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.1)' }}
                   onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
-
-                  {/* Photo */}
                   <div style={{ height: 180, background: '#EEF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                     {car.featured && (
                       <span style={{ position: 'absolute', top: 8, left: 8, background: '#1565C0', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 100, textTransform: 'uppercase', fontFamily: 'Outfit, sans-serif', zIndex: 1 }}>⭐ Featured</span>
@@ -289,15 +383,13 @@ const clearAll = () => {
                         </div>
                     }
                   </div>
-
                   <div style={{ padding: 12 }}>
                     <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 17, fontWeight: 800, color: '#0A2540', marginBottom: 2 }}>{fmt(car.price)}</div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 8 }}>{car.year} {car.make} {car.model}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
                       {[
                         car.mileage && `${Number(car.mileage).toLocaleString()} km`,
-                        car.fuel_type,
-                        car.transmission,
+                        car.fuel_type, car.transmission,
                         car.engine_cc && `${car.engine_cc}cc`,
                         car.body_type
                       ].filter(Boolean).map((s, i) => (
