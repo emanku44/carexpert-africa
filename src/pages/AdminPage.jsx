@@ -37,7 +37,7 @@ function ListingRow({ listing, onApprove, onDecline, onFeatured }) {
   const borderColor = listing.status==='approved'?'#16A34A':listing.status==='declined'?'#EF4444':'#D97706'
   return (
     <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderLeft:`4px solid ${borderColor}`, borderRadius:12, marginBottom:10, overflow:'hidden' }}>
-      <div style={{ display:'grid', gridTemplateColumns:'72px 1fr auto', gap:14, padding:14, alignItems:'center', cursor:'pointer' }} onClick={() => setExpanded(!expanded)}>
+      <div className="listing-row-grid" style={{ display:'grid', gridTemplateColumns:'60px 1fr auto', gap:10, padding:12, alignItems:'start', cursor:'pointer' }} onClick={() => setExpanded(!expanded)}>
         <div style={{ width:72, height:50, borderRadius:8, background:'#EEF5FF', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
           {listing.listing_photos?.[0]?.url ? <img src={listing.listing_photos[0].url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <span style={{ fontSize:11, color:'#94A3B8', fontWeight:600 }}>No photo</span>}
         </div>
@@ -122,9 +122,9 @@ function UsersTab() {
   const filtered = users.filter(u => !search || u.email?.toLowerCase().includes(search.toLowerCase()) || u.full_name?.toLowerCase().includes(search.toLowerCase()))
   return (
     <div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-        <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540' }}>All Users</h2>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by email or name..." style={{ padding:'8px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, outline:'none', background:'#fff', width:240 }}/>
+      <div className="admin-header" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540', margin:0 }}>All Users</h2>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." className="admin-search" style={{ padding:'8px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, outline:'none', background:'#fff', width:240 }}/>
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:18 }}>
         <StatCard icon="👤" number={users.length} label="Total Users" color="#1565C0"/>
@@ -133,12 +133,12 @@ function UsersTab() {
       </div>
       {loading ? <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading users...</div> : (
         <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'40px 1fr 160px 110px 100px', padding:'10px 16px', background:'#F8FAFC', borderBottom:'1px solid #E8EDF3' }}>
+          <div className="users-table-header" style={{ display:'grid', gridTemplateColumns:'40px 1fr 160px 110px 100px', padding:'10px 16px', background:'#F8FAFC', borderBottom:'1px solid #E8EDF3' }}>
             {['','User','Joined','Role','Status'].map((h,i) => <div key={i} style={{ fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.5px' }}>{h}</div>)}
           </div>
           {filtered.length===0 ? <div style={{ textAlign:'center', padding:32, color:'#94A3B8', fontSize:13 }}>No users found.</div>
            : filtered.map((u,i) => (
-            <div key={u.id} style={{ display:'grid', gridTemplateColumns:'40px 1fr 160px 110px 100px', padding:'12px 16px', borderBottom:'1px solid #F5F7FA', alignItems:'center', background:i%2===0?'#fff':'#FAFBFC' }}>
+            <div key={u.id} className="users-table-row" style={{ display:'grid', gridTemplateColumns:'40px 1fr 160px 110px 100px', padding:'12px 16px', borderBottom:'1px solid #F5F7FA', alignItems:'center', background:i%2===0?'#fff':'#FAFBFC' }}>
               <div style={{ width:28, height:28, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:11, fontWeight:700, color:'#fff' }}>{u.email?.[0]?.toUpperCase()||'?'}</div>
               <div><div style={{ fontSize:13, fontWeight:600, color:'#0A2540' }}>{u.full_name||'—'}</div><div style={{ fontSize:11, color:'#94A3B8' }}>{u.email}</div></div>
               <div style={{ fontSize:12, color:'#64748B' }}>{new Date(u.created_at).toLocaleDateString('en-GB')}</div>
@@ -165,9 +165,9 @@ function DealersTab({ listings }) {
   const filtered = dealers.filter(d=>!search||d.name.toLowerCase().includes(search.toLowerCase()))
   return (
     <div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-        <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540' }}>Dealers and Sellers</h2>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search dealers..." style={{ padding:'8px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, outline:'none', background:'#fff', width:240 }}/>
+      <div className="admin-header" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540', margin:0 }}>Dealers and Sellers</h2>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." className="admin-search" style={{ padding:'8px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, outline:'none', background:'#fff', width:240 }}/>
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:18 }}>
         <StatCard icon="🏢" number={dealers.length} label="Active Sellers" color="#1565C0"/>
@@ -175,12 +175,12 @@ function DealersTab({ listings }) {
         <StatCard icon="💰" number={dealers.filter(d=>d.count>=3).length} label="Power Sellers (3+ listings)" color="#D97706"/>
       </div>
       <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 140px 120px 160px', padding:'10px 16px', background:'#F8FAFC', borderBottom:'1px solid #E8EDF3' }}>
+        <div className="dealers-table-header" style={{ display:'grid', gridTemplateColumns:'1fr 140px 120px 160px', padding:'10px 16px', background:'#F8FAFC', borderBottom:'1px solid #E8EDF3' }}>
           {['Seller','Location','Listings','Inventory Value'].map(h => <div key={h} style={{ fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.5px' }}>{h}</div>)}
         </div>
         {filtered.length===0 ? <div style={{ textAlign:'center', padding:32, color:'#94A3B8', fontSize:13 }}>No dealers yet.</div>
          : filtered.map((d,i) => (
-          <div key={d.name} style={{ display:'grid', gridTemplateColumns:'1fr 140px 120px 160px', padding:'12px 16px', borderBottom:'1px solid #F5F7FA', alignItems:'center', background:i%2===0?'#fff':'#FAFBFC' }}>
+          <div key={d.name} className="dealers-table-row" style={{ display:'grid', gridTemplateColumns:'1fr 140px 120px 160px', padding:'12px 16px', borderBottom:'1px solid #F5F7FA', alignItems:'center', background:i%2===0?'#fff':'#FAFBFC' }}>
             <div><div style={{ fontSize:13, fontWeight:600, color:'#0A2540' }}>{d.name}</div><div style={{ fontSize:11, color:'#94A3B8' }}>{d.phone||'—'}</div></div>
             <div style={{ fontSize:12, color:'#64748B' }}>{d.location||'—'}</div>
             <div><span style={{ fontSize:13, fontWeight:700, color:'#1565C0', fontFamily:'Outfit,sans-serif' }}>{d.count}</span><span style={{ fontSize:11, color:'#94A3B8' }}> listing{d.count!==1?'s':''}</span></div>
@@ -278,14 +278,22 @@ const ADMIN_MOBILE_CSS = `
   @media (max-width: 768px) {
     .admin-layout { grid-template-columns: 1fr !important; }
     .admin-sidebar { display: none !important; }
+    .admin-desktop-tabs { display: none !important; }
     .admin-nav-tabs { display: flex !important; overflow-x: auto; }
     .admin-stat-grid { grid-template-columns: 1fr 1fr !important; }
     .admin-analytics-grid { grid-template-columns: 1fr !important; }
-    .admin-users-grid { grid-template-columns: 1fr !important; }
-    .admin-search { width: 100% !important; }
-    .admin-header { flex-wrap: wrap; gap: 8px; }
+    .admin-search { width: 100% !important; box-sizing: border-box; }
+    .admin-header { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
     .listing-row-grid { grid-template-columns: 52px 1fr !important; }
-    .listing-row-actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
+    .listing-row-grid > div:last-child { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .users-table-header { display: none !important; }
+    .users-table-row { grid-template-columns: 36px 1fr !important; }
+    .users-table-row > div:nth-child(3),
+    .users-table-row > div:nth-child(4) { display: none !important; }
+    .dealers-table-header { display: none !important; }
+    .dealers-table-row { grid-template-columns: 1fr !important; }
+    .dealers-table-row > div:nth-child(2) { display: none !important; }
+    .main-pad { padding: 12px !important; }
   }
 `
 
@@ -349,7 +357,7 @@ export default function AdminPage({ user }) {
           <span style={{ color:'rgba(255,255,255,.3)', fontWeight:400, fontSize:12 }}>/ Admin</span>
           {counts.pending>0 && <span style={{ background:'#EF4444', color:'#fff', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100 }}>{counts.pending}</span>}
         </div>
-        <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+        <div className="admin-desktop-tabs" style={{ display:'flex', gap:12, alignItems:'center' }}>
           {['listings','users','dealers','analytics'].map(t => (
             <span key={t} onClick={()=>setAdminTab(t)} style={{ color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', fontSize:12, cursor:'pointer', fontWeight:adminTab===t?700:400, textTransform:'capitalize', display: window.innerWidth < 400 && t !== adminTab ? 'none' : 'block' }}>{t}</span>
           ))}
@@ -379,12 +387,12 @@ export default function AdminPage({ user }) {
           ))}
         </aside>
 
-        <main style={{ padding:20 }}>
+        <main className="main-pad" style={{ padding:20 }}>
           {adminTab==='listings' && (
             <>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-                <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540' }}>Listing Approvals</h2>
-                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search listings or sellers..." style={{ padding:'8px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, outline:'none', background:'#fff', width:220 }}/>
+              <div className="admin-header" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                <h2 style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540', margin:0 }}>Listing Approvals</h2>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." className="admin-search" style={{ padding:'8px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, outline:'none', background:'#fff', width:220 }}/>
               </div>
               <div className="admin-stat-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:18 }}>
                 <StatCard icon="⏳" number={counts.pending} label="Pending Review" color="#D97706"/>
@@ -392,7 +400,7 @@ export default function AdminPage({ user }) {
                 <StatCard icon="✕" number={listings.filter(l=>l.status==='declined'&&new Date(l.updated_at)>new Date(Date.now()-86400000)).length} label="Declined Today" color="#EF4444"/>
                 <StatCard icon="📋" number={counts.approved} label="Total Live" color="#1565C0"/>
               </div>
-              <div style={{ display:'flex', background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:10, overflow:'hidden', marginBottom:14, width:'fit-content' }}>
+              <div style={{ display:'flex', background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:10, overflow:'hidden', marginBottom:14, overflowX:'auto' }}>
                 {TABS.map(t => (
                   <button key={t} onClick={()=>setFilter(t)} style={{ padding:'8px 16px', fontSize:12, fontWeight:600, cursor:'pointer', color:filter===t?'#fff':'#64748B', background:filter===t?'#0A2540':'transparent', border:'none', borderRight:'1px solid #F0F4F8', fontFamily:'Outfit,sans-serif', display:'flex', alignItems:'center', gap:5 }}>
                     {t.charAt(0).toUpperCase()+t.slice(1)}
