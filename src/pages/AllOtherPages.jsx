@@ -513,33 +513,217 @@ export function AuthPage() {
 // LIST A CAR PAGE
 // ─────────────────────────────────────────────────────────────
 const CAR_DATA = {
-  Toyota: ['Land Cruiser 200','Land Cruiser 300','Land Cruiser Prado 150','Land Cruiser Prado 120','Hilux','Harrier','RAV4','Vanguard','Fortuner','Rush','Fielder','Corolla','Camry','Crown','Mark X','Allion','Premio','Wish','Noah','Voxy','Alphard','Vellfire','Hiace','Probox','Succeed'],
-  Nissan: ['X-Trail','Patrol','Juke','Note','March','Tiida','Sylphy','Teana','Murano','Qashqai','Navara','Urvan','Caravan','Serena','Elgrand'],
-  Mazda: ['CX-5','CX-3','CX-7','CX-9','Demio','Axela','Atenza','BT-50','MPV'],
-  Subaru: ['Forester','Outback','Legacy','Impreza','XV','Tribeca','WRX'],
-  Mitsubishi: ['Pajero','Pajero Mini','Outlander','Eclipse Cross','Montero','L200','Colt','Galant','Lancer'],
-  BMW: ['X1','X3','X5','X6','3 Series','5 Series','7 Series','1 Series','2 Series'],
-  'Mercedes-Benz': ['C-Class','E-Class','S-Class','GLC','GLE','GLS','A-Class','B-Class','ML','GL'],
-  Audi: ['A3','A4','A6','Q3','Q5','Q7','TT'],
-  Volkswagen: ['Golf','Polo','Passat','Tiguan','Touareg','Amarok','Transporter'],
-  Honda: ['CR-V','HR-V','Fit','Jazz','Civic','Accord','Pilot','Freed','Stream','Odyssey','StepWagon'],
-  Hyundai: ['Tucson','Santa Fe','Elantra','i10','i20','ix35','Creta'],
-  Kia: ['Sportage','Sorento','Picanto','Rio','Cerato','Carnival'],
-  Ford: ['Ranger','Everest','Explorer','EcoSport','Fusion','Mustang'],
-  'Land Rover': ['Defender','Discovery','Discovery Sport','Range Rover','Range Rover Sport','Range Rover Evoque','Freelander'],
-  Isuzu: ['D-Max','MU-X','Trooper'],
-  Suzuki: ['Vitara','Jimny','Swift','Alto','Baleno','Ertiga','Grand Vitara','Escudo'],
-  Lexus: ['LX','GX','RX','NX','IS','GS','LS','UX'],
-  Porsche: ['Cayenne','Macan','Panamera','911'],
-  Other: ['Other'],
+  'Audi': ['A1','A3','A4','A5','A6','A7','A8','Q2','Q3','Q5','Q7','Q8','RS3','RS4','RS5','RS6','S3','S4','S5','S6','TT'],
+  'BAIC': ['BJ20','BJ40','BJ80','D20','D50','X25','X35','X55','X65'],
+  'BMW': ['1 Series','2 Series','3 Series','4 Series','5 Series','6 Series','7 Series','8 Series','M2','M3','M4','M5','X1','X2','X3','X4','X5','X6','X7','Z4'],
+  'BYD': ['Atto 3','Dolphin','Han','Seal','Song','Tang'],
+  'Bentley': ['Bentayga','Continental GT','Flying Spur','Mulsanne'],
+  'Changan': ['CS15','CS35','CS55','CS75','CS95','Alsvin','Eado','Uni-K','Uni-T'],
+  'Chery': ['Arrizo 5','Arrizo 6','Omoda 5','QQ','Tiggo 4','Tiggo 5X','Tiggo 7','Tiggo 7 Pro','Tiggo 8'],
+  'Chrysler': ['300','300C','Pacifica','Sebring','Voyager'],
+  'Citroën': ['Berlingo','C3','C4','C5','Dispatch','Jumpy','Picasso','SpaceTourer'],
+  'DAF': ['CF','LF','XF'],
+  'Daihatsu': ['Boon','Gran Max','Mira','Move','Rocky','Sirion','Terios'],
+  'Datsun': ['1200','120Y','1600','Go','Go+','redi-GO'],
+  'Dodge': ['Challenger','Charger','Durango','RAM 1500','Viper'],
+  'Dongfeng': ['AX4','AX7','DF6','Sokon','T5'],
+  'Ferrari': ['488','812 Superfast','California','F8 Tributo','Portofino','Roma'],
+  'Fiat': ['500','Bravo','Doblo','Ducato','Freemont','Punto','Scudo','Tipo'],
+  'Ford': ['Bronco','EcoSport','Edge','Everest','Explorer','F-150','Focus','Freestar','Fusion','Galaxy','Kuga','Mondeo','Mustang','Puma','Ranger','S-Max','Territory','Transit','Transit Connect'],
+  'Foton': ['Auman','BJ','Commander','Gratour','Midi','Sauvana','Tunland','View'],
+  'GAC': ['Emkoo','Empow','GS3','GS4','GS5','GS8','M6','M8'],
+  'Geely': ['Azkarra','Boyue','Coolray','Emgrand','Okavango','Panda','Proton X50','Tugella'],
+  'Haval': ['F7','H1','H2','H4','H5','H6','H9','Jolion','M6'],
+  'Hino': ['300 Series','500 Series','700 Series','Dutro','Profia','Ranger'],
+  'Honda': ['Accord','Airwave','Amaze','BR-V','CR-V','City','Civic','Element','Fit','Freed','HR-V','Jazz','Legend','Odyssey','Pilot','Ridgeline','Stream','StepWagon','Vezel','WR-V'],
+  'Hyundai': ['Accent','Azera','Creta','Elantra','Equus','Genesis','H-1','H100','i10','i20','i30','ix35','Kona','Palisade','Santa Fe','Sonata','Starex','Tucson','Venue'],
+  'Infiniti': ['FX35','FX37','G35','G37','Q50','Q60','Q70','QX50','QX56','QX60','QX80'],
+  'Isuzu': ['D-Max','ELF','FRR','FTR','FVR','FVZ','MU-X','NKR','NMR','NPR','NQR','NRR','Trooper'],
+  'Iveco': ['Daily','Eurocargo','Stralis','Trakker'],
+  'JAC': ['J5','J7','S2','S3','S4','S5','T6','T8','X200'],
+  'Jaguar': ['E-Pace','F-Pace','F-Type','I-Pace','S-Type','X-Type','XE','XF','XJ'],
+  'Jeep': ['Cherokee','Compass','Grand Cherokee','Liberty','Patriot','Renegade','Wrangler'],
+  'Kia': ['Carnival','Ceed','Cerato','EV6','Niro','Optima','Picanto','Rio','Seltos','Sorento','Soul','Sportage','Stinger','Telluride'],
+  'King Long': ['XMQ','XMQ6'],
+  'Land Rover': ['Defender 90','Defender 110','Discovery','Discovery Sport','Freelander','Range Rover','Range Rover Evoque','Range Rover Sport','Range Rover Velar'],
+  'Lexus': ['CT200h','ES','GS','GS300','GS350','GX','GX460','IS','IS250','IS300','IS350','LC','LX','LX570','NX','RC','RX','RX330','RX350','UX'],
+  'Lincoln': ['Aviator','Continental','MKC','MKX','MKZ','Navigator'],
+  'MAN': ['TGA','TGE','TGL','TGM','TGS','TGX'],
+  'MG': ['3','5','6','GS','HS','RX5','ZS','ZS EV'],
+  'Mahindra': ['Bolero','KUV100','Marazzo','Scorpio','TUV300','Thar','XUV300','XUV500','XUV700'],
+  'Maserati': ['Ghibli','GranTurismo','Levante','Quattroporte'],
+  'Maxus': ['D60','D90','G10','T60','T90','V80','V90'],
+  'Mazda': ['2','3','5','6','Atenza','Axela','BT-50','CX-3','CX-30','CX-5','CX-7','CX-8','CX-9','Demio','MPV','MX-5','Premacy','Tribute'],
+  'Mercedes-Benz': ['A-Class','AMG GT','B-Class','C-Class','CLA','CLS','E-Class','G-Class','GLA','GLB','GLC','GLE','GLS','ML','S-Class','SLK','Sprinter','V-Class','Viano','Vito'],
+  'Mitsubishi': ['Attrage','Colt','Eclipse Cross','Galant','L200','L300','Lancer','Montero','Outlander','Pajero','Pajero Mini','Pajero Sport','RVR','Space Wagon','Triton'],
+  'Nissan': ['Almera','Armada','Caravan','Elgrand','Frontier','GT-R','Juke','Kicks','Leaf','March','Micra','Murano','Navara','Note','Patrol','Pathfinder','Pickup','Qashqai','Serena','Sylphy','Teana','Tiida','Urvan','X-Trail','350Z','370Z'],
+  'Opel': ['Astra','Corsa','Insignia','Mokka','Movano','Vivaro','Zafira'],
+  'Peugeot': ['2008','208','3008','308','4008','408','5008','508','Boxer','Expert','Partner'],
+  'Porsche': ['718','911','Cayenne','Macan','Panamera','Taycan'],
+  'Proton': ['Exora','Iriz','Persona','Preve','Saga','X50','X70'],
+  'Renault': ['Captur','Clio','Duster','Kadjar','Koleos','Megane','Sandero','Scenic','Symbol','Trafic'],
+  'Rolls-Royce': ['Cullinan','Dawn','Ghost','Phantom','Silver Shadow','Wraith'],
+  'Saab': ['9-3','9-5'],
+  'Scania': ['G Series','P Series','R Series','S Series'],
+  'SsangYong': ['Actyon','Korando','Musso','Rexton','Tivoli','XLV'],
+  'Subaru': ['Ascent','BRZ','Crosstrek','Forester','Impreza','Legacy','Levorg','Outback','Tribeca','WRX','XV'],
+  'Suzuki': ['Alto','Baleno','Carry','Celerio','Dzire','Ertiga','Escudo','Grand Vitara','Ignis','Jimny','Kizashi','S-Cross','SX4','Swift','Vitara','Wagon R'],
+  'Tata': ['Ace','Harrier','Nexon','Safari','Xenon','Yodha'],
+  'Toyota': ['4Runner','Allion','Alphard','Auris','Avalon','Avanza','Avensis','Axio','Aygo','Camry','CH-R','Corolla','Crown','FJ Cruiser','Fielder','Fortuner','Harrier','Hiace','Hilux','Hilux Surf','Ipsum','Land Cruiser 70 Series','Land Cruiser 80 Series','Land Cruiser 100 Series','Land Cruiser 200','Land Cruiser 300','Land Cruiser Prado 90','Land Cruiser Prado 120','Land Cruiser Prado 150','Mark X','Noah','Premio','Probox','RAV4','Rush','Sequoia','Sienna','Spacio','Succeed','Supra','Tundra','Vanguard','Vellfire','Vitz','Voxy','Wish','Yaris'],
+  'Volkswagen': ['Amarok','Arteon','Caddy','Caravelle','Golf','Jetta','Multivan','Passat','Phaeton','Polo','Sharan','T-Cross','T-Roc','Tiguan','Touareg','Touran','Transporter','Up'],
+  'Volvo': ['C30','C40','S60','S90','V40','V60','V90','XC40','XC60','XC90'],
+  'Yutong': ['E10','E12','TC9','ZK6'],
+  'Other': ['Other'],
 }
-const LC_MAKES = Object.keys(CAR_DATA)
+const LC_MAKES = Object.keys(CAR_DATA).sort()
+
+const VARIANTS = {
+  // Toyota
+  'Land Cruiser 300': ['GX','GXR','VX','VX.R','ZX','Sahara','Sahara ZX','Black Edition','Gazoo Racing GR Sport'],
+  'Land Cruiser 200': ['GX','GXR','VX','VXR','VX Limited','ZX','Sahara','Heritage Edition'],
+  'Land Cruiser Prado 150': ['GX','GXR','TX','TX-L','VX','VXL','TZ-G','Active','Kakadu'],
+  'Land Cruiser Prado 120': ['GX','GXL','VX','VXL','Grande'],
+  'Land Cruiser Prado 90': ['GX','VX','RV'],
+  'Land Cruiser 100 Series': ['GX','VX','VX Limited','Sahara','Amazon'],
+  'Land Cruiser 80 Series': ['GX','VX','GXL','VXL','Sahara'],
+  'Land Cruiser 70 Series': ['Single Cab','Double Cab','Troop Carrier','VDJ76','VDJ78','VDJ79'],
+  'Hilux': ['Single Cab 4x2','Single Cab 4x4','Extra Cab 4x2','Extra Cab 4x4','Double Cab 4x2','Double Cab 4x4','GD-6','Raider','Revo','Legend 50','Legend RS'],
+  'Fortuner': ['GX','GXR','VX','Legender','GR Sport'],
+  'Harrier': ['Standard','Premium','Z','Z Leather'],
+  'RAV4': ['XA','XLE','Adventure','TRD Off-Road','Limited','Hybrid XLE','Prime'],
+  'Camry': ['LE','SE','XLE','XSE','TRD'],
+  'Corolla': ['Base','LE','SE','XLE','XSE','ZR'],
+  'Noah': ['S','G','Si','Gi'],
+  'Voxy': ['V','ZS','ZR'],
+  'Alphard': ['S','G','GF','SC','Executive Lounge'],
+  'Vellfire': ['V','Z','ZG','Z G Edition','Executive Lounge'],
+  'Crown': ['S','G','RS','Advance','RS Advance'],
+  'Mark X': ['250G','350G','350S','Relax Selection'],
+  'Hiace': ['Standard','High Roof','Super GL','Grand Cabin','KDH','LH'],
+  'Fielder': ['Standard','G','S','Z','WXB'],
+  'Allion': ['A15','A18','A20'],
+  'Premio': ['F EX Package','G EX Package','X EX Package'],
+  'Rush': ['G','S','Sport'],
+  'Prado 90': ['GX','VX'],
+  'Vanguard': ['Standard','S Premium'],
+
+  // Nissan
+  'Patrol': ['DX','SGL','LE','SE','Titanium','Safari','Y61','Y62'],
+  'X-Trail': ['LE','ST','ST-L','Ti','Ti-L'],
+  'Navara': ['D40','D23','NP300','LE','SE','Calibre','King Cab','Double Cab'],
+  'Elgrand': ['Standard','Rider','Highway Star','VIP','E51','E52'],
+
+  // Mercedes-Benz
+  'C-Class': ['C180','C200','C220d','C250','C300','C350','AMG C43','AMG C63'],
+  'E-Class': ['E200','E220','E250','E300','E350','E400','AMG E43','AMG E63','E220d'],
+  'S-Class': ['S300','S320','S350','S400','S450','S500','S600','AMG S63','Maybach S580'],
+  'GLE': ['GLE 300d','GLE 350','GLE 400','GLE 450','AMG GLE 53','AMG GLE 63','Coupe'],
+  'GLC': ['GLC 200','GLC 220d','GLC 250','GLC 300','AMG GLC 43','Coupe'],
+  'GLS': ['GLS 350d','GLS 400','GLS 450','AMG GLS 63'],
+  'ML': ['ML 250','ML 320','ML 350','ML 400','AMG ML 63'],
+  'G-Class': ['G 350d','G 500','G 550','AMG G 63'],
+  'Sprinter': ['211 CDI','213 CDI','315 CDI','319 CDI','316 CDI'],
+  'Vito': ['109 CDI','111 CDI','113 CDI','114 CDI','116 CDI'],
+
+  // BMW
+  'X5': ['xDrive 25d','xDrive 30d','xDrive 40i','M50i','xDrive 45e','M Competition'],
+  'X3': ['xDrive 20i','xDrive 20d','xDrive 30i','xDrive 30d','M40i','M Competition'],
+  'X6': ['xDrive 30d','xDrive 40i','M50i','M Competition'],
+  '3 Series': ['316i','318i','320i','320d','325i','328i','330i','335i','M3'],
+  '5 Series': ['518d','520i','520d','523i','525d','528i','530i','535i','M5'],
+  'X1': ['sDrive 18i','xDrive 20i','xDrive 25i'],
+  'X7': ['xDrive 30d','xDrive 40i','M50i'],
+
+  // Land Rover
+  'Range Rover': ['Vogue','Vogue SE','Autobiography','SVAutobiography','Sport','Sport HSE','Sport HST','Evoque','Velar'],
+  'Range Rover Sport': ['SE','HSE','HSE Dynamic','Autobiography Dynamic','SVR','P400e'],
+  'Range Rover Evoque': ['S','SE','HSE','R-Dynamic SE','First Edition'],
+  'Discovery': ['S','SE','HSE','HSE Luxury','First Edition','HSE Si6','Metropolitan Edition'],
+  'Defender 110': ['S','SE','HSE','X','X-Dynamic SE','Trophy Edition','Heritage'],
+  'Defender 90': ['S','SE','HSE','X','X-Dynamic SE','Trophy Edition'],
+
+  // Volkswagen
+  'Golf': ['Trendline','Comfortline','Highline','R-Line','GTI','Golf R','e-Golf'],
+  'Tiguan': ['Trendline','Comfortline','Highline','R-Line','Allspace'],
+  'Amarok': ['Trendline','Comfortline','Highline','V6 TDI','Aventura'],
+  'Touareg': ['SE','Elegance','R-Line','Atmosphere'],
+
+  // Ford
+  'Ranger': ['XL','XLS','XLT','Sport','Wildtrak','Raptor','Limited','FX4','Tremor'],
+  'Everest': ['Ambiente','Trend','Sport','Titanium','Titanium Plus','Platinum'],
+  'Explorer': ['Base','XLT','Limited','ST','Platinum','King Ranch'],
+
+  // Mitsubishi
+  'Pajero': ['GLX','GLS','Exceed','Dakar','Final Edition','4M41','V6','Short Body','Long Body'],
+  'Outlander': ['GLX','GLS','Exceed','GT','PHEV'],
+  'L200': ['GL','GLX','GLS','Triton','Double Cab','Single Cab'],
+  'Montero': ['GLS','Sport','Limited'],
+
+  // Subaru
+  'Forester': ['2.0i','2.5i','XT','X20','Premium','Sport','Touring'],
+  'Outback': ['2.5i','3.6R','Premium','Limited','Touring','XT'],
+  'Impreza': ['Base','Premium','Sport','Limited'],
+  'WRX': ['Base','Premium','Limited','STI','STI S209'],
+
+  // Honda
+  'CR-V': ['LX','EX','EX-L','Touring','Sport'],
+  'Pilot': ['LX','EX','EX-L','Touring','Elite','Black Edition'],
+  'HR-V': ['LX','EX','EX-L','Sport','Touring'],
+
+  // Lexus
+  'LX': ['LX 450d','LX 570','LX 600 Luxury','LX 600 Ultra Luxury'],
+  'GX': ['GX 400','GX 460','Luxury','Premium'],
+  'RX': ['RX 200t','RX 300','RX 330','RX 350','RX 450h','F Sport','NX 200t'],
+  'IS': ['IS 200','IS 250','IS 300','IS 350','F Sport'],
+  'GS': ['GS 250','GS 300','GS 350','GS 450h','F Sport'],
+
+  // Haval
+  'H6': ['Classic','Premium','Supreme','Ultra','HEV'],
+  'H9': ['Ultra','Supreme'],
+  'Jolion': ['Comfort','Premium','Lux','HEV'],
+  'F7': ['Comfort','Premium','Luxury','Sport'],
+
+  // Chery
+  'Tiggo 7 Pro': ['Comfort','Premium','Luxury'],
+  'Tiggo 8': ['Comfort','Premium','Luxury','Sport','Pro'],
+
+  // Audi
+  'Q7': ['35 TDI','45 TFSI','55 TFSI','S7','SQ7'],
+  'Q5': ['35 TDI','40 TDI','40 TFSI','45 TFSI','SQ5'],
+  'A4': ['35 TDI','40 TDI','40 TFSI','45 TFSI','S4','RS4'],
+  'A6': ['40 TDI','45 TDI','45 TFSI','55 TFSI','S6','RS6'],
+
+  // Porsche
+  'Cayenne': ['Base','S','GTS','Turbo','Turbo S','E-Hybrid','Coupe'],
+  'Macan': ['Base','S','GTS','Turbo'],
+  '911': ['Carrera','Carrera S','Carrera 4','Carrera 4S','Turbo','Turbo S','GT3'],
+
+  // Hyundai
+  'Santa Fe': ['GL','GLS','Executive','XL','Highlander','Calligraphy'],
+  'Tucson': ['GL','GLS','Executive','Highlander','N Line'],
+  'Starex': ['GL','GLS','Executive','Limousine','Urban'],
+  'H-1': ['GL','GLS','Executive'],
+
+  // Kia
+  'Sorento': ['LX','EX','SX','SX Prestige','Hybrid EX'],
+  'Sportage': ['LX','EX','SX','GT Line','Hybrid'],
+
+  // Isuzu
+  'D-Max': ['Base','LS','V-Cross','X-Series','4x2','4x4','Single Cab','Spacecab','Double Cab'],
+  'MU-X': ['LS-U','LS-T','X Series','Ultimate'],
+
+  // Commercial
+  'Hino 300 Series': ['714','916','921'],
+  'Hino 500 Series': ['1322','1527','1726','2626'],
+}
+
 const FEATURES_LIST = ['Sunroof','Leather Seats','Reverse Camera','Navigation','Cruise Control','Alloy Wheels','Push Start','Heated Seats','360 Camera','Parking Sensors','Apple CarPlay','Tow Bar','Roof Rack','Bull Bar','Window Tint']
 
 export function ListCarPage({ user }) {
   const [step, setStep] = useState(1)
   const [make, setMake] = useState('Toyota')
   const [model, setModel] = useState('')
+  const [variant, setVariant] = useState('')
   const [year, setYear] = useState('2020')
   const [km, setKm] = useState('')
   const [engineCc, setEngineCc] = useState('')
@@ -564,7 +748,7 @@ export function ListCarPage({ user }) {
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     if (!currentUser) { alert('Please log in first'); return }
     const { error } = await supabase.from('listings').insert({
-      user_id: currentUser.id, make, model, year, mileage: km,
+      user_id: currentUser.id, make, model: variant ? `${model} — ${variant}` : model, year, mileage: km,
       engine_cc: engineCc, body_type: bodyType, fuel_type: fuel,
       transmission, drive_type: drive, colour, condition, price,
       negotiable: nego, status: 'pending', contact_name: contactName,
@@ -618,8 +802,17 @@ export function ListCarPage({ user }) {
                 <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Vehicle Information
               </div>
               <div className="listcar-form-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                <div><label style={lbl}>Make</label><select value={make} onChange={e => { setMake(e.target.value); setModel('') }} style={inp}>{LC_MAKES.map(m => <option key={m}>{m}</option>)}</select></div>
-                <div><label style={lbl}>Model</label><select value={model} onChange={e => setModel(e.target.value)} style={inp}><option value="">Select model...</option>{(CAR_DATA[make] || []).map(m => <option key={m}>{m}</option>)}</select></div>
+                <div><label style={lbl}>Make</label><select value={make} onChange={e => { setMake(e.target.value); setModel(''); setVariant('') }} style={inp}>{LC_MAKES.map(m => <option key={m}>{m}</option>)}</select></div>
+                <div><label style={lbl}>Model</label><select value={model} onChange={e => { setModel(e.target.value); setVariant('') }} style={inp}><option value="">Select model...</option>{(CAR_DATA[make] || []).map(m => <option key={m}>{m}</option>)}</select></div>
+                {model && VARIANTS[model] && (
+                  <div style={{ gridColumn:'1/-1' }}>
+                    <label style={lbl}>Variant / Trim <span style={{ color:'#94A3B8', fontWeight:400, textTransform:'none', letterSpacing:0 }}>(optional)</span></label>
+                    <select value={variant} onChange={e => setVariant(e.target.value)} style={inp}>
+                      <option value="">Select variant...</option>
+                      {VARIANTS[model].map(v => <option key={v}>{v}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div><label style={lbl}>Year</label><select value={year} onChange={e => setYear(e.target.value)} style={inp}>{Array.from({length:20},(_,i)=>`${2025-i}`).map(y => <option key={y}>{y}</option>)}</select></div>
                 <div><label style={lbl}>Mileage (km)</label><input type="number" value={km} onChange={e => setKm(e.target.value)} placeholder="e.g. 62000" style={inp}/></div>
                 <div><label style={lbl}>Engine (cc)</label><input type="number" value={engineCc} onChange={e => setEngineCc(e.target.value)} placeholder="e.g. 2000" style={inp}/></div>
@@ -711,7 +904,7 @@ export function ListCarPage({ user }) {
                   ✓ Review the details below before submitting.
                 </div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, fontSize:13 }}>
-                  <div><span style={{ color:'#94A3B8', fontSize:11 }}>Make / Model</span><br/><strong>{make} {model||'—'}</strong></div>
+                  <div><span style={{ color:'#94A3B8', fontSize:11 }}>Make / Model</span><br/><strong>{make} {model||'—'}{variant ? ` — ${variant}` : ''}</strong></div>
                   <div><span style={{ color:'#94A3B8', fontSize:11 }}>Asking Price</span><br/><strong style={{ color:'#1565C0' }}>{price ? fmt(price) : '—'}</strong></div>
                   <div><span style={{ color:'#94A3B8', fontSize:11 }}>Year</span><br/><strong>{year}</strong></div>
                   <div><span style={{ color:'#94A3B8', fontSize:11 }}>Mileage</span><br/><strong>{km ? `${Number(km).toLocaleString()} km` : '—'}</strong></div>
@@ -747,7 +940,7 @@ export function ListCarPage({ user }) {
             </div>
             <div style={{ padding:14 }}>
               <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540', marginBottom:2 }}>{price ? fmt(price) : 'KSH —'}</div>
-              <div style={{ fontSize:12, fontWeight:600, color:'#64748B', marginBottom:8 }}>{year} {make} {model || 'Your Model'}</div>
+              <div style={{ fontSize:12, fontWeight:600, color:'#64748B', marginBottom:8 }}>{year} {make} {model || 'Your Model'}{variant ? ` — ${variant}` : ''}</div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
                 {[year, km ? `${Number(km).toLocaleString()} km` : 'Mileage', transmission, bodyType].map((s,i) => (
                   <span key={i} style={{ fontSize:10, color:'#94A3B8', padding:'2px 6px', background:'#F8FAFC', borderRadius:100, border:'1px solid #E8EDF3' }}>{s}</span>
