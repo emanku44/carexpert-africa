@@ -520,6 +520,7 @@ export default function ListingsPage({ user }) {
                 ⚙ Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
               </button>
               <MobileSavedSearches user={user} onApply={filters => { applySearch(filters) }} />
+              <MobileSavedSearches user={user} onApply={filters => { applySearch(filters) }} />
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 700, color: '#0A2540' }}>
                 {loading ? 'Loading...' : (
                   <><span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars
