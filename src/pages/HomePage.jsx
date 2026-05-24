@@ -28,11 +28,7 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
   const dragging = useRef(null)
 
   const toPercent = v => ((v - absMin) / (absMax - absMin)) * 100
-
-  const fromPercent = pct => {
-    const raw = absMin + (pct / 100) * (absMax - absMin)
-    return Math.round(raw / step) * step
-  }
+  const fromPercent = pct => Math.round((absMin + (pct / 100) * (absMax - absMin)) / step) * step
 
   const getPercFromEvent = e => {
     const track = trackRef.current
@@ -53,8 +49,7 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
 
   const onMove = e => {
     if (e.cancelable) e.preventDefault()
-    const pct = getPercFromEvent(e)
-    const val = fromPercent(pct)
+    const val = fromPercent(getPercFromEvent(e))
     if (dragging.current === 'min') setMin(Math.min(val, maxVal - step))
     if (dragging.current === 'max') setMax(Math.max(val, minVal + step))
   }
@@ -84,8 +79,7 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
           style={{ position:'absolute', left:`${maxPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:18, height:18, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
       </div>
       <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:6 }}>
-        <span>{formatLabel(absMin)}</span>
-        <span>{formatLabel(absMax)}</span>
+        <span>{formatLabel(absMin)}</span><span>{formatLabel(absMax)}</span>
       </div>
     </div>
   )
@@ -106,33 +100,56 @@ export default function HomePage({ user }) {
   const [minKm, setMinKm]               = useState(0)
   const [maxKm, setMaxKm]               = useState(300000)
   const [featured, setFeatured]         = useState([])
-  const [totalCars, setTotalCars]       = useState(0)
+  const [allListings, setAllListings]   = useState([])
   const [makeCounts, setMakeCounts]     = useState({})
+  const [modelCounts, setModelCounts]   = useState({})
 
   useEffect(() => {
     getFeaturedListings().then(({ data }) => setFeatured(data || []))
-    supabase.from('listings').select('make').eq('status', 'approved').then(({ data }) => {
+    supabase.from('listings').select('make,model,body_type,fuel_type,transmission,price,year,mileage').eq('status','approved').then(({ data }) => {
       if (!data) return
-      setTotalCars(data.length)
-      const counts = {}
-      data.forEach(l => { counts[l.make] = (counts[l.make] || 0) + 1 })
-      setMakeCounts(counts)
+      setAllListings(data)
+      const mc = {}, mdc = {}
+      data.forEach(l => {
+        mc[l.make] = (mc[l.make] || 0) + 1
+        if (l.make && l.model) {
+          if (!mdc[l.make]) mdc[l.make] = {}
+          mdc[l.make][l.model] = (mdc[l.make][l.model] || 0) + 1
+        }
+      })
+      setMakeCounts(mc)
+      setModelCounts(mdc)
     })
   }, [])
 
+  // Live count of listings matching current filters
+  const matchingCount = allListings.filter(l => {
+    if (make && l.make !== make) return false
+    if (model && l.model !== model) return false
+    if (body && l.body_type !== body) return false
+    if (transmission && l.transmission !== transmission) return false
+    if (fuel && l.fuel_type !== fuel) return false
+    if (l.price < minPrice || l.price > maxPrice) return false
+    if (l.year < minYear || l.year > maxYear) return false
+    if (l.mileage < minKm || l.mileage > maxKm) return false
+    return true
+  }).length
+
+  const filtersActive = make || model || body || transmission || fuel || minPrice > 0 || maxPrice < 20000000 || minYear > 2000 || maxYear < 2025 || minKm > 0 || maxKm < 300000
+
   const search = () => {
     const p = new URLSearchParams()
-    if (make)               p.set('make', make)
-    if (model)              p.set('model', model)
-    if (body)               p.set('body', body)
-    if (transmission)       p.set('transmission', transmission)
-    if (fuel)               p.set('fuel', fuel)
-    if (minPrice > 0)       p.set('minPrice', minPrice)
+    if (make)                p.set('make', make)
+    if (model)               p.set('model', model)
+    if (body)                p.set('body', body)
+    if (transmission)        p.set('transmission', transmission)
+    if (fuel)                p.set('fuel', fuel)
+    if (minPrice > 0)        p.set('minPrice', minPrice)
     if (maxPrice < 20000000) p.set('maxPrice', maxPrice)
-    if (minYear > 2000)     p.set('minYear', minYear)
-    if (maxYear < 2025)     p.set('maxYear', maxYear)
-    if (minKm > 0)          p.set('minKm', minKm)
-    if (maxKm < 300000)     p.set('maxKm', maxKm)
+    if (minYear > 2000)      p.set('minYear', minYear)
+    if (maxYear < 2025)      p.set('maxYear', maxYear)
+    if (minKm > 0)           p.set('minKm', minKm)
+    if (maxKm < 300000)      p.set('maxKm', maxKm)
     navigate(`/listings?${p.toString()}`)
   }
 
@@ -162,27 +179,43 @@ export default function HomePage({ user }) {
           {/* Search box */}
           <div style={{ background:'#fff', borderRadius:'14px 14px 0 0', padding:24 }}>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1.4fr auto', gap:12, alignItems:'end' }}>
+
+              {/* Make */}
               <div>
                 <label style={lbl}>Make</label>
                 <select value={make} onChange={e => { setMake(e.target.value); setModel('') }} style={inp}>
-                  <option value="">Any Make</option>
-                  {MAKES.map(m => <option key={m}>{m}</option>)}
+                  <option value="">Any Make ({allListings.length})</option>
+                  {MAKES.map(m => (
+                    <option key={m} value={m}>{m}{makeCounts[m] ? ` (${makeCounts[m]})` : ''}</option>
+                  ))}
                 </select>
               </div>
+
+              {/* Model */}
               <div>
                 <label style={lbl}>Model</label>
                 <select value={model} onChange={e => setModel(e.target.value)} style={{ ...inp, color: make ? '#0A2540' : '#94A3B8' }} disabled={!make}>
-                  <option value="">{make ? `All ${make} Models` : 'Select make first'}</option>
-                  {models.map(m => <option key={m}>{m}</option>)}
+                  <option value="">{make ? `All ${make} (${makeCounts[make] || 0})` : 'Select make first'}</option>
+                  {models.map(m => {
+                    const count = modelCounts[make]?.[m] || 0
+                    return <option key={m} value={m}>{m}{count > 0 ? ` (${count})` : ''}</option>
+                  })}
                 </select>
               </div>
+
+              {/* Body */}
               <div>
                 <label style={lbl}>Body Style</label>
                 <select value={body} onChange={e => setBody(e.target.value)} style={inp}>
                   <option value="">Any Body</option>
-                  {BODY_TYPES.map(b => <option key={b.t}>{b.t}</option>)}
+                  {BODY_TYPES.map(b => {
+                    const count = allListings.filter(l => l.body_type === b.t).length
+                    return <option key={b.t} value={b.t}>{b.t}{count > 0 ? ` (${count})` : ''}</option>
+                  })}
                 </select>
               </div>
+
+              {/* Price */}
               <div>
                 <label style={lbl}>Price Range (KSH)</label>
                 <DualSlider
@@ -192,8 +225,13 @@ export default function HomePage({ user }) {
                   formatLabel={n => `${(n/1e6).toFixed(1)}M`}
                 />
               </div>
+
+              {/* Search button */}
               <button onClick={search} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'11px 20px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit, sans-serif', whiteSpace:'nowrap' }}>
-                Search {totalCars > 0 ? `${totalCars}` : ''} Cars →
+                {filtersActive
+                  ? `Search ${matchingCount} Cars →`
+                  : `Search ${allListings.length} Cars →`
+                }
               </button>
             </div>
 
@@ -209,19 +247,20 @@ export default function HomePage({ user }) {
                   <label style={lbl}>Transmission</label>
                   <select value={transmission} onChange={e => setTransmission(e.target.value)} style={inp}>
                     <option value="">Any</option>
-                    <option>Automatic</option>
-                    <option>Manual</option>
-                    <option>CVT</option>
+                    {['Automatic','Manual','CVT'].map(t => {
+                      const count = allListings.filter(l => l.transmission === t).length
+                      return <option key={t} value={t}>{t}{count > 0 ? ` (${count})` : ''}</option>
+                    })}
                   </select>
                 </div>
                 <div>
                   <label style={lbl}>Fuel Type</label>
                   <select value={fuel} onChange={e => setFuel(e.target.value)} style={inp}>
                     <option value="">Any</option>
-                    <option>Petrol</option>
-                    <option>Diesel</option>
-                    <option>Hybrid</option>
-                    <option>Electric</option>
+                    {['Petrol','Diesel','Hybrid','Electric'].map(f => {
+                      const count = allListings.filter(l => l.fuel_type === f).length
+                      return <option key={f} value={f}>{f}{count > 0 ? ` (${count})` : ''}</option>
+                    })}
                   </select>
                 </div>
                 <div>
@@ -251,7 +290,7 @@ export default function HomePage({ user }) {
       {/* Stats bar */}
       <div style={{ background:'#EEF5FF', borderBottom:'1px solid #D9E8FA', padding:'14px 24px', display:'flex', gap:40 }}>
         {[
-          [totalCars > 0 ? `${totalCars}+` : '0', 'Active Listings'],
+          [allListings.length > 0 ? `${allListings.length}+` : '0', 'Active Listings'],
           [Object.keys(makeCounts).length || '14', 'Car Makes'],
           ['100%', 'Verified Sellers'],
           ['7 Days', 'Support']
@@ -327,7 +366,10 @@ export default function HomePage({ user }) {
           {BODY_TYPES.map(b => (
             <div key={b.t} onClick={() => navigate(`/listings?body=${b.t}`)}
               style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:'18px 12px', textAlign:'center', cursor:'pointer' }}>
-              <div style={{ fontFamily:'Outfit, sans-serif', fontSize:13, fontWeight:700, color:'#0A2540' }}>{b.t}</div>
+              <div style={{ fontFamily:'Outfit, sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{b.t}</div>
+              {allListings.filter(l => l.body_type === b.t).length > 0 &&
+                <div style={{ fontSize:11, color:'#94A3B8' }}>{allListings.filter(l => l.body_type === b.t).length} cars</div>
+              }
             </div>
           ))}
         </div>
