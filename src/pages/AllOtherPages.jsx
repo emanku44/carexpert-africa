@@ -865,6 +865,72 @@ const handleSubmit = async () => {
 // ─────────────────────────────────────────────────────────────
 // DASHBOARD PAGE
 // ─────────────────────────────────────────────────────────────
+function SavedSearchesList({ user }) {
+  const [searches, setSearches] = useState([])
+  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!user) return
+    supabase.from('saved_searches').select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { setSearches(data || []); setLoading(false) })
+  }, [user])
+
+  const runSearch = (filters) => {
+    const p = new URLSearchParams()
+    if (filters.make) p.set('make', filters.make)
+    if (filters.model) p.set('model', filters.model)
+    if (filters.search) p.set('q', filters.search)
+    if (filters.location) p.set('location', filters.location)
+    if (filters.minPrice > 0) p.set('minPrice', filters.minPrice)
+    if (filters.maxPrice < 30000000) p.set('maxPrice', filters.maxPrice)
+    if (filters.minYear > 1970) p.set('minYear', filters.minYear)
+    if (filters.maxYear < 2025) p.set('maxYear', filters.maxYear)
+    if (filters.bodies?.length) p.set('body', filters.bodies[0])
+    navigate(`/listings?${p.toString()}`)
+  }
+
+  if (loading) return <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading...</div>
+
+  if (searches.length === 0) return (
+    <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+      <div style={{ fontSize:32, marginBottom:12 }}>🔖</div>
+      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540', marginBottom:6 }}>No saved searches yet</div>
+      <div style={{ fontSize:13, color:'#94A3B8', marginBottom:16 }}>Use the Save Search button on the listings page to save your filters.</div>
+      <Link to="/listings" style={{ background:'#1565C0', color:'#fff', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>Browse Listings</Link>
+    </div>
+  )
+
+  return searches.map(s => (
+    <div key={s.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:6 }}>🔖 {s.name}</div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:4 }}>
+          {s.filters.make && <span style={{ fontSize:10, color:'#1565C0', padding:'2px 8px', background:'#EEF5FF', borderRadius:100, border:'1px solid #BDD5FF' }}>{s.filters.make}</span>}
+          {s.filters.model && <span style={{ fontSize:10, color:'#1565C0', padding:'2px 8px', background:'#EEF5FF', borderRadius:100, border:'1px solid #BDD5FF' }}>{s.filters.model}</span>}
+          {s.filters.minPrice > 0 && <span style={{ fontSize:10, color:'#1565C0', padding:'2px 8px', background:'#EEF5FF', borderRadius:100, border:'1px solid #BDD5FF' }}>From KSH {(s.filters.minPrice/1e6).toFixed(1)}M</span>}
+          {s.filters.maxPrice < 30000000 && <span style={{ fontSize:10, color:'#1565C0', padding:'2px 8px', background:'#EEF5FF', borderRadius:100, border:'1px solid #BDD5FF' }}>Up to KSH {(s.filters.maxPrice/1e6).toFixed(1)}M</span>}
+          {s.filters.bodies?.map(b => <span key={b} style={{ fontSize:10, color:'#1565C0', padding:'2px 8px', background:'#EEF5FF', borderRadius:100, border:'1px solid #BDD5FF' }}>{b}</span>)}
+          {s.filters.search && <span style={{ fontSize:10, color:'#1565C0', padding:'2px 8px', background:'#EEF5FF', borderRadius:100, border:'1px solid #BDD5FF' }}>"{s.filters.search}"</span>}
+        </div>
+        <div style={{ fontSize:10, color:'#94A3B8' }}>Saved {new Date(s.created_at).toLocaleDateString('en-GB')}</div>
+      </div>
+      <div style={{ display:'flex', gap:8, flexShrink:0 }}>
+        <button onClick={() => runSearch(s.filters)}
+          style={{ background:'#1565C0', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>
+          Run Search →
+        </button>
+        <button onClick={async () => {
+          await supabase.from('saved_searches').delete().eq('id', s.id)
+          setSearches(prev => prev.filter(x => x.id !== s.id))
+        }} style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'8px 12px', borderRadius:7, fontSize:12, cursor:'pointer' }}>✕</button>
+      </div>
+    </div>
+  ))
+}
+
 export function DashboardPage({ user }) {
   const [tab, setTab] = useState('overview')
   const [myListings, setMyListings] = useState([])
@@ -1073,12 +1139,13 @@ localStorage.setItem('cea_recently_viewed', JSON.stringify(updated))
           )}
 
           {tab === 'alerts' && (
-            <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
-              <div style={{ fontSize:32, marginBottom:12 }}>🔔</div>
-              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540', marginBottom:6 }}>Price alerts coming soon</div>
-              <div style={{ fontSize:13, color:'#94A3B8' }}>Set alerts and get notified when matching cars are listed.</div>
-            </div>
-          )}
+  <div>
+    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540', marginBottom:16 }}>
+      Saved Searches <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}></span>
+    </div>
+    <SavedSearchesList user={user} />
+  </div>
+)}
         </main>
       </div>
     </div>
