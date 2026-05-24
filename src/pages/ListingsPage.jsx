@@ -185,7 +185,41 @@ function SavedSearchesQuickList({ user, onApply }) {
     </div>
   )
 }
+function MobileSavedSearches({ user, onApply }) {
+  const [searches, setSearches] = useState([])
+  const [open, setOpen] = useState(false)
 
+  useEffect(() => {
+    if (!user) return
+    supabase.from('saved_searches').select('*').eq('user_id', user.id)
+      .order('created_at', { ascending: false }).limit(5)
+      .then(({ data }) => setSearches(data || []))
+  }, [user])
+
+  if (!user || searches.length === 0) return null
+
+  return (
+    <div style={{ position: 'relative' }} className="mobile-filter-btn">
+      <button onClick={() => setOpen(!open)}
+        style={{ background: '#FEF3C7', color: '#92400E', border: '1.5px solid #FCD34D', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
+        🔖 Saved ({searches.length})
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#fff', border: '1.5px solid #E2E8F0', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', zIndex: 100, width: 240 }}>
+          {searches.map(s => (
+            <button key={s.id} onClick={() => { onApply(s.filters); setOpen(false) }}
+              style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: '1px solid #F0F4F8', padding: '12px 14px', cursor: 'pointer', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
+              <div style={{ fontWeight: 700, color: '#0A2540', marginBottom: 2 }}>{s.name}</div>
+              <div style={{ color: '#94A3B8', fontSize: 11 }}>
+                {[s.filters.make, s.filters.model, s.filters.maxPrice < 30000000 && `Up to ${(s.filters.maxPrice/1e6).toFixed(1)}M`].filter(Boolean).join(' · ') || 'All filters'}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 export default function ListingsPage({ user }) {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -485,6 +519,7 @@ export default function ListingsPage({ user }) {
                 style={{ background: '#0A2540', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', alignItems: 'center', gap: 6 }}>
                 ⚙ Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
               </button>
+              <MobileSavedSearches user={user} onApply={filters => { applySearch(filters) }} />
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 700, color: '#0A2540' }}>
                 {loading ? 'Loading...' : (
                   <><span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars
