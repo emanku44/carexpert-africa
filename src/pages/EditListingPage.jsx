@@ -3,6 +3,16 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Navbar from '../components/Navbar'
 
+const EDIT_MOBILE_CSS = `
+  @media (max-width: 768px) {
+    .edit-form-grid { grid-template-columns: 1fr !important; }
+    .edit-price-grid { grid-template-columns: 1fr !important; }
+    .edit-contact-grid { grid-template-columns: 1fr !important; }
+    .edit-actions { flex-direction: column !important; }
+    .edit-actions a, .edit-actions button { width: 100% !important; text-align: center !important; }
+  }
+`
+
 const CAR_DATA = {
   Audi: ['A3','A4','A6','Q3','Q5','Q7','TT'],
   Bentley: ['Continental','Bentayga','Flying Spur','Mulsanne'],
@@ -172,6 +182,7 @@ export default function EditListingPage({ user }) {
 
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
+      <style>{EDIT_MOBILE_CSS}</style>
       <Navbar user={user} />
 
       <div style={{ background:'linear-gradient(135deg,#0A2540,#0D3B6E)', padding:'24px' }}>
@@ -196,7 +207,7 @@ export default function EditListingPage({ user }) {
           <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:18, display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}></span> Vehicle Information
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+          <div className="edit-form-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
             <div>
               <label style={lbl}>Make</label>
               <select value={make} onChange={e => { setMake(e.target.value); setModel('') }} style={inp}>
@@ -269,7 +280,7 @@ export default function EditListingPage({ user }) {
           <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:16, display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}></span> Pricing
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:12, alignItems:'end' }}>
+          <div className="edit-price-grid" style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:12, alignItems:'end' }}>
             <div>
               <label style={lbl}>Asking Price (KSH)</label>
               <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="e.g. 4500000" style={inp}/>
@@ -298,7 +309,7 @@ export default function EditListingPage({ user }) {
           <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}></span> Contact Details
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+          <div className="edit-contact-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
             <div>
               <label style={lbl}>Contact Name</label>
               <input value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Your name" style={inp}/>
@@ -318,7 +329,7 @@ export default function EditListingPage({ user }) {
         </div>
 
         {/* Action buttons */}
-        <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+        <div className="edit-actions" style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
           <Link to="/dashboard" style={{ background:'#fff', color:'#475569', border:'1.5px solid #E2E8F0', padding:'11px 20px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
             Cancel
           </Link>
