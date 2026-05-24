@@ -136,7 +136,46 @@ function CheckList({ items, selected, onToggle, counts }) {
     )
   })
 }
+function SavedSearchesQuickList({ user, onApply }) {
+  const [searches, setSearches] = useState([])
+  const [open, setOpen] = useState(false)
 
+  useEffect(() => {
+    if (!user) return
+    supabase.from('saved_searches').select('*').eq('user_id', user.id)
+      .order('created_at', { ascending: false }).limit(5)
+      .then(({ data }) => setSearches(data || []))
+  }, [user])
+
+  if (searches.length === 0) return null
+
+  return (
+    <div style={{ borderTop: '1px solid #F5F7FA' }}>
+      <div onClick={() => setOpen(!open)}
+        style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: '#FFFBEB' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 12 }}>🔖</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#92400E', fontFamily: 'Outfit, sans-serif' }}>Saved Searches</span>
+          <span style={{ background: '#F59E0B', color: '#fff', borderRadius: 100, padding: '1px 6px', fontSize: 9, fontWeight: 700 }}>{searches.length}</span>
+        </div>
+        <span style={{ color: '#94A3B8', fontSize: 12, transform: open ? 'rotate(180deg)' : 'none', display: 'inline-block' }}>▾</span>
+      </div>
+      {open && (
+        <div style={{ padding: '4px 10px 10px' }}>
+          {searches.map(s => (
+            <button key={s.id} onClick={() => { onApply(s.filters); setOpen(false) }}
+              style={{ width: '100%', textAlign: 'left', background: '#fff', border: '1.5px solid #E2E8F0', borderRadius: 7, padding: '7px 10px', marginBottom: 6, cursor: 'pointer', fontSize: 11, fontFamily: 'DM Sans, sans-serif' }}>
+              <div style={{ fontWeight: 700, color: '#0A2540', marginBottom: 2 }}>{s.name}</div>
+              <div style={{ color: '#94A3B8', fontSize: 10 }}>
+                {[s.filters.make, s.filters.model, s.filters.maxPrice < 30000000 && `Up to ${(s.filters.maxPrice/1e6).toFixed(1)}M`].filter(Boolean).join(' · ')}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 function Tag({ label, onClear }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#EEF4FF', border: '1px solid #BDD5FF', borderRadius: 100, padding: '3px 10px', fontSize: 11, fontWeight: 600, color: '#1565C0' }}>
