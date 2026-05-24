@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { supabase } from '../lib/supabase'
 
@@ -8,7 +8,6 @@ const BODIES = ['SUV','Sedan','Hatchback','Minivan','Pickup','Coupe','Wagon','Tr
 const FUELS = ['Petrol','Diesel','Hybrid','Electric','LPG']
 const TRANS = ['Automatic','Manual','CVT','Semi-Automatic']
 const DRIVES = ['AWD','4WD','FWD','RWD','4x4']
-const ENGINE_TYPES = ['Petrol Inline-4','Petrol V6','Petrol V8','Diesel Inline-4','Diesel V6','Hybrid','Electric','Turbocharged','Naturally Aspirated']
 const CONDITIONS = ['New','Used — Excellent','Used — Good','Used — Fair','Foreign Used — Excellent','Foreign Used — Good']
 const LOCATIONS = ['Nairobi — Westlands','Nairobi — CBD','Nairobi — Karen','Nairobi — Langata','Nairobi — Eastlands','Mombasa','Kisumu','Nakuru','Eldoret','Thika','Meru','Nyeri','Machakos','Kitale','Malindi']
 
@@ -138,33 +137,46 @@ function CheckList({ items, selected, onToggle, counts }) {
   })
 }
 
+function Tag({ label, onClear }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#EEF4FF', border: '1px solid #BDD5FF', borderRadius: 100, padding: '3px 10px', fontSize: 11, fontWeight: 600, color: '#1565C0' }}>
+      {label} <span onClick={onClear} style={{ cursor: 'pointer', fontSize: 14 }}>×</span>
+    </div>
+  )
+}
+
 export default function ListingsPage({ user }) {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const [listings, setListings] = useState([])
   const [loading, setLoading] = useState(true)
+  const [saved, setSaved] = useState(new Set())
+  const [saveSearchOpen, setSaveSearchOpen] = useState(false)
+  const [searchName, setSearchName] = useState('')
+  const [saveMsg, setSaveMsg] = useState('')
 
   // Filters
   const [search, setSearch] = useState(searchParams.get('q') || '')
   const [selectedMake, setSelectedMake] = useState(searchParams.get('make') || '')
   const [selectedModel, setSelectedModel] = useState(searchParams.get('model') || '')
   const [selectedLocation, setSelectedLocation] = useState('')
-  const [bodies, setBodies]   = useState(new Set())
-  const [fuels, setFuels]     = useState(new Set())
-  const [trans, setTrans]     = useState(new Set())
-  const [drives, setDrives]   = useState(new Set())
-  const [engines, setEngines] = useState(new Set())
+  const [bodies, setBodies]       = useState(new Set())
+  const [fuels, setFuels]         = useState(new Set())
+  const [trans, setTrans]         = useState(new Set())
+  const [drives, setDrives]       = useState(new Set())
   const [conditions, setConditions] = useState(new Set())
-  const [minPrice, setMinPrice] = useState(0)
-  const [maxPrice, setMaxPrice] = useState(30000000)
-  const [minYear, setMinYear]   = useState(1970)
-  const [maxYear, setMaxYear]   = useState(2025)
-  const [minKm, setMinKm]       = useState(0)
-  const [maxKm, setMaxKm]       = useState(300000)
-  const [sort, setSort]         = useState('newest')
-  const [saved, setSaved]       = useState(new Set())
+  const [minPrice, setMinPrice]   = useState(0)
+  const [maxPrice, setMaxPrice]   = useState(30000000)
+  const [minYear, setMinYear]     = useState(1970)
+  const [maxYear, setMaxYear]     = useState(2025)
+  const [minKm, setMinKm]         = useState(0)
+  const [maxKm, setMaxKm]         = useState(300000)
+  const [sort, setSort]           = useState('newest')
 
-  useEffect(() => { fetchListings() }, [])
+  useEffect(() => {
+    fetchListings()
+  }, [])
 
   const fetchListings = async () => {
     setLoading(true)
@@ -174,6 +186,13 @@ export default function ListingsPage({ user }) {
       .order('featured', { ascending: false })
       .order('created_at', { ascending: false })
     if (!error) setListings(data || [])
+
+    // load saved listings for logged in user
+    const { data: { user: u } } = await supabase.auth.getUser()
+    if (u) {
+      const { data: savedData } = await supabase.from('saved_listings').select('listing_id').eq('user_id', u.id)
+      if (savedData) setSaved(new Set(savedData.map(s => s.listing_id)))
+    }
     setLoading(false)
   }
 
@@ -186,13 +205,40 @@ export default function ListingsPage({ user }) {
   const clearAll = () => {
     setSearch(''); setSelectedMake(''); setSelectedModel(''); setSelectedLocation('')
     setBodies(new Set()); setFuels(new Set()); setTrans(new Set())
-    setDrives(new Set()); setEngines(new Set()); setConditions(new Set())
+    setDrives(new Set()); setConditions(new Set())
     setMinPrice(0); setMaxPrice(30000000)
     setMinYear(1970); setMaxYear(2025)
     setMinKm(0); setMaxKm(300000)
   }
 
-  // Wildcard search: splits query into tokens and checks all text fields
+  const handleSaveCar = async (e, car) => {
+    e.stopPropagation()
+    const { data: { user: u } } = await supabase.auth.getUser()
+    if (!u) { alert('Please log in to save cars'); return }
+    if (saved.has(car.id)) {
+      await supabase.from('saved_listings').delete().eq('user_id', u.id).eq('listing_id', car.id)
+      setSaved(prev => { const n = new Set(prev); n.delete(car.id); return n })
+    } else {
+      await supabase.from('saved_listings').insert({ user_id: u.id, listing_id: car.id, saved_price: car.price, last_price: car.price })
+      setSaved(prev => new Set([...prev, car.id]))
+    }
+  }
+
+  const handleSaveSearch = async () => {
+    if (!searchName.trim()) return
+    const { data: { user: u } } = await supabase.auth.getUser()
+    if (!u) { alert('Please log in to save searches'); return }
+    const filters = {
+      search, make: selectedMake, model: selectedModel, location: selectedLocation,
+      bodies: [...bodies], fuels: [...fuels], trans: [...trans], drives: [...drives], conditions: [...conditions],
+      minPrice, maxPrice, minYear, maxYear, minKm, maxKm
+    }
+    const { error } = await supabase.from('saved_searches').insert({ user_id: u.id, name: searchName.trim(), filters })
+    if (error) { setSaveMsg('Error saving search'); return }
+    setSaveMsg('✓ Search saved!')
+    setTimeout(() => { setSaveSearchOpen(false); setSaveMsg(''); setSearchName('') }, 1500)
+  }
+
   const matchesSearch = (car) => {
     if (!search.trim()) return true
     const tokens = search.toLowerCase().split(/\s+/).filter(Boolean)
@@ -201,18 +247,18 @@ export default function ListingsPage({ user }) {
   }
 
   const filtered = listings.filter(c => {
-    if (!matchesSearch(c))                                       return false
-    if (selectedMake && c.make !== selectedMake)                 return false
-    if (selectedModel && c.model !== selectedModel)              return false
-    if (selectedLocation && c.location !== selectedLocation)     return false
-    if (bodies.size && !bodies.has(c.body_type))                 return false
-    if (fuels.size && !fuels.has(c.fuel_type))                   return false
-    if (trans.size && !trans.has(c.transmission))                return false
-    if (drives.size && !drives.has(c.drive_type))                return false
-    if (conditions.size && !conditions.has(c.condition))         return false
-    if (c.price < minPrice || c.price > maxPrice)                return false
-    if (c.year < minYear   || c.year > maxYear)                  return false
-    if (c.mileage < minKm  || c.mileage > maxKm)                 return false
+    if (!matchesSearch(c))                                     return false
+    if (selectedMake && c.make !== selectedMake)               return false
+    if (selectedModel && c.model !== selectedModel)            return false
+    if (selectedLocation && c.location !== selectedLocation)   return false
+    if (bodies.size && !bodies.has(c.body_type))               return false
+    if (fuels.size && !fuels.has(c.fuel_type))                 return false
+    if (trans.size && !trans.has(c.transmission))              return false
+    if (drives.size && !drives.has(c.drive_type))              return false
+    if (conditions.size && !conditions.has(c.condition))       return false
+    if (c.price < minPrice || c.price > maxPrice)              return false
+    if (c.year < minYear   || c.year > maxYear)                return false
+    if (c.mileage < minKm  || c.mileage > maxKm)               return false
     return true
   }).sort((a, b) => {
     if (sort === 'price_asc')  return a.price - b.price
@@ -222,24 +268,22 @@ export default function ListingsPage({ user }) {
     return new Date(b.created_at) - new Date(a.created_at)
   })
 
-  // Count helpers
   const cnt = (field, val) => listings.filter(l => l[field] === val).length
-  const makeCounts = Object.fromEntries(MAKES.map(m => [m, listings.filter(l => l.make === m).length]))
-  const modelCounts = Object.fromEntries((CAR_MODELS[selectedMake] || []).map(m => [m, listings.filter(l => l.make === selectedMake && l.model === m).length]))
-  const bodyCounts = Object.fromEntries(BODIES.map(b => [b, cnt('body_type', b)]))
-  const fuelCounts = Object.fromEntries(FUELS.map(f => [f, cnt('fuel_type', f)]))
-  const transCounts = Object.fromEntries(TRANS.map(t => [t, cnt('transmission', t)]))
-  const driveCounts = Object.fromEntries(DRIVES.map(d => [d, cnt('drive_type', d)]))
-  const condCounts = Object.fromEntries(CONDITIONS.map(c => [c, cnt('condition', c)]))
-  const locCounts = Object.fromEntries(LOCATIONS.map(l => [l, cnt('location', l)]))
+  const makeCounts    = Object.fromEntries(MAKES.map(m => [m, listings.filter(l => l.make === m).length]))
+  const modelCounts   = Object.fromEntries((CAR_MODELS[selectedMake] || []).map(m => [m, listings.filter(l => l.make === selectedMake && l.model === m).length]))
+  const bodyCounts    = Object.fromEntries(BODIES.map(b => [b, cnt('body_type', b)]))
+  const fuelCounts    = Object.fromEntries(FUELS.map(f => [f, cnt('fuel_type', f)]))
+  const transCounts   = Object.fromEntries(TRANS.map(t => [t, cnt('transmission', t)]))
+  const driveCounts   = Object.fromEntries(DRIVES.map(d => [d, cnt('drive_type', d)]))
+  const condCounts    = Object.fromEntries(CONDITIONS.map(c => [c, cnt('condition', c)]))
+  const locCounts     = Object.fromEntries(LOCATIONS.map(l => [l, cnt('location', l)]))
+  const availableModels = selectedMake && CAR_MODELS[selectedMake] ? CAR_MODELS[selectedMake] : []
 
   const activeFiltersCount = [
     search, selectedMake, selectedModel, selectedLocation,
     ...bodies, ...fuels, ...trans, ...drives, ...conditions,
     minPrice > 0, maxPrice < 30000000, minYear > 1970, maxYear < 2025, minKm > 0, maxKm < 300000
   ].filter(Boolean).length
-
-  const availableModels = selectedMake && CAR_MODELS[selectedMake] ? CAR_MODELS[selectedMake] : []
 
   return (
     <div style={{ fontFamily: 'DM Sans, sans-serif', background: '#F7F9FC', minHeight: '100vh' }}>
@@ -250,10 +294,8 @@ export default function ListingsPage({ user }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '268px 1fr', minHeight: 'calc(100vh - 96px)' }}>
 
-        {/* ── SIDEBAR ── */}
+        {/* SIDEBAR */}
         <aside style={{ background: '#fff', borderRight: '1px solid #E8EDF3', overflowY: 'auto' }}>
-
-          {/* Header */}
           <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F0F4F8', position: 'sticky', top: 0, background: '#fff', zIndex: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 13, fontWeight: 700, color: '#0A2540' }}>Filters</span>
@@ -262,36 +304,29 @@ export default function ListingsPage({ user }) {
             <button onClick={clearAll} style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear all</button>
           </div>
 
-          {/* Live match count */}
           <div style={{ padding: '10px 16px', background: '#F8FAFC', borderBottom: '1px solid #F0F4F8', textAlign: 'center' }}>
             <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: 14, fontWeight: 800, color: '#1565C0' }}>{loading ? '...' : filtered.length}</span>
             <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 4 }}>cars match</span>
           </div>
 
-          {/* ── Wildcard search ── */}
+          {/* Search */}
           <div style={{ padding: '12px 16px', borderTop: '1px solid #F5F7FA' }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 8 }}>Search</div>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#94A3B8' }}>🔍</span>
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder='e.g. "Land Cruiser 100"'
-                style={{ width: '100%', padding: '8px 10px 8px 30px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}
-              />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder='e.g. "Land Cruiser 100"'
+                style={{ width: '100%', padding: '8px 10px 8px 30px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }} />
               {search && <span onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#94A3B8', fontSize: 14 }}>×</span>}
             </div>
           </div>
 
-          {/* ── Make ── */}
+          {/* Make + Model */}
           <FilterSection title="Make" activeCount={selectedMake ? 1 : 0}>
             <select value={selectedMake} onChange={e => { setSelectedMake(e.target.value); setSelectedModel('') }}
               style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC', marginBottom: 8 }}>
               <option value="">Any Make ({listings.length})</option>
               {MAKES.map(m => <option key={m} value={m}>{m}{makeCounts[m] > 0 ? ` (${makeCounts[m]})` : ''}</option>)}
             </select>
-
-            {/* Model — shown when make selected */}
             {selectedMake && availableModels.length > 0 && (
               <>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 6, marginTop: 4 }}>Model</div>
@@ -304,7 +339,6 @@ export default function ListingsPage({ user }) {
             )}
           </FilterSection>
 
-          {/* ── Location ── */}
           <FilterSection title="Location" activeCount={selectedLocation ? 1 : 0}>
             <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)}
               style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
@@ -313,42 +347,34 @@ export default function ListingsPage({ user }) {
             </select>
           </FilterSection>
 
-          {/* ── Price ── */}
           <FilterSection title="Price (KSH)" activeCount={minPrice > 0 || maxPrice < 30000000 ? 1 : 0}>
             <DualSlider minVal={minPrice} maxVal={maxPrice} absMin={0} absMax={30000000} step={500000} setMin={setMinPrice} setMax={setMaxPrice} formatLabel={n => `${(n/1e6).toFixed(1)}M`} />
           </FilterSection>
 
-          {/* ── Year ── */}
           <FilterSection title="Year" activeCount={minYear > 1970 || maxYear < 2025 ? 1 : 0}>
             <DualSlider minVal={minYear} maxVal={maxYear} absMin={1970} absMax={2025} step={1} setMin={setMinYear} setMax={setMaxYear} formatLabel={n => `${n}`} />
           </FilterSection>
 
-          {/* ── Odometer ── */}
           <FilterSection title="Odometer (km)" activeCount={minKm > 0 || maxKm < 300000 ? 1 : 0}>
             <DualSlider minVal={minKm} maxVal={maxKm} absMin={0} absMax={300000} step={5000} setMin={setMinKm} setMax={setMaxKm} formatLabel={n => `${(n/1000).toFixed(0)}k`} />
           </FilterSection>
 
-          {/* ── Transmission ── */}
           <FilterSection title="Transmission" activeCount={trans.size}>
             <CheckList items={TRANS} selected={trans} onToggle={toggle(setTrans)} counts={transCounts} />
           </FilterSection>
 
-          {/* ── Body Type ── */}
           <FilterSection title="Body Type" activeCount={bodies.size}>
             <CheckList items={BODIES} selected={bodies} onToggle={toggle(setBodies)} counts={bodyCounts} />
           </FilterSection>
 
-          {/* ── New / Used ── */}
           <FilterSection title="Condition" activeCount={conditions.size}>
             <CheckList items={CONDITIONS} selected={conditions} onToggle={toggle(setConditions)} counts={condCounts} />
           </FilterSection>
 
-          {/* ── Fuel Type ── */}
           <FilterSection title="Fuel Type" activeCount={fuels.size}>
             <CheckList items={FUELS} selected={fuels} onToggle={toggle(setFuels)} counts={fuelCounts} />
           </FilterSection>
 
-          {/* ── Drive Type ── */}
           <FilterSection title="Drive Type" activeCount={drives.size}>
             <CheckList items={DRIVES} selected={drives} onToggle={toggle(setDrives)} counts={driveCounts} />
           </FilterSection>
@@ -356,7 +382,7 @@ export default function ListingsPage({ user }) {
           <div style={{ height: 24 }} />
         </aside>
 
-        {/* ── MAIN ── */}
+        {/* MAIN */}
         <main style={{ padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 18, fontWeight: 700, color: '#0A2540' }}>
@@ -367,16 +393,24 @@ export default function ListingsPage({ user }) {
               )}
               <span style={{ color: '#94A3B8', fontSize: 13, fontWeight: 400, fontFamily: 'DM Sans, sans-serif', marginLeft: 6 }}>in Kenya</span>
             </div>
-            <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#fff' }}>
-              <option value="newest">Newest First</option>
-              <option value="price_asc">Price: Low → High</option>
-              <option value="price_desc">Price: High → Low</option>
-              <option value="mileage">Lowest Mileage</option>
-              <option value="year">Newest Year</option>
-            </select>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {user && (
+                <button onClick={() => setSaveSearchOpen(true)}
+                  style={{ background: '#EEF5FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+                  🔖 Save Search
+                </button>
+              )}
+              <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 12, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#fff' }}>
+                <option value="newest">Newest First</option>
+                <option value="price_asc">Price: Low → High</option>
+                <option value="price_desc">Price: High → Low</option>
+                <option value="mileage">Lowest Mileage</option>
+                <option value="year">Newest Year</option>
+              </select>
+            </div>
           </div>
 
-          {/* Active filter tags */}
+          {/* Active tags */}
           {activeFiltersCount > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
               {search && <Tag label={`"${search}"`} onClear={() => setSearch('')} />}
@@ -421,8 +455,8 @@ export default function ListingsPage({ user }) {
                   onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
                   <div style={{ height: 180, background: '#EEF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                     {car.featured && <span style={{ position: 'absolute', top: 8, left: 8, background: '#1565C0', color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 100, textTransform: 'uppercase', fontFamily: 'Outfit, sans-serif', zIndex: 1 }}>⭐ Featured</span>}
-                    <button onClick={e => { e.stopPropagation(); setSaved(prev => { const n = new Set(prev); n.has(car.id) ? n.delete(car.id) : n.add(car.id); return n }) }}
-                      style={{ position: 'absolute', top: 8, right: 8, width: 28, height: 28, background: 'rgba(255,255,255,.92)', borderRadius: '50%', border: 'none', cursor: 'pointer', fontSize: 14, color: saved.has(car.id) ? '#EF4444' : '#94A3B8', zIndex: 1 }}>
+                    <button onClick={e => handleSaveCar(e, car)}
+                      style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, background: saved.has(car.id) ? '#EF4444' : 'rgba(255,255,255,.92)', borderRadius: '50%', border: 'none', cursor: 'pointer', fontSize: 16, color: saved.has(car.id) ? '#fff' : '#94A3B8', zIndex: 1, display:'flex', alignItems:'center', justifyContent:'center' }}>
                       {saved.has(car.id) ? '♥' : '♡'}
                     </button>
                     {car.listing_photos?.[0]?.url
@@ -453,14 +487,45 @@ export default function ListingsPage({ user }) {
           )}
         </main>
       </div>
-    </div>
-  )
-}
 
-function Tag({ label, onClear }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#EEF4FF', border: '1px solid #BDD5FF', borderRadius: 100, padding: '3px 10px', fontSize: 11, fontWeight: 600, color: '#1565C0' }}>
-      {label} <span onClick={onClear} style={{ cursor: 'pointer', fontSize: 14 }}>×</span>
+      {/* Save Search Modal */}
+      {saveSearchOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: 400, boxShadow: '0 20px 60px rgba(0,0,0,.2)' }}>
+            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 18, fontWeight: 800, color: '#0A2540', marginBottom: 6 }}>🔖 Save This Search</div>
+            <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 18 }}>
+              Give this search a name. You can re-run it anytime from your dashboard.
+            </div>
+            {activeFiltersCount > 0 && (
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 11, color: '#64748B' }}>
+                {activeFiltersCount} filter{activeFiltersCount > 1 ? 's' : ''} will be saved
+                {selectedMake && ` · ${selectedMake}`}
+                {selectedModel && ` ${selectedModel}`}
+                {(minPrice > 0 || maxPrice < 30000000) && ` · KSH ${(minPrice/1e6).toFixed(1)}M–${(maxPrice/1e6).toFixed(1)}M`}
+              </div>
+            )}
+            <input
+              value={searchName}
+              onChange={e => setSearchName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSaveSearch()}
+              placeholder="e.g. Toyota SUVs under 5M"
+              autoFocus
+              style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', marginBottom: 16 }}
+            />
+            {saveMsg && (
+              <div style={{ background: '#DCFCE7', color: '#16A34A', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, marginBottom: 12, textAlign: 'center' }}>{saveMsg}</div>
+            )}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => { setSaveSearchOpen(false); setSearchName(''); setSaveMsg('') }}
+                style={{ background: '#F8FAFC', color: '#64748B', border: '1.5px solid #E2E8F0', padding: '9px 18px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+              <button onClick={handleSaveSearch} disabled={!searchName.trim()}
+                style={{ background: searchName.trim() ? '#1565C0' : '#94A3B8', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: searchName.trim() ? 'pointer' : 'default', fontFamily: 'Outfit, sans-serif' }}>
+                Save Search
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
