@@ -17,25 +17,22 @@ const CAR_MODELS = {
   Audi: ['A3','A4','A6','Q3','Q5','Q7','TT'],
   Volkswagen: ['Amarok','Golf','Passat','Polo','Tiguan','Touareg','Transporter'],
   Honda: ['Accord','CR-V','Civic','Fit','Freed','HR-V','Jazz','Odyssey','Pilot','StepWagon','Stream'],
-  Hyundai: ['Creta','Elantra','Santa Fe','Tucson','i10','i20','ix35'],
-  Kia: ['Carnival','Cerato','Picanto','Rio','Sorento','Sportage'],
-  Ford: ['EcoSport','Everest','Explorer','Fusion','Mustang','Ranger'],
-  'Land Rover': ['Defender','Discovery','Discovery Sport','Freelander','Range Rover','Range Rover Evoque','Range Rover Sport'],
   Lexus: ['GS','GX','IS','LS','LX','NX','RX','UX'],
   Isuzu: ['D-Max','MU-X','Trooper'],
   Suzuki: ['Alto','Baleno','Ertiga','Escudo','Grand Vitara','Jimny','Swift','Vitara'],
   Porsche: ['911','Cayenne','Macan','Panamera'],
 }
 
-const MAX_PRICE = 20000000
-
-function PriceRangeSlider({ minPrice, maxPrice, setMinPrice, setMaxPrice }) {
+function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, formatLabel }) {
   const trackRef = useRef(null)
   const dragging = useRef(null)
 
-  const toPercent = v => (v / MAX_PRICE) * 100
+  const toPercent = v => ((v - absMin) / (absMax - absMin)) * 100
 
-  const fromPercent = pct => Math.round((pct / 100) * MAX_PRICE / 500000) * 500000
+  const fromPercent = pct => {
+    const raw = absMin + (pct / 100) * (absMax - absMin)
+    return Math.round(raw / step) * step
+  }
 
   const getPercFromEvent = e => {
     const track = trackRef.current
@@ -45,20 +42,21 @@ function PriceRangeSlider({ minPrice, maxPrice, setMinPrice, setMaxPrice }) {
     return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100))
   }
 
-  const onMouseDown = (handle) => (e) => {
+  const onMouseDown = handle => e => {
     e.preventDefault()
     dragging.current = handle
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
-    window.addEventListener('touchmove', onMove)
+    window.addEventListener('touchmove', onMove, { passive: false })
     window.addEventListener('touchend', onUp)
   }
 
-  const onMove = (e) => {
+  const onMove = e => {
+    if (e.cancelable) e.preventDefault()
     const pct = getPercFromEvent(e)
     const val = fromPercent(pct)
-    if (dragging.current === 'min') setMinPrice(Math.min(val, maxPrice - 500000))
-    if (dragging.current === 'max') setMaxPrice(Math.max(val, minPrice + 500000))
+    if (dragging.current === 'min') setMin(Math.min(val, maxVal - step))
+    if (dragging.current === 'max') setMax(Math.max(val, minVal + step))
   }
 
   const onUp = () => {
@@ -69,27 +67,25 @@ function PriceRangeSlider({ minPrice, maxPrice, setMinPrice, setMaxPrice }) {
     window.removeEventListener('touchend', onUp)
   }
 
-  const minPct = toPercent(minPrice)
-  const maxPct = toPercent(maxPrice)
+  const minPct = toPercent(minVal)
+  const maxPct = toPercent(maxVal)
 
   return (
     <div>
       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-        <span style={{ fontSize:11, fontWeight:700, color:'#1565C0' }}>KSH {(minPrice/1e6).toFixed(1)}M</span>
-        <span style={{ fontSize:11, fontWeight:700, color:'#1565C0' }}>KSH {(maxPrice/1e6).toFixed(1)}M</span>
+        <span style={{ fontSize:11, fontWeight:700, color:'#1565C0' }}>{formatLabel(minVal)}</span>
+        <span style={{ fontSize:11, fontWeight:700, color:'#1565C0' }}>{formatLabel(maxVal)}</span>
       </div>
-      <div ref={trackRef} style={{ position:'relative', height:6, background:'#E2E8F0', borderRadius:100, cursor:'pointer', userSelect:'none' }}>
-        {/* filled range */}
+      <div ref={trackRef} style={{ position:'relative', height:6, background:'#E2E8F0', borderRadius:100, cursor:'pointer', userSelect:'none', margin:'0 9px' }}>
         <div style={{ position:'absolute', left:`${minPct}%`, right:`${100-maxPct}%`, top:0, height:'100%', background:'#1565C0', borderRadius:100 }}/>
-        {/* min handle */}
         <div onMouseDown={onMouseDown('min')} onTouchStart={onMouseDown('min')}
           style={{ position:'absolute', left:`${minPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:18, height:18, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
-        {/* max handle */}
         <div onMouseDown={onMouseDown('max')} onTouchStart={onMouseDown('max')}
           style={{ position:'absolute', left:`${maxPct}%`, top:'50%', transform:'translate(-50%,-50%)', width:18, height:18, borderRadius:'50%', background:'#1565C0', border:'2px solid #fff', boxShadow:'0 2px 6px rgba(21,101,192,.4)', cursor:'grab', zIndex:2 }}/>
       </div>
-      <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:4 }}>
-        <span>0</span><span>20M</span>
+      <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:6 }}>
+        <span>{formatLabel(absMin)}</span>
+        <span>{formatLabel(absMax)}</span>
       </div>
     </div>
   )
@@ -104,7 +100,7 @@ export default function HomePage({ user }) {
   const [transmission, setTransmission] = useState('')
   const [fuel, setFuel]                 = useState('')
   const [minPrice, setMinPrice]         = useState(0)
-  const [maxPrice, setMaxPrice]         = useState(MAX_PRICE)
+  const [maxPrice, setMaxPrice]         = useState(20000000)
   const [minYear, setMinYear]           = useState(2000)
   const [maxYear, setMaxYear]           = useState(2025)
   const [minKm, setMinKm]               = useState(0)
@@ -126,22 +122,21 @@ export default function HomePage({ user }) {
 
   const search = () => {
     const p = new URLSearchParams()
-    if (make)                p.set('make', make)
-    if (model)               p.set('model', model)
-    if (body)                p.set('body', body)
-    if (transmission)        p.set('transmission', transmission)
-    if (fuel)                p.set('fuel', fuel)
-    if (minPrice > 0)        p.set('minPrice', minPrice)
-    if (maxPrice < MAX_PRICE) p.set('maxPrice', maxPrice)
-    if (minYear > 2000)      p.set('minYear', minYear)
-    if (maxYear < 2025)      p.set('maxYear', maxYear)
-    if (minKm > 0)           p.set('minKm', minKm)
-    if (maxKm < 300000)      p.set('maxKm', maxKm)
+    if (make)               p.set('make', make)
+    if (model)              p.set('model', model)
+    if (body)               p.set('body', body)
+    if (transmission)       p.set('transmission', transmission)
+    if (fuel)               p.set('fuel', fuel)
+    if (minPrice > 0)       p.set('minPrice', minPrice)
+    if (maxPrice < 20000000) p.set('maxPrice', maxPrice)
+    if (minYear > 2000)     p.set('minYear', minYear)
+    if (maxYear < 2025)     p.set('maxYear', maxYear)
+    if (minKm > 0)          p.set('minKm', minKm)
+    if (maxKm < 300000)     p.set('maxKm', maxKm)
     navigate(`/listings?${p.toString()}`)
   }
 
   const models = make && CAR_MODELS[make] ? CAR_MODELS[make] : []
-
   const inp = { width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans, sans-serif', outline:'none', background:'#F8FAFC' }
   const lbl = { display:'block', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:5 }
 
@@ -166,8 +161,6 @@ export default function HomePage({ user }) {
 
           {/* Search box */}
           <div style={{ background:'#fff', borderRadius:'14px 14px 0 0', padding:24 }}>
-
-            {/* Main row: Make, Model, Body, Price, Search */}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1.4fr auto', gap:12, alignItems:'end' }}>
               <div>
                 <label style={lbl}>Make</label>
@@ -178,7 +171,7 @@ export default function HomePage({ user }) {
               </div>
               <div>
                 <label style={lbl}>Model</label>
-                <select value={model} onChange={e => setModel(e.target.value)} style={inp} disabled={!make}>
+                <select value={model} onChange={e => setModel(e.target.value)} style={{ ...inp, color: make ? '#0A2540' : '#94A3B8' }} disabled={!make}>
                   <option value="">{make ? `All ${make} Models` : 'Select make first'}</option>
                   {models.map(m => <option key={m}>{m}</option>)}
                 </select>
@@ -192,7 +185,12 @@ export default function HomePage({ user }) {
               </div>
               <div>
                 <label style={lbl}>Price Range (KSH)</label>
-                <PriceRangeSlider minPrice={minPrice} maxPrice={maxPrice} setMinPrice={setMinPrice} setMaxPrice={setMaxPrice} />
+                <DualSlider
+                  minVal={minPrice} maxVal={maxPrice}
+                  absMin={0} absMax={20000000} step={500000}
+                  setMin={setMinPrice} setMax={setMaxPrice}
+                  formatLabel={n => `${(n/1e6).toFixed(1)}M`}
+                />
               </div>
               <button onClick={search} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'11px 20px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit, sans-serif', whiteSpace:'nowrap' }}>
                 Search {totalCars > 0 ? `${totalCars}` : ''} Cars →
@@ -206,7 +204,7 @@ export default function HomePage({ user }) {
             </div>
 
             {showMore && (
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:16, marginTop:14, paddingTop:14, borderTop:'1px solid #F0F4F8' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:20, marginTop:14, paddingTop:14, borderTop:'1px solid #F0F4F8' }}>
                 <div>
                   <label style={lbl}>Transmission</label>
                   <select value={transmission} onChange={e => setTransmission(e.target.value)} style={inp}>
@@ -227,28 +225,22 @@ export default function HomePage({ user }) {
                   </select>
                 </div>
                 <div>
-                  <label style={lbl}>Year — <span style={{ color:'#1565C0' }}>{minYear} – {maxYear}</span></label>
-                  <input type="range" min={2000} max={2025} value={minYear}
-                    onChange={e => setMinYear(Math.min(Number(e.target.value), maxYear - 1))}
-                    style={{ width:'100%', accentColor:'#1565C0', marginBottom:2 }} />
-                  <input type="range" min={2000} max={2025} value={maxYear}
-                    onChange={e => setMaxYear(Math.max(Number(e.target.value), minYear + 1))}
-                    style={{ width:'100%', accentColor:'#1565C0' }} />
-                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:2 }}>
-                    <span>2000</span><span>2025</span>
-                  </div>
+                  <label style={lbl}>Year</label>
+                  <DualSlider
+                    minVal={minYear} maxVal={maxYear}
+                    absMin={2000} absMax={2025} step={1}
+                    setMin={setMinYear} setMax={setMaxYear}
+                    formatLabel={n => `${n}`}
+                  />
                 </div>
                 <div>
-                  <label style={lbl}>Mileage — <span style={{ color:'#1565C0' }}>{minKm.toLocaleString()} – {maxKm.toLocaleString()} km</span></label>
-                  <input type="range" min={0} max={300000} step={5000} value={minKm}
-                    onChange={e => setMinKm(Math.min(Number(e.target.value), maxKm - 5000))}
-                    style={{ width:'100%', accentColor:'#1565C0', marginBottom:2 }} />
-                  <input type="range" min={0} max={300000} step={5000} value={maxKm}
-                    onChange={e => setMaxKm(Math.max(Number(e.target.value), minKm + 5000))}
-                    style={{ width:'100%', accentColor:'#1565C0' }} />
-                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#CBD5E1', marginTop:2 }}>
-                    <span>0 km</span><span>300,000 km</span>
-                  </div>
+                  <label style={lbl}>Mileage (km)</label>
+                  <DualSlider
+                    minVal={minKm} maxVal={maxKm}
+                    absMin={0} absMax={300000} step={5000}
+                    setMin={setMinKm} setMax={setMaxKm}
+                    formatLabel={n => `${(n/1000).toFixed(0)}k`}
+                  />
                 </div>
               </div>
             )}
@@ -335,7 +327,7 @@ export default function HomePage({ user }) {
           {BODY_TYPES.map(b => (
             <div key={b.t} onClick={() => navigate(`/listings?body=${b.t}`)}
               style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:'18px 12px', textAlign:'center', cursor:'pointer' }}>
-              <div style={{ fontFamily:'Outfit, sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{b.t}</div>
+              <div style={{ fontFamily:'Outfit, sans-serif', fontSize:13, fontWeight:700, color:'#0A2540' }}>{b.t}</div>
             </div>
           ))}
         </div>
