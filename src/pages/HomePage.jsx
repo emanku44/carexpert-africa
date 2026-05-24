@@ -84,7 +84,77 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
     </div>
   )
 }
+function DealersBar() {
+  const [dealers, setDealers] = useState([])
 
+  useEffect(() => {
+    supabase
+      .from('listings')
+      .select('contact_name, location')
+      .eq('status', 'approved')
+      .not('contact_name', 'is', null)
+      .then(({ data }) => {
+        if (!data) return
+        const unique = {}
+        data.forEach(l => {
+          if (l.contact_name && !unique[l.contact_name]) {
+            unique[l.contact_name] = l.location || 'Kenya'
+          }
+        })
+        setDealers(Object.entries(unique).map(([name, location]) => ({ name, location })))
+      })
+  }, [])
+
+  const displayDealers = dealers.length > 0 ? dealers : [
+    { name: 'Nairobi Kars Ltd', location: 'Westlands' },
+    { name: 'AutoMart Kenya', location: 'Mombasa' },
+    { name: 'Prime Motors', location: 'Karen' },
+    { name: 'Capital Cars', location: 'Nakuru' },
+    { name: 'Safari Motors', location: 'Kisumu' },
+    { name: 'Prestige Auto', location: 'Langata' },
+  ]
+
+  // Duplicate for seamless loop
+  const items = [...displayDealers, ...displayDealers, ...displayDealers]
+
+  return (
+    <div style={{ background: '#0A2540', padding: '20px 0', overflow: 'hidden', marginTop: 48 }}>
+      <div style={{ textAlign: 'center', fontFamily: 'Outfit, sans-serif', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 14 }}>
+        Dealers We Work With
+      </div>
+      <div style={{ overflow: 'hidden', position: 'relative' }}>
+        {/* Fade edges */}
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to right, #0A2540, transparent)', zIndex: 2 }}/>
+        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to left, #0A2540, transparent)', zIndex: 2 }}/>
+        <div style={{
+          display: 'flex', gap: 0,
+          animation: 'scroll-dealers 30s linear infinite',
+          width: 'max-content'
+        }}>
+          {items.map((d, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 32, padding: '0 32px', borderRight: '1px solid rgba(255,255,255,.08)', whiteSpace: 'nowrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(77,166,255,.15)', border: '1px solid rgba(77,166,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Outfit, sans-serif', fontSize: 10, fontWeight: 800, color: '#4DA6FF', flexShrink: 0 }}>
+                  {d.name[0]}
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: 700, color: '#fff' }}>{d.name}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)' }}>📍 {d.location}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <style>{`
+        @keyframes scroll-dealers {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-33.333%); }
+        }
+      `}</style>
+    </div>
+  )
+}
 export default function HomePage({ user }) {
   const navigate = useNavigate()
   const [make, setMake]                 = useState('')
@@ -374,6 +444,8 @@ export default function HomePage({ user }) {
           ))}
         </div>
       </div>
+{/* Revolving Dealers Bar */}
+<DealersBar />
 
       {/* Dealer CTA */}
       <div style={{ maxWidth:1200, margin:'48px auto', padding:'0 24px' }}>
