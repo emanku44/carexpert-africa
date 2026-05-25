@@ -32,7 +32,82 @@ const CAR_MODELS = {
   Porsche: ['911','Cayenne','Macan','Panamera'],
 }
 
-const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
+const VARIANTS = {
+  'Land Cruiser 300': ['GX','GXR','VX','VX.R','ZX','Sahara','Sahara ZX','Black Edition','GR Sport'],
+  'Land Cruiser 200': ['GX','GXR','VX','VXR','VX Limited','ZX','Sahara','Heritage Edition'],
+  'Land Cruiser Prado 150': ['GX','GXR','TX','TX-L','VX','VXL','TZ-G','Active','Kakadu'],
+  'Land Cruiser Prado 120': ['GX','GXL','VX','VXL','Grande'],
+  'Land Cruiser Prado 90': ['GX','VX','RV'],
+  'Land Cruiser 100 Series': ['GX','VX','VX Limited','Sahara','Amazon'],
+  'Land Cruiser 80 Series': ['GX','VX','GXL','VXL','Sahara'],
+  'Land Cruiser 70 Series': ['Single Cab','Double Cab','Troop Carrier','VDJ76','VDJ78','VDJ79'],
+  'Hilux': ['Single Cab 4x2','Single Cab 4x4','Extra Cab 4x2','Extra Cab 4x4','Double Cab 4x2','Double Cab 4x4','Raider','Revo','Legend 50','Legend RS'],
+  'Fortuner': ['GX','GXR','VX','Legender','GR Sport'],
+  'Harrier': ['Standard','Premium','Z','Z Leather'],
+  'RAV4': ['XA','XLE','Adventure','TRD Off-Road','Limited','Hybrid XLE','Prime'],
+  'Camry': ['LE','SE','XLE','XSE','TRD'],
+  'Corolla': ['Base','LE','SE','XLE','XSE','ZR'],
+  'Noah': ['S','G','Si','Gi'],
+  'Voxy': ['V','ZS','ZR'],
+  'Alphard': ['S','G','GF','SC','Executive Lounge'],
+  'Vellfire': ['V','Z','ZG','Z G Edition','Executive Lounge'],
+  'Crown': ['S','G','RS','Advance','RS Advance'],
+  'Mark X': ['250G','350G','350S','Relax Selection'],
+  'Hiace': ['Standard','High Roof','Super GL','Grand Cabin','KDH','LH'],
+  'Patrol': ['DX','SGL','LE','SE','Titanium','Safari','Y61','Y62'],
+  'X-Trail': ['LE','ST','ST-L','Ti','Ti-L'],
+  'Navara': ['D40','D23','NP300','LE','SE','Calibre','King Cab','Double Cab'],
+  'Elgrand': ['Standard','Rider','Highway Star','VIP','E51','E52'],
+  'C-Class': ['C180','C200','C220d','C250','C300','C350','AMG C43','AMG C63'],
+  'E-Class': ['E200','E220','E250','E300','E350','E400','AMG E43','AMG E63'],
+  'S-Class': ['S300','S320','S350','S400','S450','S500','S600','AMG S63','Maybach S580'],
+  'GLE': ['GLE 300d','GLE 350','GLE 400','GLE 450','AMG GLE 53','AMG GLE 63'],
+  'GLC': ['GLC 200','GLC 220d','GLC 250','GLC 300','AMG GLC 43'],
+  'GLS': ['GLS 350d','GLS 400','GLS 450','AMG GLS 63'],
+  'G-Class': ['G 350d','G 500','G 550','AMG G 63'],
+  'X5': ['xDrive 25d','xDrive 30d','xDrive 40i','M50i','xDrive 45e','M Competition'],
+  'X3': ['xDrive 20i','xDrive 20d','xDrive 30i','xDrive 30d','M40i','M Competition'],
+  'X6': ['xDrive 30d','xDrive 40i','M50i','M Competition'],
+  '3 Series': ['316i','318i','320i','320d','325i','328i','330i','335i','M3'],
+  '5 Series': ['518d','520i','520d','525d','528i','530i','535i','M5'],
+  'Range Rover': ['Vogue','Vogue SE','Autobiography','SVAutobiography','Sport HSE','Sport HST'],
+  'Range Rover Sport': ['SE','HSE','HSE Dynamic','Autobiography Dynamic','SVR','P400e'],
+  'Range Rover Evoque': ['S','SE','HSE','R-Dynamic SE','First Edition'],
+  'Discovery': ['S','SE','HSE','HSE Luxury','First Edition','HSE Si6'],
+  'Defender 110': ['S','SE','HSE','X','X-Dynamic SE','Trophy Edition','Heritage'],
+  'Defender 90': ['S','SE','HSE','X','X-Dynamic SE','Trophy Edition'],
+  'Golf': ['Trendline','Comfortline','Highline','R-Line','GTI','Golf R','e-Golf'],
+  'Tiguan': ['Trendline','Comfortline','Highline','R-Line','Allspace'],
+  'Amarok': ['Trendline','Comfortline','Highline','V6 TDI','Aventura'],
+  'Ranger': ['XL','XLS','XLT','Sport','Wildtrak','Raptor','Limited','FX4','Tremor'],
+  'Everest': ['Ambiente','Trend','Sport','Titanium','Titanium Plus','Platinum'],
+  'Pajero': ['GLX','GLS','Exceed','Dakar','Final Edition','Short Body','Long Body'],
+  'Outlander': ['GLX','GLS','Exceed','GT','PHEV'],
+  'L200': ['GL','GLX','GLS','Triton','Double Cab','Single Cab'],
+  'Forester': ['2.0i','2.5i','XT','X20','Premium','Sport','Touring'],
+  'Outback': ['2.5i','3.6R','Premium','Limited','Touring','XT'],
+  'WRX': ['Base','Premium','Limited','STI','STI S209'],
+  'CR-V': ['LX','EX','EX-L','Touring','Sport'],
+  'LX': ['LX 450d','LX 570','LX 600 Luxury','LX 600 Ultra Luxury'],
+  'GX': ['GX 400','GX 460','Luxury','Premium'],
+  'RX': ['RX 200t','RX 300','RX 330','RX 350','RX 450h','F Sport'],
+  'Cayenne': ['Base','S','GTS','Turbo','Turbo S','E-Hybrid','Coupe'],
+  '911': ['Carrera','Carrera S','Carrera 4','Carrera 4S','Turbo','Turbo S','GT3'],
+  'Santa Fe': ['GL','GLS','Executive','XL','Highlander','Calligraphy'],
+  'Tucson': ['GL','GLS','Executive','Highlander','N Line'],
+  'Sorento': ['LX','EX','SX','SX Prestige','Hybrid EX'],
+  'Sportage': ['LX','EX','SX','GT Line','Hybrid'],
+  'D-Max': ['Base','LS','V-Cross','X-Series','4x2','4x4','Single Cab','Spacecab','Double Cab'],
+  'MU-X': ['LS-U','LS-T','X Series','Ultimate'],
+  'H6': ['Classic','Premium','Supreme','Ultra','HEV'],
+  'Jolion': ['Comfort','Premium','Lux','HEV'],
+  'Tiggo 7 Pro': ['Comfort','Premium','Luxury'],
+  'Tiggo 8': ['Comfort','Premium','Luxury','Sport','Pro'],
+  'Q7': ['35 TDI','45 TFSI','55 TFSI','SQ7'],
+  'Q5': ['35 TDI','40 TDI','40 TFSI','45 TFSI','SQ5'],
+  'A4': ['35 TDI','40 TDI','40 TFSI','45 TFSI','S4','RS4'],
+  'A6': ['40 TDI','45 TDI','45 TFSI','55 TFSI','S6','RS6'],
+}
 
 function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, formatLabel }) {
   const trackRef = useRef(null)
@@ -185,41 +260,7 @@ function SavedSearchesQuickList({ user, onApply }) {
     </div>
   )
 }
-function MobileSavedSearches({ user, onApply }) {
-  const [searches, setSearches] = useState([])
-  const [open, setOpen] = useState(false)
 
-  useEffect(() => {
-    if (!user) return
-    supabase.from('saved_searches').select('*').eq('user_id', user.id)
-      .order('created_at', { ascending: false }).limit(5)
-      .then(({ data }) => setSearches(data || []))
-  }, [user])
-
-  if (!user || searches.length === 0) return null
-
-  return (
-    <div style={{ position: 'relative' }} className="mobile-filter-btn">
-      <button onClick={() => setOpen(!open)}
-        style={{ background: '#FEF3C7', color: '#92400E', border: '1.5px solid #FCD34D', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
-        🔖 Saved ({searches.length})
-      </button>
-      {open && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#fff', border: '1.5px solid #E2E8F0', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', zIndex: 100, width: 240 }}>
-          {searches.map(s => (
-            <button key={s.id} onClick={() => { onApply(s.filters); setOpen(false) }}
-              style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: '1px solid #F0F4F8', padding: '12px 14px', cursor: 'pointer', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
-              <div style={{ fontWeight: 700, color: '#0A2540', marginBottom: 2 }}>{s.name}</div>
-              <div style={{ color: '#94A3B8', fontSize: 11 }}>
-                {[s.filters.make, s.filters.model, s.filters.maxPrice < 30000000 && `Up to ${(s.filters.maxPrice/1e6).toFixed(1)}M`].filter(Boolean).join(' · ') || 'All filters'}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 export default function ListingsPage({ user }) {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -235,6 +276,7 @@ export default function ListingsPage({ user }) {
   const [search, setSearch] = useState(searchParams.get('q') || '')
   const [selectedMake, setSelectedMake] = useState(searchParams.get('make') || '')
   const [selectedModel, setSelectedModel] = useState(searchParams.get('model') || '')
+  const [selectedVariant, setSelectedVariant] = useState('')
   const [selectedLocation, setSelectedLocation] = useState('')
   const [bodies, setBodies]       = useState(new Set())
   const [fuels, setFuels]         = useState(new Set())
@@ -274,7 +316,7 @@ export default function ListingsPage({ user }) {
   })
 
   const clearAll = () => {
-    setSearch(''); setSelectedMake(''); setSelectedModel(''); setSelectedLocation('')
+    setSearch(''); setSelectedMake(''); setSelectedModel(''); setSelectedVariant(''); setSelectedLocation('')
     setBodies(new Set()); setFuels(new Set()); setTrans(new Set())
     setDrives(new Set()); setConditions(new Set())
     setMinPrice(0); setMaxPrice(30000000)
@@ -300,7 +342,7 @@ export default function ListingsPage({ user }) {
     const { data: { user: u } } = await supabase.auth.getUser()
     if (!u) { alert('Please log in to save searches'); return }
     const filters = {
-      search, make: selectedMake, model: selectedModel, location: selectedLocation,
+      search, make: selectedMake, model: selectedModel, variant: selectedVariant, location: selectedLocation,
       bodies: [...bodies], fuels: [...fuels], trans: [...trans], drives: [...drives], conditions: [...conditions],
       minPrice, maxPrice, minYear, maxYear, minKm, maxKm
     }
@@ -321,6 +363,7 @@ export default function ListingsPage({ user }) {
     if (!matchesSearch(c))                                     return false
     if (selectedMake && c.make !== selectedMake)               return false
     if (selectedModel && c.model !== selectedModel)            return false
+    if (selectedVariant && c.variant !== selectedVariant)      return false
     if (selectedLocation && c.location !== selectedLocation)   return false
     if (bodies.size && !bodies.has(c.body_type))               return false
     if (fuels.size && !fuels.has(c.fuel_type))                 return false
@@ -351,7 +394,7 @@ export default function ListingsPage({ user }) {
   const availableModels = selectedMake && CAR_MODELS[selectedMake] ? CAR_MODELS[selectedMake] : []
 
   const activeFiltersCount = [
-    search, selectedMake, selectedModel, selectedLocation,
+    search, selectedMake, selectedModel, selectedVariant, selectedLocation,
     ...bodies, ...fuels, ...trans, ...drives, ...conditions,
     minPrice > 0, maxPrice < 30000000, minYear > 1970, maxYear < 2025, minKm > 0, maxKm < 300000
   ].filter(Boolean).length
@@ -359,6 +402,7 @@ export default function ListingsPage({ user }) {
   const applySearch = (filters) => {
     if (filters.make) setSelectedMake(filters.make)
     if (filters.model) setSelectedModel(filters.model)
+    if (filters.variant) setSelectedVariant(filters.variant)
     if (filters.search) setSearch(filters.search)
     if (filters.location) setSelectedLocation(filters.location)
     if (filters.minPrice) setMinPrice(filters.minPrice)
@@ -412,11 +456,21 @@ export default function ListingsPage({ user }) {
         {selectedMake && availableModels.length > 0 && (
           <>
             <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 6 }}>Model</div>
-            <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
+            <select value={selectedModel} onChange={e => { setSelectedModel(e.target.value); setSelectedVariant('') }}
               style={{ width: '100%', padding: '10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
               <option value="">All {selectedMake} ({listings.filter(l => l.make === selectedMake).length})</option>
               {availableModels.map(m => <option key={m} value={m}>{m}{modelCounts[m] > 0 ? ` (${modelCounts[m]})` : ''}</option>)}
             </select>
+            {selectedModel && VARIANTS[selectedModel] && (
+              <>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.8px', fontFamily: 'Outfit, sans-serif', marginBottom: 6, marginTop: 10 }}>Variant / Trim</div>
+                <select value={selectedVariant} onChange={e => setSelectedVariant(e.target.value)}
+                  style={{ width: '100%', padding: '10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
+                  <option value="">All Variants</option>
+                  {VARIANTS[selectedModel].map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </>
+            )}
           </>
         )}
       </FilterSection>
@@ -519,8 +573,6 @@ export default function ListingsPage({ user }) {
                 style={{ background: '#0A2540', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', alignItems: 'center', gap: 6 }}>
                 ⚙ Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
               </button>
-              <MobileSavedSearches user={user} onApply={filters => { applySearch(filters) }} />
-              <MobileSavedSearches user={user} onApply={filters => { applySearch(filters) }} />
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 700, color: '#0A2540' }}>
                 {loading ? 'Loading...' : (
                   <><span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars
@@ -551,7 +603,8 @@ export default function ListingsPage({ user }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
               {search && <Tag label={`"${search}"`} onClear={() => setSearch('')} />}
               {selectedMake && <Tag label={selectedMake} onClear={() => { setSelectedMake(''); setSelectedModel('') }} />}
-              {selectedModel && <Tag label={selectedModel} onClear={() => setSelectedModel('')} />}
+              {selectedModel && <Tag label={selectedModel} onClear={() => { setSelectedModel(''); setSelectedVariant('') }} />}
+              {selectedVariant && <Tag label={selectedVariant} onClear={() => setSelectedVariant('')} />}}
               {selectedLocation && <Tag label={selectedLocation} onClear={() => setSelectedLocation('')} />}
               {[...bodies].map(v => <Tag key={v} label={v} onClear={() => toggle(setBodies)(v)} />)}
               {[...fuels].map(v => <Tag key={v} label={v} onClear={() => toggle(setFuels)(v)} />)}
@@ -602,7 +655,7 @@ export default function ListingsPage({ user }) {
                   </div>
                   <div style={{ padding: 12 }}>
                     <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 800, color: '#0A2540', marginBottom: 2 }}>{fmt(car.price)}</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 8 }}>{car.year} {car.make} {car.model}{car.variant ? ` ${car.variant}` : ''}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 8 }}>{car.year} {car.make} {car.model}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
                       {[car.mileage && `${Number(car.mileage).toLocaleString()} km`, car.fuel_type, car.transmission, car.body_type].filter(Boolean).map((s, i) => (
                         <span key={i} style={{ fontSize: 10, color: '#94A3B8', padding: '2px 6px', background: '#F8FAFC', borderRadius: 100, border: '1px solid #E8EDF3' }}>{s}</span>
