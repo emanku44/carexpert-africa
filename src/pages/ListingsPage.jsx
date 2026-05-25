@@ -604,7 +604,7 @@ export default function ListingsPage({ user }) {
               {search && <Tag label={`"${search}"`} onClear={() => setSearch('')} />}
               {selectedMake && <Tag label={selectedMake} onClear={() => { setSelectedMake(''); setSelectedModel('') }} />}
               {selectedModel && <Tag label={selectedModel} onClear={() => { setSelectedModel(''); setSelectedVariant('') }} />}
-              {selectedVariant && <Tag label={selectedVariant} onClear={() => setSelectedVariant('')} />}}
+              {selectedVariant && <Tag label={selectedVariant} onClear={() => setSelectedVariant('')} />}
               {selectedLocation && <Tag label={selectedLocation} onClear={() => setSelectedLocation('')} />}
               {[...bodies].map(v => <Tag key={v} label={v} onClear={() => toggle(setBodies)(v)} />)}
               {[...fuels].map(v => <Tag key={v} label={v} onClear={() => toggle(setFuels)(v)} />)}
