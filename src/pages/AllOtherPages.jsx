@@ -748,7 +748,7 @@ export function ListCarPage({ user }) {
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     if (!currentUser) { alert('Please log in first'); return }
     const { error } = await supabase.from('listings').insert({
-      user_id: currentUser.id, make, model: variant ? `${model} — ${variant}` : model, year, mileage: km,
+      user_id: currentUser.id, make, model, variant: variant || null, year, mileage: km,
       engine_cc: engineCc, body_type: bodyType, fuel_type: fuel,
       transmission, drive_type: drive, colour, condition, price,
       negotiable: nego, status: 'pending', contact_name: contactName,
