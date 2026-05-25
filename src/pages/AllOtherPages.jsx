@@ -145,7 +145,10 @@ export function CarDetailPage({ user }) {
             <div style={{ fontSize:12, color:'#94A3B8', display:'flex', gap:8, flexWrap:'wrap' }}>
               {car.location && <span>📍 {car.location}</span>}
               {car.views > 0 && <span style={{ color:'#1565C0', fontWeight:600 }}>{car.views} views</span>}
-              <span>{new Date(car.created_at).toLocaleDateString('en-GB')}</span>
+              <span>Listed {new Date(car.created_at).toLocaleDateString('en-GB')}</span>
+              {car.updated_at && car.updated_at !== car.created_at && (
+                <span>· Updated {new Date(car.updated_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+              )}
             </div>
           </div>
 
