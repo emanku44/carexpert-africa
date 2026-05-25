@@ -260,7 +260,7 @@ function SavedSearchesQuickList({ user, onApply }) {
     </div>
   )
 }
-
+const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
 export default function ListingsPage({ user }) {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
