@@ -106,14 +106,14 @@ export function CarDetailPage({ user }) {
     </div>
   )
 
-  const waLink = `https://wa.me/${(car.phone||'').replace(/\D/g,'')}?text=Hi, I saw your ${car.year} ${car.make} ${car.model} on CarExpert Africa. Is it still available?`
+  const waLink = `https://wa.me/${(car.phone||'').replace(/\D/g,'')}?text=Hi, I saw your ${car.year} ${car.make} ${car.model}${car.variant ? ` — ${car.variant}` : ''} on CarExpert Africa. Is it still available?`
 
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
       <style>{MOBILE_CSS}</style>
       <Navbar user={user} />
       <div style={{ background:'#fff', borderBottom:'1px solid #E8EDF3', padding:'10px 16px', fontSize:12, color:'#94A3B8' }}>
-        <Link to="/" style={{ color:'#1565C0', textDecoration:'none' }}>Home</Link> / <Link to="/listings" style={{ color:'#1565C0', textDecoration:'none' }}>Listings</Link> / {car.year} {car.make} {car.model}
+        <Link to="/" style={{ color:'#1565C0', textDecoration:'none' }}>Home</Link> / <Link to="/listings" style={{ color:'#1565C0', textDecoration:'none' }}>Listings</Link> / {car.year} {car.make} {car.model}{car.variant ? ` — ${car.variant}` : ''}
       </div>
 
       <div className="detail-grid detail-main-pad" style={{ display:'grid', gridTemplateColumns:'1fr 300px', gap:16, padding:'16px', maxWidth:1200, margin:'0 auto' }}>
@@ -141,7 +141,7 @@ export function CarDetailPage({ user }) {
 
           {/* Title */}
           <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:12 }}>
-            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540', marginBottom:4 }}>{car.year} {car.make} {car.model}</div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540', marginBottom:4 }}>{car.year} {car.make} {car.model}{car.variant ? ` — ${car.variant}` : ''}</div>
             <div style={{ fontSize:12, color:'#94A3B8', display:'flex', gap:8, flexWrap:'wrap' }}>
               {car.location && <span>📍 {car.location}</span>}
               {car.views > 0 && <span style={{ color:'#1565C0', fontWeight:600 }}>{car.views} views</span>}
@@ -155,7 +155,7 @@ export function CarDetailPage({ user }) {
               <span style={{ width:3, height:14, background:'#1565C0', borderRadius:2, display:'inline-block' }}/>  Vehicle Specifications
             </div>
             <div className="spec-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr' }}>
-              {[['Make',car.make],['Model',car.model],['Year',car.year],['Mileage',car.mileage?`${Number(car.mileage).toLocaleString()} km`:'—'],['Condition',car.condition||'—'],['Body Type',car.body_type||'—'],['Engine',car.engine_cc?`${car.engine_cc} cc`:'—'],['Fuel Type',car.fuel_type||'—'],['Transmission',car.transmission||'—'],['Drive Type',car.drive_type||'—'],['Colour',car.colour||car.color||'—'],['Negotiable',car.negotiable?'Yes':'No']].map(([k,v],i) => (
+              {[['Make',car.make],['Model',car.model],['Variant',car.variant||'—'],['Year',car.year],['Mileage',car.mileage?`${Number(car.mileage).toLocaleString()} km`:'—'],['Condition',car.condition||'—'],['Body Type',car.body_type||'—'],['Engine',car.engine_cc?`${car.engine_cc} cc`:'—'],['Fuel Type',car.fuel_type||'—'],['Transmission',car.transmission||'—'],['Drive Type',car.drive_type||'—'],['Colour',car.colour||car.color||'—'],['Negotiable',car.negotiable?'Yes':'No']].map(([k,v],i) => (
                 <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'9px 10px', borderBottom:'1px solid #F0F4F8', borderRight: i%2===0?'1px solid #F0F4F8':'none' }}>
                   <span style={{ fontSize:12, color:'#94A3B8' }}>{k}</span>
                   <span style={{ fontSize:12, fontWeight:700, color:'#0A2540', fontFamily:'Outfit,sans-serif' }}>{v}</span>
