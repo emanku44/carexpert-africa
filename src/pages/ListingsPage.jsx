@@ -179,7 +179,11 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
 }
 
 function FilterSection({ title, activeCount, children }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(activeCount > 0)
+
+  useEffect(() => {
+    if (activeCount > 0) setOpen(true)
+  }, [activeCount])
   return (
     <div style={{ borderTop: '1px solid #F5F7FA' }}>
       <div onClick={() => setOpen(!open)}
