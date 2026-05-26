@@ -115,7 +115,6 @@ export function CarDetailPage({ user }) {
     if (error) { alert('Error: ' + error.message); return }
     setOfferSubmitted(true)
   }
-  const [driveOpen, setDriveOpen] = useState(false)
   const [driveDate, setDriveDate] = useState(null)
   const [driveTime, setDriveTime] = useState('')
   const [driveName, setDriveName] = useState('')
