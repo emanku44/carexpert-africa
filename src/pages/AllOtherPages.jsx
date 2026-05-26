@@ -53,7 +53,14 @@ export function CarDetailPage({ user }) {
   const [offerPhone, setOfferPhone] = useState('')
   const [offerSubmitted, setOfferSubmitted] = useState(false)
   const [copyMsg, setCopyMsg] = useState('')
-
+  const [driveOpen, setDriveOpen] = useState(false)
+  const [driveDate, setDriveDate] = useState(null)
+  const [driveTime, setDriveTime] = useState('')
+  const [driveName, setDriveName] = useState('')
+  const [drivePhone, setDrivePhone] = useState('')
+  const [driveMsg, setDriveMsg] = useState('')
+  const [driveSubmitted, setDriveSubmitted] = useState(false)
+  const [calMonth, setCalMonth] = useState(new Date())
   useEffect(() => {
     if (!id) return
     supabase.from('listings').select('*, listing_photos(*)').eq('id', id).single()
@@ -136,7 +143,18 @@ export function CarDetailPage({ user }) {
     if (type === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`, '_blank')
     else if (type === 'copy') { navigator.clipboard.writeText(url); setCopyMsg('Copied!'); setTimeout(() => setCopyMsg(''), 2000) }
   }
-
+  const handleTestDrive = async () => {
+    if (!driveDate || !driveTime || !driveName || !drivePhone) { alert('Please fill in all fields'); return }
+    const { data: { user: u } } = await supabase.auth.getUser()
+    const { error } = await supabase.from('test_drives').insert({
+      listing_id: id, buyer_id: u?.id || null,
+      buyer_name: driveName, buyer_phone: drivePhone,
+      preferred_date: driveDate.toISOString().split('T')[0],
+      preferred_time: driveTime, message: driveMsg, status: 'pending'
+    })
+  if (error) { alert('Error: ' + error.message); return }
+  setDriveSubmitted(true)
+}
   if (loading) return (
     <div style={{ fontFamily:'DM Sans,sans-serif', minHeight:'100vh', background:'#F7F9FC' }}>
       <style>{MOBILE_CSS}</style><Navbar user={user} />
