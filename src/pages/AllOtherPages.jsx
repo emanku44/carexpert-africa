@@ -108,6 +108,27 @@ export function CarDetailPage({ user }) {
     if (error) { alert('Error: ' + error.message); return }
     setOfferSubmitted(true)
   }
+  const [driveOpen, setDriveOpen] = useState(false)
+  const [driveDate, setDriveDate] = useState(null)
+  const [driveTime, setDriveTime] = useState('')
+  const [driveName, setDriveName] = useState('')
+  const [drivePhone, setDrivePhone] = useState('')
+  const [driveMsg, setDriveMsg] = useState('')
+  const [driveSubmitted, setDriveSubmitted] = useState(false)
+  const [calMonth, setCalMonth] = useState(new Date())
+
+  const handleTestDrive = async () => {
+    if (!driveDate || !driveTime || !driveName || !drivePhone) { alert('Please fill in all fields'); return }
+    const { data: { user: u } } = await supabase.auth.getUser()
+    const { error } = await supabase.from('test_drives').insert({
+      listing_id: id, buyer_id: u?.id || null,
+      buyer_name: driveName, buyer_phone: drivePhone,
+      preferred_date: driveDate.toISOString().split('T')[0],
+      preferred_time: driveTime, message: driveMsg, status: 'pending'
+    })
+    if (error) { alert('Error: ' + error.message); return }
+  setDriveSubmitted(true)
+}
 
   const handleShare = (type) => {
     const url = window.location.href
@@ -309,6 +330,10 @@ export function CarDetailPage({ user }) {
               style={{ width:'100%', background:'rgba(255,255,255,.1)', color:'#fff', border:'1.5px solid rgba(255,255,255,.25)', padding:'10px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginBottom:8 }}>
               🤝 Make an Offer
             </button>
+            <button onClick={() => setDriveOpen(true)}
+              style={{ width:'100%', background:'rgba(255,255,255,.1)', color:'#fff', border:'1.5px solid rgba(255,255,255,.25)', padding:'10px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginBottom:8 }}>
+              📅 Book a Test Drive
+            </button>
             {car.contact_name && (
               <>
                 <div style={{ height:1, background:'rgba(255,255,255,.1)', margin:'12px 0' }}/>
@@ -404,7 +429,132 @@ export function CarDetailPage({ user }) {
   )
 }
 
+{/* Test Drive Modal */}
+{driveOpen && (
+  <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+    <div style={{ background:'#fff', borderRadius:16, padding:24, width:'100%', maxWidth:460, boxShadow:'0 20px 60px rgba(0,0,0,.2)', maxHeight:'90vh', overflowY:'auto' }}>
+      {driveSubmitted ? (
+        <div style={{ textAlign:'center', padding:'20px 0' }}>
+          <div style={{ fontSize:48, marginBottom:12 }}>📅</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540', marginBottom:8 }}>Test Drive Booked!</div>
+          <div style={{ fontSize:13, color:'#64748B', marginBottom:8, lineHeight:1.6 }}>
+            <strong>{driveDate?.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</strong> at <strong>{driveTime}</strong>
+          </div>
+          <div style={{ fontSize:13, color:'#64748B', marginBottom:20 }}>The seller will confirm via WhatsApp or phone.</div>
+          <button onClick={() => { setDriveOpen(false); setDriveSubmitted(false); setDriveDate(null); setDriveTime('') }}
+            style={{ background:'#1565C0', color:'#fff', border:'none', padding:'11px 28px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Done</button>
+        </div>
+      ) : (
+        <>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540', marginBottom:4 }}>📅 Book a Test Drive</div>
+          <div style={{ fontSize:12, color:'#94A3B8', marginBottom:16 }}>{car.year} {car.make} {car.model}{car.variant ? ` — ${car.variant}` : ''}</div>
 
+          {/* Calendar */}
+          <div style={{ border:'1.5px solid #E2E8F0', borderRadius:10, overflow:'hidden', marginBottom:16 }}>
+            {/* Month header */}
+            <div style={{ background:'#0A2540', padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth()-1, 1))}
+                style={{ background:'rgba(255,255,255,.15)', border:'none', color:'#fff', width:28, height:28, borderRadius:6, cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#fff' }}>
+                {calMonth.toLocaleDateString('en-GB', { month:'long', year:'numeric' })}
+              </div>
+              <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth()+1, 1))}
+                style={{ background:'rgba(255,255,255,.15)', border:'none', color:'#fff', width:28, height:28, borderRadius:6, cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center' }}>›</button>
+            </div>
+            {/* Day headers */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', background:'#F8FAFC', borderBottom:'1px solid #E8EDF3' }}>
+              {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
+                <div key={d} style={{ textAlign:'center', padding:'8px 0', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase' }}>{d}</div>
+              ))}
+            </div>
+            {/* Days grid */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'8px' }}>
+              {(() => {
+                const year = calMonth.getFullYear()
+                const month = calMonth.getMonth()
+                const firstDay = new Date(year, month, 1).getDay()
+                const daysInMonth = new Date(year, month+1, 0).getDate()
+                const today = new Date(); today.setHours(0,0,0,0)
+                const cells = []
+                for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`}/>)
+                for (let d = 1; d <= daysInMonth; d++) {
+                  const date = new Date(year, month, d)
+                  const isPast = date < today
+                  const isToday = date.toDateString() === today.toDateString()
+                  const isSelected = driveDate?.toDateString() === date.toDateString()
+                  const isSunday = date.getDay() === 0
+                  cells.push(
+                    <div key={d} onClick={() => !isPast && !isSunday && setDriveDate(date)}
+                      style={{
+                        textAlign:'center', padding:'7px 0', borderRadius:7, fontSize:13, fontWeight: isSelected||isToday ? 700 : 400, margin:'1px',
+                        background: isSelected ? '#1565C0' : isToday ? '#EEF5FF' : 'transparent',
+                        color: isSelected ? '#fff' : isPast||isSunday ? '#CBD5E1' : isToday ? '#1565C0' : '#0A2540',
+                        cursor: isPast||isSunday ? 'not-allowed' : 'pointer',
+                        border: isToday && !isSelected ? '1.5px solid #BDD5FF' : '1.5px solid transparent',
+                      }}>
+                      {d}
+                    </div>
+                  )
+                }
+                return cells
+              })()}
+            </div>
+            {driveDate && (
+              <div style={{ padding:'8px 12px', borderTop:'1px solid #E8EDF3', background:'#F8FAFC', fontSize:12, fontWeight:600, color:'#1565C0', textAlign:'center' }}>
+                📅 {driveDate.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })}
+              </div>
+            )}
+          </div>
+
+          {/* Time slots */}
+          {driveDate && (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:8 }}>Preferred Time</div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:6 }}>
+                {['8:00 AM','9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM'].map(t => (
+                  <button key={t} onClick={() => setDriveTime(t)}
+                    style={{ padding:'8px 4px', border:`1.5px solid ${driveTime===t?'#1565C0':'#E2E8F0'}`, borderRadius:7, fontSize:12, fontWeight: driveTime===t?700:400, color: driveTime===t?'#1565C0':'#475569', background: driveTime===t?'#EEF5FF':'#fff', cursor:'pointer', fontFamily:'DM Sans,sans-serif' }}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Contact fields */}
+          {driveDate && driveTime && (
+            <>
+              {[
+                { label:'Your Name', value:driveName, set:setDriveName, type:'text', placeholder:'John Kamau' },
+                { label:'Phone / WhatsApp', value:drivePhone, set:setDrivePhone, type:'tel', placeholder:'+254 7XX XXX XXX' },
+              ].map(f => (
+                <div key={f.label} style={{ marginBottom:12 }}>
+                  <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>{f.label}</label>
+                  <input type={f.type} value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.placeholder}
+                    style={{ width:'100%', padding:'11px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', boxSizing:'border-box' }}/>
+                </div>
+              ))}
+              <div style={{ marginBottom:16 }}>
+                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Message (optional)</label>
+                <textarea value={driveMsg} onChange={e => setDriveMsg(e.target.value)} placeholder="Any specific requests for the test drive..." rows={2}
+                  style={{ width:'100%', padding:'11px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', resize:'none', boxSizing:'border-box' }}/>
+              </div>
+            </>
+          )}
+
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={() => setDriveOpen(false)}
+              style={{ flex:1, background:'#F8FAFC', color:'#64748B', border:'1.5px solid #E2E8F0', padding:'11px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Cancel</button>
+            <button onClick={handleTestDrive} disabled={!driveDate||!driveTime||!driveName||!drivePhone}
+              style={{ flex:2, background: driveDate&&driveTime&&driveName&&drivePhone?'#1565C0':'#94A3B8', color:'#fff', border:'none', padding:'11px', borderRadius:8, fontSize:13, fontWeight:700, cursor: driveDate&&driveTime&&driveName&&drivePhone?'pointer':'default', fontFamily:'Outfit,sans-serif' }}>
+              {driveDate && driveTime ? `Book for ${driveDate.toLocaleDateString('en-GB', { day:'numeric', month:'short' })} at ${driveTime}` : 'Select a date and time'}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+)}
 // ─────────────────────────────────────────────────────────────
 // VALUATION PAGE
 // ─────────────────────────────────────────────────────────────
