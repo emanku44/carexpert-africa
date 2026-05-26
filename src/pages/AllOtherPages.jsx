@@ -45,6 +45,14 @@ export function CarDetailPage({ user }) {
   const [term, setTerm] = useState(48)
   const [rate, setRate] = useState(14)
   const [activePhoto, setActivePhoto] = useState(0)
+  const [similarCars, setSimilarCars] = useState([])
+  const [offerOpen, setOfferOpen] = useState(false)
+  const [offerAmount, setOfferAmount] = useState('')
+  const [offerMsg, setOfferMsg] = useState('')
+  const [offerName, setOfferName] = useState('')
+  const [offerPhone, setOfferPhone] = useState('')
+  const [offerSubmitted, setOfferSubmitted] = useState(false)
+  const [copyMsg, setCopyMsg] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -61,6 +69,10 @@ export function CarDetailPage({ user }) {
             supabase.from('saved_listings').select('id').eq('user_id', u.id).eq('listing_id', id).single()
               .then(({ data: s }) => { if (s) setSaved(true) })
           })
+          supabase.from('listings')
+            .select('id, make, model, variant, year, price, mileage, fuel_type, transmission, body_type, engine_cc, drive_type, colour, condition, location, listing_photos(*)')
+            .eq('status', 'approved').eq('make', data.make).eq('model', data.model).neq('id', id).limit(3)
+            .then(({ data: similar }) => setSimilarCars(similar || []))
         }
         setLoading(false)
       })
@@ -86,18 +98,34 @@ export function CarDetailPage({ user }) {
     }
   }
 
+  const handleOffer = async () => {
+    if (!offerAmount || !offerName || !offerPhone) { alert('Please fill in all fields'); return }
+    const { data: { user: u } } = await supabase.auth.getUser()
+    const { error } = await supabase.from('offers').insert({
+      listing_id: id, buyer_id: u?.id || null, buyer_name: offerName,
+      buyer_phone: offerPhone, offer_amount: Number(offerAmount), message: offerMsg, status: 'pending'
+    })
+    if (error) { alert('Error: ' + error.message); return }
+    setOfferSubmitted(true)
+  }
+
+  const handleShare = (type) => {
+    const url = window.location.href
+    const text = `Check out this ${car.year} ${car.make} ${car.model}${car.variant ? ` — ${car.variant}` : ''} for KSH ${Number(car.price).toLocaleString()} on CarExpert Africa`
+    if (type === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`, '_blank')
+    else if (type === 'copy') { navigator.clipboard.writeText(url); setCopyMsg('Copied!'); setTimeout(() => setCopyMsg(''), 2000) }
+  }
+
   if (loading) return (
     <div style={{ fontFamily:'DM Sans,sans-serif', minHeight:'100vh', background:'#F7F9FC' }}>
-      <style>{MOBILE_CSS}</style>
-      <Navbar user={user} />
+      <style>{MOBILE_CSS}</style><Navbar user={user} />
       <div style={{ textAlign:'center', padding:80, color:'#94A3B8' }}>Loading...</div>
     </div>
   )
 
   if (!car) return (
     <div style={{ fontFamily:'DM Sans,sans-serif', minHeight:'100vh', background:'#F7F9FC' }}>
-      <style>{MOBILE_CSS}</style>
-      <Navbar user={user} />
+      <style>{MOBILE_CSS}</style><Navbar user={user} />
       <div style={{ textAlign:'center', padding:80 }}>
         <div style={{ fontSize:40, marginBottom:16 }}>🔍</div>
         <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540', marginBottom:8 }}>Listing not found</div>
@@ -107,6 +135,13 @@ export function CarDetailPage({ user }) {
   )
 
   const waLink = `https://wa.me/${(car.phone||'').replace(/\D/g,'')}?text=Hi, I saw your ${car.year} ${car.make} ${car.model}${car.variant ? ` — ${car.variant}` : ''} on CarExpert Africa. Is it still available?`
+  const SPEC_FIELDS = [
+    ['Make',car.make],['Model',car.model],['Variant',car.variant||'—'],['Year',car.year],
+    ['Mileage',car.mileage?`${Number(car.mileage).toLocaleString()} km`:'—'],['Condition',car.condition||'—'],
+    ['Body Type',car.body_type||'—'],['Engine',car.engine_cc?`${car.engine_cc} cc`:'—'],
+    ['Fuel Type',car.fuel_type||'—'],['Transmission',car.transmission||'—'],
+    ['Drive Type',car.drive_type||'—'],['Colour',car.colour||car.color||'—'],['Negotiable',car.negotiable?'Yes':'No'],
+  ]
 
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
@@ -117,17 +152,15 @@ export function CarDetailPage({ user }) {
       </div>
 
       <div className="detail-grid detail-main-pad" style={{ display:'grid', gridTemplateColumns:'1fr 300px', gap:16, padding:'16px', maxWidth:1200, margin:'0 auto' }}>
-        {/* Main */}
         <div>
-          {/* Photo */}
+          {/* Photos */}
           <div style={{ borderRadius:12, overflow:'hidden', background:'#EEF5FF', height:280, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:8, position:'relative' }}>
-            <button onClick={handleSave} style={{ position:'absolute', top:12, right:12, width:36, height:36, background: saved?'#EF4444':'rgba(255,255,255,.9)', borderRadius:'50%', border:'none', cursor:'pointer', fontSize:18, color: saved?'#fff':'#94A3B8', zIndex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <button onClick={handleSave} style={{ position:'absolute', top:12, right:12, width:36, height:36, background:saved?'#EF4444':'rgba(255,255,255,.9)', borderRadius:'50%', border:'none', cursor:'pointer', fontSize:18, color:saved?'#fff':'#94A3B8', zIndex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
               {saved ? '♥' : '♡'}
             </button>
             {car.listing_photos?.[activePhoto]?.url
               ? <img src={car.listing_photos[activePhoto].url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-              : <div style={{ textAlign:'center' }}><span style={{ fontSize:56 }}>🚗</span><div style={{ fontSize:12, color:'#94A3B8', marginTop:8 }}>No photos</div></div>
-            }
+              : <div style={{ textAlign:'center' }}><span style={{ fontSize:56 }}>🚗</span><div style={{ fontSize:12, color:'#94A3B8', marginTop:8 }}>No photos</div></div>}
           </div>
           {car.listing_photos?.length > 1 && (
             <div style={{ display:'grid', gridTemplateColumns:`repeat(${Math.min(car.listing_photos.length,5)},1fr)`, gap:6, marginBottom:14 }}>
@@ -139,27 +172,33 @@ export function CarDetailPage({ user }) {
             </div>
           )}
 
-          {/* Title */}
+          {/* Title + share */}
           <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:12 }}>
-            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540', marginBottom:4 }}>{car.year} {car.make} {car.model}{car.variant ? ` — ${car.variant}` : ''}</div>
-            <div style={{ fontSize:12, color:'#94A3B8', display:'flex', gap:8, flexWrap:'wrap' }}>
-              {car.location && <span>📍 {car.location}</span>}
-              {car.views > 0 && <span style={{ color:'#1565C0', fontWeight:600 }}>{car.views} views</span>}
-              <span>Listed {new Date(car.created_at).toLocaleDateString('en-GB')}</span>
-              {car.updated_at && car.updated_at !== car.created_at && (
-                <span>· Updated {new Date(car.updated_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
-              )}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:10 }}>
+              <div>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540', marginBottom:4 }}>{car.year} {car.make} {car.model}{car.variant ? ` — ${car.variant}` : ''}</div>
+                <div style={{ fontSize:12, color:'#94A3B8', display:'flex', gap:8, flexWrap:'wrap' }}>
+                  {car.location && <span>📍 {car.location}</span>}
+                  {car.views > 0 && <span style={{ color:'#1565C0', fontWeight:600 }}>{car.views} views</span>}
+                  <span>Listed {new Date(car.created_at).toLocaleDateString('en-GB')}</span>
+                  {car.updated_at && car.updated_at !== car.created_at && <span>· Updated {new Date(car.updated_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</span>}
+                </div>
+              </div>
+              <div style={{ display:'flex', gap:8, flexShrink:0 }}>
+                <button onClick={() => handleShare('whatsapp')} style={{ background:'#25D366', color:'#fff', border:'none', padding:'7px 12px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>📱 Share</button>
+                <button onClick={() => handleShare('copy')} style={{ background:'#F0F6FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'7px 12px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>{copyMsg || '🔗 Copy Link'}</button>
+              </div>
             </div>
           </div>
 
           {/* Specs */}
           <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:12 }}>
             <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ width:3, height:14, background:'#1565C0', borderRadius:2, display:'inline-block' }}/>  Vehicle Specifications
+              <span style={{ width:3, height:14, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Vehicle Specifications
             </div>
             <div className="spec-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr' }}>
-              {[['Make',car.make],['Model',car.model],['Variant',car.variant||'—'],['Year',car.year],['Mileage',car.mileage?`${Number(car.mileage).toLocaleString()} km`:'—'],['Condition',car.condition||'—'],['Body Type',car.body_type||'—'],['Engine',car.engine_cc?`${car.engine_cc} cc`:'—'],['Fuel Type',car.fuel_type||'—'],['Transmission',car.transmission||'—'],['Drive Type',car.drive_type||'—'],['Colour',car.colour||car.color||'—'],['Negotiable',car.negotiable?'Yes':'No']].map(([k,v],i) => (
-                <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'9px 10px', borderBottom:'1px solid #F0F4F8', borderRight: i%2===0?'1px solid #F0F4F8':'none' }}>
+              {SPEC_FIELDS.map(([k,v],i) => (
+                <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'9px 10px', borderBottom:'1px solid #F0F4F8', borderRight:i%2===0?'1px solid #F0F4F8':'none' }}>
                   <span style={{ fontSize:12, color:'#94A3B8' }}>{k}</span>
                   <span style={{ fontSize:12, fontWeight:700, color:'#0A2540', fontFamily:'Outfit,sans-serif' }}>{v}</span>
                 </div>
@@ -169,22 +208,92 @@ export function CarDetailPage({ user }) {
 
           {/* Description */}
           {car.description && (
-            <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
+            <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:12 }}>
               <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ width:3, height:14, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Seller Description
               </div>
               <p style={{ fontSize:13, color:'#475569', lineHeight:1.7, margin:0 }}>{car.description}</p>
             </div>
           )}
+
+          {/* Map */}
+          {car.location && (
+            <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:12 }}>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ width:3, height:14, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> 📍 Location — {car.location}
+              </div>
+              <div style={{ borderRadius:10, overflow:'hidden', border:'1px solid #E8EDF3' }}>
+                <iframe title="location" width="100%" height="220" style={{ border:0, display:'block' }} loading="lazy"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(car.location + ', Kenya')}&output=embed&z=13`}/>
+              </div>
+            </div>
+          )}
+
+          {/* Compare */}
+          {similarCars.length > 0 && (
+            <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:12 }}>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ width:3, height:14, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> 🔄 Compare Similar {car.make} {car.model}s
+              </div>
+              <div style={{ overflowX:'auto' }}>
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12, minWidth:480 }}>
+                  <thead>
+                    <tr style={{ background:'#F8FAFC' }}>
+                      <th style={{ padding:'10px 12px', textAlign:'left', fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', borderBottom:'2px solid #E8EDF3' }}>Spec</th>
+                      <th style={{ padding:'10px 12px', textAlign:'center', fontSize:11, fontWeight:700, color:'#1565C0', borderBottom:'2px solid #1565C0', background:'#EEF5FF' }}>This Car</th>
+                      {similarCars.map(c => (
+                        <th key={c.id} style={{ padding:'10px 12px', textAlign:'center', fontSize:11, fontWeight:700, color:'#475569', borderBottom:'2px solid #E8EDF3' }}>
+                          <Link to={`/listings/${c.id}`} style={{ color:'#1565C0', textDecoration:'none' }}>{c.year} {c.variant || c.model}</Link>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ['Price', c => `KSH ${Number(c.price).toLocaleString()}`],
+                      ['Variant', c => c.variant || '—'],
+                      ['Year', c => c.year],
+                      ['Mileage', c => c.mileage ? `${Number(c.mileage).toLocaleString()} km` : '—'],
+                      ['Fuel', c => c.fuel_type || '—'],
+                      ['Transmission', c => c.transmission || '—'],
+                      ['Engine', c => c.engine_cc ? `${c.engine_cc}cc` : '—'],
+                      ['Drive', c => c.drive_type || '—'],
+                      ['Condition', c => c.condition || '—'],
+                      ['Location', c => c.location || '—'],
+                    ].map(([label, getter], i) => (
+                      <tr key={label} style={{ background:i%2===0?'#fff':'#FAFBFC' }}>
+                        <td style={{ padding:'9px 12px', fontWeight:700, color:'#64748B', fontSize:11, textTransform:'uppercase', letterSpacing:'.3px', borderBottom:'1px solid #F0F4F8' }}>{label}</td>
+                        <td style={{ padding:'9px 12px', textAlign:'center', fontWeight:600, color:'#0A2540', borderBottom:'1px solid #F0F4F8', background:'#F8FBFF' }}>{getter(car)}</td>
+                        {similarCars.map(c => (
+                          <td key={c.id} style={{ padding:'9px 12px', textAlign:'center', color:'#475569', borderBottom:'1px solid #F0F4F8' }}>{getter(c)}</td>
+                        ))}
+                      </tr>
+                    ))}
+                    <tr>
+                      <td style={{ padding:'10px 12px' }}></td>
+                      <td style={{ padding:'10px 12px', textAlign:'center', background:'#F8FBFF' }}>
+                        <span style={{ fontSize:10, fontWeight:700, color:'#1565C0', background:'#EEF5FF', padding:'3px 10px', borderRadius:100 }}>Viewing</span>
+                      </td>
+                      {similarCars.map(c => (
+                        <td key={c.id} style={{ padding:'10px 12px', textAlign:'center' }}>
+                          <Link to={`/listings/${c.id}`} style={{ fontSize:11, fontWeight:700, color:'#1565C0', background:'#F0F6FF', padding:'5px 12px', borderRadius:6, textDecoration:'none', border:'1.5px solid #BDD5FF' }}>View →</Link>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Sidebar — fixed bar on mobile */}
+        {/* Sidebar */}
         <div className="detail-sidebar">
           <div className="detail-price-bar" style={{ background:'#0A2540', borderRadius:12, padding:16, marginBottom:14, color:'#fff' }}>
             <div style={{ fontSize:10, color:'rgba(255,255,255,.5)', fontWeight:700, textTransform:'uppercase', letterSpacing:'.8px', marginBottom:2 }}>Asking Price</div>
             <div style={{ fontFamily:'Outfit,sans-serif', fontSize:26, fontWeight:800, marginBottom:car.negotiable?4:12 }}>KSH {Number(car.price).toLocaleString()}</div>
             {car.negotiable && <div style={{ fontSize:11, color:'#4DA6FF', fontWeight:600, marginBottom:12 }}>Price negotiable</div>}
-            <div style={{ display:'flex', gap:8 }}>
+            <div style={{ display:'flex', gap:8, marginBottom:8 }}>
               <a href={waLink} target="_blank" rel="noopener noreferrer"
                 style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#25D366', color:'#fff', border:'none', padding:'11px 8px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
                 📱 WhatsApp
@@ -196,6 +305,10 @@ export function CarDetailPage({ user }) {
                 </a>
               )}
             </div>
+            <button onClick={() => setOfferOpen(true)}
+              style={{ width:'100%', background:'rgba(255,255,255,.1)', color:'#fff', border:'1.5px solid rgba(255,255,255,.25)', padding:'10px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginBottom:8 }}>
+              🤝 Make an Offer
+            </button>
             {car.contact_name && (
               <>
                 <div style={{ height:1, background:'rgba(255,255,255,.1)', margin:'12px 0' }}/>
@@ -238,9 +351,59 @@ export function CarDetailPage({ user }) {
           </div>
         </div>
       </div>
+
+      {/* Offer Modal */}
+      {offerOpen && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div style={{ background:'#fff', borderRadius:16, padding:24, width:'100%', maxWidth:420, boxShadow:'0 20px 60px rgba(0,0,0,.2)' }}>
+            {offerSubmitted ? (
+              <div style={{ textAlign:'center', padding:'20px 0' }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>🤝</div>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540', marginBottom:8 }}>Offer Submitted!</div>
+                <div style={{ fontSize:13, color:'#64748B', marginBottom:20, lineHeight:1.6 }}>The seller will review your offer of <strong>KSH {Number(offerAmount).toLocaleString()}</strong> and contact you.</div>
+                <button onClick={() => { setOfferOpen(false); setOfferSubmitted(false) }}
+                  style={{ background:'#1565C0', color:'#fff', border:'none', padding:'11px 28px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Done</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540', marginBottom:4 }}>🤝 Make an Offer</div>
+                <div style={{ fontSize:12, color:'#94A3B8', marginBottom:16 }}>Asking price: <strong style={{ color:'#1565C0' }}>KSH {Number(car.price).toLocaleString()}</strong></div>
+                {[
+                  { label:'Your Offer (KSH)', value:offerAmount, set:setOfferAmount, type:'number', placeholder:`e.g. ${Math.round(car.price*0.9/1000)*1000}` },
+                  { label:'Your Name', value:offerName, set:setOfferName, type:'text', placeholder:'John Kamau' },
+                  { label:'Phone / WhatsApp', value:offerPhone, set:setOfferPhone, type:'tel', placeholder:'+254 7XX XXX XXX' },
+                ].map(f => (
+                  <div key={f.label} style={{ marginBottom:12 }}>
+                    <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>{f.label}</label>
+                    <input type={f.type} value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.placeholder}
+                      style={{ width:'100%', padding:'11px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', boxSizing:'border-box' }}/>
+                    {f.label.includes('Offer') && offerAmount && Number(offerAmount) < car.price && (
+                      <div style={{ fontSize:11, color:'#F59E0B', marginTop:4 }}>{Math.round((1-Number(offerAmount)/car.price)*100)}% below asking price</div>
+                    )}
+                  </div>
+                ))}
+                <div style={{ marginBottom:16 }}>
+                  <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Message (optional)</label>
+                  <textarea value={offerMsg} onChange={e => setOfferMsg(e.target.value)} placeholder="e.g. I can pay cash and collect this week..." rows={3}
+                    style={{ width:'100%', padding:'11px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', resize:'vertical', boxSizing:'border-box' }}/>
+                </div>
+                <div style={{ display:'flex', gap:8 }}>
+                  <button onClick={() => setOfferOpen(false)}
+                    style={{ flex:1, background:'#F8FAFC', color:'#64748B', border:'1.5px solid #E2E8F0', padding:'11px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Cancel</button>
+                  <button onClick={handleOffer} disabled={!offerAmount||!offerName||!offerPhone}
+                    style={{ flex:1, background:offerAmount&&offerName&&offerPhone?'#1565C0':'#94A3B8', color:'#fff', border:'none', padding:'11px', borderRadius:8, fontSize:13, fontWeight:700, cursor:offerAmount&&offerName&&offerPhone?'pointer':'default', fontFamily:'Outfit,sans-serif' }}>
+                    Submit Offer →
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // VALUATION PAGE
@@ -751,7 +914,7 @@ export function ListCarPage({ user }) {
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     if (!currentUser) { alert('Please log in first'); return }
     const { error } = await supabase.from('listings').insert({
-      user_id: currentUser.id, make, model, variant: variant || null, year, mileage: km,
+      user_id: currentUser.id, make, model: variant ? `${model} — ${variant}` : model, year, mileage: km,
       engine_cc: engineCc, body_type: bodyType, fuel_type: fuel,
       transmission, drive_type: drive, colour, condition, price,
       negotiable: nego, status: 'pending', contact_name: contactName,
