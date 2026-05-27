@@ -1559,17 +1559,24 @@ export function ListCarPage({ user }) {
                 <label style={lbl}>Asking Price (KSH)</label>
                 <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="e.g. 3500000" style={inp}/>
                 {make && model && year && km && (() => {
+                  const condKey = condition === 'Used — Excellent' || condition === 'Foreign Used — Excellent' ? 'Excellent'
+                    : condition === 'Used — Good' || condition === 'Foreign Used — Good' ? 'Good'
+                    : condition === 'Used — Fair' ? 'Fair'
+                    : condition === 'New' ? 'Excellent' : 'Good'
                   const base = getBase(make, model)
-                  const raw = base * (condMult[condition === 'Used — Excellent' ? 'Excellent' : condition === 'Used — Good' ? 'Good' : condition === 'Used — Fair' ? 'Fair' : condition === 'New' ? 'Excellent' : 'Good'] || 1.0) * kmMult(Number(km)) * yearMult(Number(year)) * txMult(transmission) * fuelMult(fuel)
+                  const raw = base * (condMult[condKey] || 1.0) * kmMult(Number(km)) * yearMult(Number(year)) * txMult(transmission) * fuelMult(fuel)
                   const suggested = Math.round(raw / 50000) * 50000
+                  const low = Math.round(suggested * 0.88 / 50000) * 50000
+                  const high = Math.round(suggested * 1.12 / 50000) * 50000
                   return (
-                    <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                      <div style={{ fontSize:12, color:'#64748B' }}>
-                        💡 Suggested: <strong style={{ color:'#1565C0' }}>KSH {suggested.toLocaleString()}</strong>
-                        <span style={{ color:'#94A3B8', marginLeft:6 }}>(range: KSH {Math.round(suggested*0.88/50000)*50000 .toLocaleString()} – {Math.round(suggested*1.12/50000)*50000 .toLocaleString()})</span>
+                    <div style={{ marginTop:8, background:'#EEF5FF', border:'1px solid #BDD5FF', borderRadius:8, padding:'10px 12px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
+                      <div>
+                        <div style={{ fontSize:11, color:'#64748B', marginBottom:2 }}>💡 Suggested listing price</div>
+                        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:800, color:'#1565C0' }}>KSH {suggested.toLocaleString()}</div>
+                        <div style={{ fontSize:10, color:'#94A3B8' }}>Range: KSH {low.toLocaleString()} – {high.toLocaleString()}</div>
                       </div>
                       <button type="button" onClick={() => setPrice(String(suggested))}
-                        style={{ background:'#EEF5FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'4px 10px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>
+                        style={{ background:'#1565C0', color:'#fff', border:'none', padding:'8px 14px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}>
                         Use this price
                       </button>
                     </div>
