@@ -1695,8 +1695,10 @@ export function NewsReviewsPage({ user }) {
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('All')
   const [searchQ, setSearchQ] = useState('')
+  const [page, setPage] = useState(1)
   const navigate = useNavigate()
 
+  const PER_PAGE = 12
   const CATEGORIES = ['All', 'News', 'Review', 'Buying Guide', 'Tips', 'Market Insight', 'EV']
 
   useEffect(() => {
@@ -1705,14 +1707,22 @@ export function NewsReviewsPage({ user }) {
       .then(({ data }) => { setArticles(data || []); setLoading(false) })
   }, [])
 
+  // reset to page 1 when filters change
+  useEffect(() => { setPage(1) }, [activeCategory, searchQ])
+
   const filtered = articles.filter(a => {
     if (activeCategory !== 'All' && a.category !== activeCategory) return false
-    if (searchQ && !a.title.toLowerCase().includes(searchQ.toLowerCase())) return false
+    if (searchQ && !a.title.toLowerCase().includes(searchQ.toLowerCase()) &&
+        !(a.excerpt || '').toLowerCase().includes(searchQ.toLowerCase())) return false
     return true
   })
 
-  const featured = filtered[0]
-  const rest = filtered.slice(1)
+  const featured = !searchQ && activeCategory === 'All' && page === 1 ? filtered[0] : null
+  const gridItems = featured ? filtered.slice(1) : filtered
+  const totalPages = Math.ceil(gridItems.length / PER_PAGE)
+  const pageItems = gridItems.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+
+  const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
@@ -1726,6 +1736,7 @@ export function NewsReviewsPage({ user }) {
           <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search articles..."
             style={{ width:'100%', padding:'11px 16px 11px 40px', borderRadius:100, border:'none', fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', boxSizing:'border-box' }}/>
           <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:14 }}>🔍</span>
+          {searchQ && <span onClick={() => setSearchQ('')} style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', cursor:'pointer', fontSize:18, color:'#94A3B8' }}>×</span>}
         </div>
       </div>
 
@@ -1736,6 +1747,9 @@ export function NewsReviewsPage({ user }) {
             <button key={cat} onClick={() => setActiveCategory(cat)}
               style={{ flexShrink:0, padding:'12px 16px', border:'none', background:'none', fontSize:12, fontWeight:activeCategory===cat?700:500, color:activeCategory===cat?'#1565C0':'#64748B', cursor:'pointer', borderBottom:`2px solid ${activeCategory===cat?'#1565C0':'transparent'}`, fontFamily:'DM Sans,sans-serif' }}>
               {cat}
+              {cat !== 'All' && articles.filter(a => a.category === cat).length > 0 && (
+                <span style={{ marginLeft:4, fontSize:10, color:'#94A3B8' }}>({articles.filter(a => a.category === cat).length})</span>
+              )}
             </button>
           ))}
         </div>
@@ -1747,13 +1761,22 @@ export function NewsReviewsPage({ user }) {
         ) : filtered.length === 0 ? (
           <div style={{ textAlign:'center', padding:60 }}>
             <div style={{ fontSize:40, marginBottom:16 }}>📰</div>
-            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:700, color:'#0A2540', marginBottom:8 }}>No articles yet</div>
-            <div style={{ fontSize:13, color:'#94A3B8' }}>Check back soon for news and reviews</div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:700, color:'#0A2540', marginBottom:8 }}>No articles found</div>
+            <div style={{ fontSize:13, color:'#94A3B8' }}>{searchQ ? 'Try a different search' : 'Check back soon'}</div>
           </div>
         ) : (
           <>
-            {/* Featured article */}
-            {featured && !searchQ && activeCategory === 'All' && (
+            {/* Results count */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <div style={{ fontSize:13, color:'#64748B' }}>
+                <span style={{ fontFamily:'Outfit,sans-serif', fontWeight:700, color:'#0A2540' }}>{filtered.length}</span> articles
+                {totalPages > 1 && <span> · Page {page} of {totalPages}</span>}
+              </div>
+              {searchQ && <button onClick={() => setSearchQ('')} style={{ fontSize:11, color:'#EF4444', fontWeight:600, background:'none', border:'none', cursor:'pointer' }}>✕ Clear search</button>}
+            </div>
+
+            {/* Featured article — only page 1, no filters */}
+            {featured && (
               <Link to={`/news/${featured.slug}`} style={{ textDecoration:'none', display:'block', marginBottom:24 }}>
                 <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:16, overflow:'hidden', display:'grid', gridTemplateColumns:'1fr 1fr', transition:'all .2s' }}
                   onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.boxShadow='0 8px 32px rgba(21,101,192,.12)' }}
@@ -1776,8 +1799,8 @@ export function NewsReviewsPage({ user }) {
               </Link>
             )}
 
-            {/* Subscribe banner between featured and grid */}
-            {!searchQ && activeCategory === 'All' && rest.length > 2 && (
+            {/* Subscribe banner — page 1 only */}
+            {page === 1 && !searchQ && activeCategory === 'All' && gridItems.length > 2 && (
               <div style={{ background:'linear-gradient(135deg,#0A2540,#1565C0)', borderRadius:14, padding:'24px 20px', marginBottom:24, display:'flex', alignItems:'center', gap:20, flexWrap:'wrap' }}>
                 <div style={{ flex:1, minWidth:200 }}>
                   <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#fff', marginBottom:4 }}>📬 Stay Updated</div>
@@ -1788,8 +1811,8 @@ export function NewsReviewsPage({ user }) {
             )}
 
             {/* Grid */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
-              {(searchQ || activeCategory !== 'All' ? filtered : rest).map(a => (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16, marginBottom:32 }}>
+              {pageItems.map(a => (
                 <Link key={a.id} to={`/news/${a.slug}`} style={{ textDecoration:'none' }}>
                   <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden', height:'100%', transition:'all .2s' }}
                     onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.1)' }}
@@ -1812,6 +1835,39 @@ export function NewsReviewsPage({ user }) {
                   </div>
                 </Link>
               ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:8, marginBottom:32, flexWrap:'wrap' }}>
+                <button onClick={() => { setPage(p => Math.max(1, p-1)); scrollTop() }} disabled={page === 1}
+                  style={{ padding:'8px 16px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontWeight:600, cursor:page===1?'default':'pointer', color:page===1?'#CBD5E1':'#475569', background:'#fff', fontFamily:'DM Sans,sans-serif' }}>
+                  ← Prev
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <button key={p} onClick={() => { setPage(p); scrollTop() }}
+                    style={{ width:36, height:36, border:`1.5px solid ${page===p?'#1565C0':'#E2E8F0'}`, borderRadius:8, fontSize:13, fontWeight:page===p?700:500, cursor:'pointer', color:page===p?'#fff':'#475569', background:page===p?'#1565C0':'#fff', fontFamily:'Outfit,sans-serif' }}>
+                    {p}
+                  </button>
+                ))}
+                <button onClick={() => { setPage(p => Math.min(totalPages, p+1)); scrollTop() }} disabled={page === totalPages}
+                  style={{ padding:'8px 16px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontWeight:600, cursor:page===totalPages?'default':'pointer', color:page===totalPages?'#CBD5E1':'#475569', background:'#fff', fontFamily:'DM Sans,sans-serif' }}>
+                  Next →
+                </button>
+              </div>
+            )}
+
+            {/* Bottom subscribe */}
+            <div style={{ background:'linear-gradient(135deg,#0A2540,#1565C0)', borderRadius:16, padding:'32px 24px', textAlign:'center', marginBottom:16 }}>
+              <div style={{ fontSize:32, marginBottom:12 }}>📬</div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:22, fontWeight:800, color:'#fff', marginBottom:8 }}>Never Miss a Story</div>
+              <div style={{ fontSize:14, color:'rgba(255,255,255,.6)', marginBottom:20, maxWidth:400, margin:'0 auto 20px' }}>
+                Join thousands of Kenyans getting the latest car news, reviews and market insights every week.
+              </div>
+              <div style={{ maxWidth:440, margin:'0 auto' }}>
+                <NewsSubscribeInline />
+              </div>
+              <div style={{ fontSize:11, color:'rgba(255,255,255,.35)', marginTop:10 }}>Free forever · No spam · Unsubscribe anytime</div>
             </div>
           </>
         )}
