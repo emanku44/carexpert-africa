@@ -109,6 +109,8 @@ const VARIANTS = {
   'A6': ['40 TDI','45 TDI','45 TFSI','55 TFSI','S6','RS6'],
 }
 
+const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
+
 function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, formatLabel }) {
   const trackRef = useRef(null)
   const dragging = useRef(null)
