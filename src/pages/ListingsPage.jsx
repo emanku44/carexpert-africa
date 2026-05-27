@@ -179,11 +179,7 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
 }
 
 function FilterSection({ title, activeCount, children }) {
-  const [open, setOpen] = useState(activeCount > 0)
-
-  useEffect(() => {
-    if (activeCount > 0) setOpen(true)
-  }, [activeCount])
+  const [open, setOpen] = useState(false)
   return (
     <div style={{ borderTop: '1px solid #F5F7FA' }}>
       <div onClick={() => setOpen(!open)}
@@ -264,7 +260,7 @@ function SavedSearchesQuickList({ user, onApply }) {
     </div>
   )
 }
-const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
+
 export default function ListingsPage({ user }) {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -294,8 +290,11 @@ export default function ListingsPage({ user }) {
   const [minKm, setMinKm]         = useState(0)
   const [maxKm, setMaxKm]         = useState(300000)
   const [sort, setSort]           = useState('newest')
+  const [page, setPage]           = useState(1)
 
   useEffect(() => { fetchListings() }, [])
+
+  useEffect(() => { setPage(1) }, [search, selectedMake, selectedModel, selectedVariant, selectedLocation, bodies, fuels, trans, drives, conditions, minPrice, maxPrice, minYear, maxYear, minKm, maxKm, sort])
 
   const fetchListings = async () => {
     setLoading(true)
@@ -471,10 +470,7 @@ export default function ListingsPage({ user }) {
                 <select value={selectedVariant} onChange={e => setSelectedVariant(e.target.value)}
                   style={{ width: '100%', padding: '10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: 13, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: '#F8FAFC' }}>
                   <option value="">All Variants</option>
-                  {VARIANTS[selectedModel].map(v => {
-                    const count = listings.filter(l => l.model === selectedModel && l.variant === v).length
-                    return <option key={v} value={v}>{v}{count > 0 ? ` (${count})` : ''}</option>
-                  })}
+                  {VARIANTS[selectedModel].map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
               </>
             )}
@@ -531,7 +527,7 @@ export default function ListingsPage({ user }) {
       <style>{`
         .listings-layout { display: grid; grid-template-columns: 268px 1fr; min-height: calc(100vh - 96px); }
         .listings-sidebar { background: #fff; border-right: 1px solid #E8EDF3; overflow-y: auto; }
-        .listings-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+        .listings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .mobile-filter-btn { display: none !important; }
         .mobile-sidebar-overlay { display: none; }
         @media (max-width: 768px) {
@@ -584,6 +580,7 @@ export default function ListingsPage({ user }) {
                 {loading ? 'Loading...' : (
                   <><span style={{ color: '#1565C0' }}>{filtered.length}</span> Cars
                     {activeFiltersCount > 0 && listings.length > 0 && <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 400, marginLeft: 6 }}>of {listings.length}</span>}
+                    {filtered.length > 15 && <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 400, marginLeft: 6 }}>· Page {page} of {Math.ceil(filtered.length/15)}</span>}
                   </>
                 )}
               </div>
@@ -611,7 +608,7 @@ export default function ListingsPage({ user }) {
               {search && <Tag label={`"${search}"`} onClear={() => setSearch('')} />}
               {selectedMake && <Tag label={selectedMake} onClear={() => { setSelectedMake(''); setSelectedModel('') }} />}
               {selectedModel && <Tag label={selectedModel} onClear={() => { setSelectedModel(''); setSelectedVariant('') }} />}
-              {selectedVariant && <Tag label={selectedVariant} onClear={() => setSelectedVariant('')} />}
+              {selectedVariant && <Tag label={selectedVariant} onClear={() => setSelectedVariant('')} />}}
               {selectedLocation && <Tag label={selectedLocation} onClear={() => setSelectedLocation('')} />}
               {[...bodies].map(v => <Tag key={v} label={v} onClear={() => toggle(setBodies)(v)} />)}
               {[...fuels].map(v => <Tag key={v} label={v} onClear={() => toggle(setFuels)(v)} />)}
@@ -644,8 +641,9 @@ export default function ListingsPage({ user }) {
               }
             </div>
           ) : (
+            <>
             <div className="listings-grid">
-              {filtered.map(car => (
+              {filtered.slice((page-1)*15, page*15).map(car => (
                 <div key={car.id} style={{ background: '#fff', border: '1.5px solid #E8EDF3', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', transition: 'all .2s' }}
                   onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.1)' }}
                   onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
@@ -680,6 +678,25 @@ export default function ListingsPage({ user }) {
                 </div>
               ))}
             </div>
+            {filtered.length > 15 && (
+              <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:6, marginTop:24, flexWrap:'wrap' }}>
+                <button onClick={() => { setPage(p => Math.max(1,p-1)); window.scrollTo({top:0,behavior:'smooth'}) }} disabled={page===1}
+                  style={{ padding:'8px 14px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontWeight:600, cursor:page===1?'default':'pointer', color:page===1?'#CBD5E1':'#475569', background:'#fff', fontFamily:'DM Sans,sans-serif' }}>
+                  ← Prev
+                </button>
+                {Array.from({ length: Math.ceil(filtered.length/15) }, (_,i) => i+1).map(p => (
+                  <button key={p} onClick={() => { setPage(p); window.scrollTo({top:0,behavior:'smooth'}) }}
+                    style={{ width:36, height:36, border:`1.5px solid ${page===p?'#1565C0':'#E2E8F0'}`, borderRadius:8, fontSize:13, fontWeight:page===p?700:500, cursor:'pointer', color:page===p?'#fff':'#475569', background:page===p?'#1565C0':'#fff', fontFamily:'Outfit,sans-serif' }}>
+                    {p}
+                  </button>
+                ))}
+                <button onClick={() => { setPage(p => Math.min(Math.ceil(filtered.length/15),p+1)); window.scrollTo({top:0,behavior:'smooth'}) }} disabled={page===Math.ceil(filtered.length/15)}
+                  style={{ padding:'8px 14px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontWeight:600, cursor:page===Math.ceil(filtered.length/15)?'default':'pointer', color:page===Math.ceil(filtered.length/15)?'#CBD5E1':'#475569', background:'#fff', fontFamily:'DM Sans,sans-serif' }}>
+                  Next →
+                </button>
+              </div>
+            )}
+            </>
           )}
         </main>
       </div>
