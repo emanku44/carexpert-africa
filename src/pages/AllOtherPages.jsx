@@ -1558,6 +1558,23 @@ export function ListCarPage({ user }) {
               <div style={{ marginBottom:12 }}>
                 <label style={lbl}>Asking Price (KSH)</label>
                 <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="e.g. 3500000" style={inp}/>
+                {make && model && year && km && (() => {
+                  const base = getBase(make, model)
+                  const raw = base * (condMult[condition === 'Used — Excellent' ? 'Excellent' : condition === 'Used — Good' ? 'Good' : condition === 'Used — Fair' ? 'Fair' : condition === 'New' ? 'Excellent' : 'Good'] || 1.0) * kmMult(Number(km)) * yearMult(Number(year)) * txMult(transmission) * fuelMult(fuel)
+                  const suggested = Math.round(raw / 50000) * 50000
+                  return (
+                    <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                      <div style={{ fontSize:12, color:'#64748B' }}>
+                        💡 Suggested: <strong style={{ color:'#1565C0' }}>KSH {suggested.toLocaleString()}</strong>
+                        <span style={{ color:'#94A3B8', marginLeft:6 }}>(range: KSH {Math.round(suggested*0.88/50000)*50000 .toLocaleString()} – {Math.round(suggested*1.12/50000)*50000 .toLocaleString()})</span>
+                      </div>
+                      <button type="button" onClick={() => setPrice(String(suggested))}
+                        style={{ background:'#EEF5FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'4px 10px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>
+                        Use this price
+                      </button>
+                    </div>
+                  )
+                })()}
               </div>
               <div onClick={() => setNego(!nego)} style={{ display:'flex', alignItems:'center', gap:10, padding:'12px', border:`1.5px solid ${nego?'#1565C0':'#E2E8F0'}`, borderRadius:8, cursor:'pointer', marginBottom:16, background:nego?'#EEF5FF':'#fff' }}>
                 <div style={{ width:20, height:20, borderRadius:4, border:`2px solid ${nego?'#1565C0':'#CBD5E1'}`, background:nego?'#1565C0':'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'#fff', flexShrink:0 }}>{nego?'✓':''}</div>
