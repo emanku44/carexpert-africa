@@ -170,6 +170,7 @@ const VARIANTS = {
   'D-Max': ['Base','LS','V-Cross','X-Series','4x2','4x4','Single Cab','Spacecab','Double Cab'],
   'MU-X': ['LS-U','LS-T','X Series','Ultimate'],
 }
+const MAKES = Object.keys(CAR_DATA).sort()
 
 export default function EditListingPage({ user }) {
   const { id } = useParams()
@@ -200,6 +201,10 @@ export default function EditListingPage({ user }) {
   const [phone, setPhone]         = useState('')
   const [location, setLocation]   = useState('')
   const [originalStatus, setOriginalStatus] = useState('')
+  const [existingPhotos, setExistingPhotos] = useState([])
+  const [newFiles, setNewFiles] = useState([])
+  const [newPreviews, setNewPreviews] = useState([])
+  const [uploadProgress, setUploadProgress] = useState('')
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return }
@@ -209,12 +214,13 @@ export default function EditListingPage({ user }) {
   const fetchListing = async () => {
     const { data, error } = await supabase
       .from('listings')
-      .select('*')
+      .select('*, listing_photos(*)')
       .eq('id', id)
       .eq('user_id', user.id)
       .single()
 
     if (error || !data) { setNotFound(true); setLoading(false); return }
+    setExistingPhotos(data.listing_photos || [])
 
     setMake(data.make || 'Toyota')
     setModel(data.model || '')
@@ -273,6 +279,21 @@ export default function EditListingPage({ user }) {
     if (error) {
       setError('Error saving: ' + error.message)
     } else {
+      // Upload any new photos
+      if (newFiles.length > 0) {
+        setUploadProgress(`Uploading ${newFiles.length} photo${newFiles.length > 1 ? 's' : ''}...`)
+        for (let i = 0; i < newFiles.length; i++) {
+          const file = newFiles[i]
+          const ext = file.name.split('.').pop()
+          const path = `${id}/${Date.now()}_${i}.${ext}`
+          const { error: uploadError } = await supabase.storage.from('listing-photos').upload(path, file)
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage.from('listing-photos').getPublicUrl(path)
+            await supabase.from('listing_photos').insert({ listing_id: id, url: urlData.publicUrl, order: existingPhotos.length + i })
+          }
+        }
+        setUploadProgress('')
+      }
       setSuccess(true)
       setTimeout(() => navigate('/dashboard'), 2000)
     }
@@ -433,6 +454,64 @@ export default function EditListingPage({ user }) {
               <span style={{ fontSize:12, fontWeight:600, color:'#475569' }}>Negotiable</span>
             </div>
           </div>
+        </div>
+
+        {/* Photos */}
+        <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:22, marginBottom:16 }}>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}></span> Photos
+            <span style={{ fontSize:12, color:'#94A3B8', fontWeight:400 }}>({existingPhotos.length + newFiles.length}/10)</span>
+          </div>
+          {/* Existing photos */}
+          {existingPhotos.length > 0 && (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8, marginBottom:12 }}>
+              {existingPhotos.map((p, i) => (
+                <div key={p.id} style={{ position:'relative', aspectRatio:'4/3', borderRadius:8, overflow:'hidden', border:'2px solid #E2E8F0' }}>
+                  <img src={p.url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  <button onClick={async () => {
+                    await supabase.from('listing_photos').delete().eq('id', p.id)
+                    setExistingPhotos(prev => prev.filter(ph => ph.id !== p.id))
+                  }} style={{ position:'absolute', top:4, right:4, width:20, height:20, borderRadius:'50%', background:'rgba(220,38,38,.8)', border:'none', color:'#fff', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+                  {i === 0 && <span style={{ position:'absolute', bottom:4, left:4, background:'#1565C0', color:'#fff', fontSize:8, fontWeight:700, padding:'2px 5px', borderRadius:4 }}>COVER</span>}
+                </div>
+              ))}
+            </div>
+          )}
+          {/* New photo previews */}
+          {newPreviews.length > 0 && (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8, marginBottom:12 }}>
+              {newPreviews.map((src, i) => (
+                <div key={i} style={{ position:'relative', aspectRatio:'4/3', borderRadius:8, overflow:'hidden', border:'2px dashed #BDD5FF' }}>
+                  <img src={src} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  <button onClick={() => {
+                    setNewFiles(prev => prev.filter((_,idx) => idx !== i))
+                    setNewPreviews(prev => prev.filter((_,idx) => idx !== i))
+                  }} style={{ position:'absolute', top:4, right:4, width:20, height:20, borderRadius:'50%', background:'rgba(220,38,38,.8)', border:'none', color:'#fff', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+                  <span style={{ position:'absolute', bottom:4, left:4, background:'#F59E0B', color:'#fff', fontSize:8, fontWeight:700, padding:'2px 5px', borderRadius:4 }}>NEW</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Add photos button */}
+          {existingPhotos.length + newFiles.length < 10 && (
+            <label style={{ display:'block', cursor:'pointer' }}>
+              <input type="file" accept="image/*" multiple onChange={e => {
+                const files = Array.from(e.target.files).slice(0, 10 - existingPhotos.length - newFiles.length)
+                setNewFiles(prev => [...prev, ...files])
+                files.forEach(file => {
+                  const reader = new FileReader()
+                  reader.onload = ev => setNewPreviews(prev => [...prev, ev.target.result])
+                  reader.readAsDataURL(file)
+                })
+              }} style={{ display:'none' }}/>
+              <div style={{ border:'2px dashed #E2E8F0', borderRadius:8, padding:'16px', textAlign:'center', background:'#F8FAFC' }}>
+                <span style={{ fontSize:20 }}>📸</span>
+                <div style={{ fontSize:12, color:'#94A3B8', marginTop:4 }}>
+                  {existingPhotos.length + newFiles.length === 0 ? 'Add photos' : 'Add more photos'}
+                </div>
+              </div>
+            </label>
+          )}
         </div>
 
         {/* Description */}

@@ -1041,7 +1041,9 @@ export function ListCarPage({ user }) {
   const [price, setPrice] = useState('')
   const [nego, setNego] = useState(false)
   const [selFeats, setSelFeats] = useState(new Set())
-  const [photos, setPhotos] = useState(Array(10).fill(false))
+  const [selectedFiles, setSelectedFiles] = useState([]) // File objects
+  const [photoPreviews, setPhotoPreviews] = useState([]) // data URLs for preview
+  const [uploadProgress, setUploadProgress] = useState('')
   const [contactName, setContactName] = useState('')
   const [phone, setPhone] = useState('')
   const [location, setLocation] = useState('Nairobi — Westlands')
@@ -1049,18 +1051,50 @@ export function ListCarPage({ user }) {
 
   const toggleFeat = f => setSelFeats(prev => { const n=new Set(prev); n.has(f)?n.delete(f):n.add(f); return n })
 
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files).slice(0, 10)
+    setSelectedFiles(prev => [...prev, ...files].slice(0, 10))
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = ev => setPhotoPreviews(prev => [...prev, ev.target.result].slice(0, 10))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const removePhoto = (i) => {
+    setSelectedFiles(prev => prev.filter((_,idx) => idx !== i))
+    setPhotoPreviews(prev => prev.filter((_,idx) => idx !== i))
+  }
+
   const handleSubmit = async () => {
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     if (!currentUser) { alert('Please log in first'); return }
-    const { error } = await supabase.from('listings').insert({
-      user_id: currentUser.id, make, model: variant ? `${model} — ${variant}` : model, year, mileage: km,
+    setUploadProgress('Creating listing...')
+    const { data: listing, error } = await supabase.from('listings').insert({
+      user_id: currentUser.id, make, model, variant: variant || null, year, mileage: km,
       engine_cc: engineCc, body_type: bodyType, fuel_type: fuel,
       transmission, drive_type: drive, colour, condition, price,
       negotiable: nego, status: 'pending', contact_name: contactName,
       phone, location, description
-    })
-    if (error) alert('Error: ' + error.message)
-    else setStep(5)
+    }).select().single()
+    if (error) { alert('Error: ' + error.message); setUploadProgress(''); return }
+    // Upload photos
+    if (selectedFiles.length > 0) {
+      setUploadProgress(`Uploading ${selectedFiles.length} photo${selectedFiles.length > 1 ? 's' : ''}...`)
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i]
+        const ext = file.name.split('.').pop()
+        const path = `${listing.id}/${Date.now()}_${i}.${ext}`
+        const { error: uploadError } = await supabase.storage.from('listing-photos').upload(path, file)
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('listing-photos').getPublicUrl(path)
+          await supabase.from('listing_photos').insert({ listing_id: listing.id, url: urlData.publicUrl, order: i })
+        }
+        setUploadProgress(`Uploading photo ${i+1} of ${selectedFiles.length}...`)
+      }
+    }
+    setUploadProgress('')
+    setStep(5)
   }
 
   const inp = { width:'100%', padding:'12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:14, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC', boxSizing:'border-box' }
@@ -1139,17 +1173,41 @@ export function ListCarPage({ user }) {
               <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:16, display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Upload Photos
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8, marginBottom:12 }}>
-                {photos.map((filled, i) => (
-                  <div key={i} onClick={() => setPhotos(prev => prev.map((p,idx) => idx===i?true:p))}
-                    style={{ aspectRatio:'4/3', border:`2px dashed ${filled?'#1565C0':'#E2E8F0'}`, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', background:filled?'#EEF5FF':'#F8FAFC', fontSize:filled?22:18, color:filled?'#1565C0':'#CBD5E1' }}>
-                    {filled ? '📷' : '+'}
+
+              {/* Upload area */}
+              <label style={{ display:'block', cursor:'pointer' }}>
+                <input type="file" accept="image/*" multiple onChange={handleFileSelect} style={{ display:'none' }}/>
+                <div style={{ border:'2px dashed #BDD5FF', borderRadius:10, padding:'28px 20px', textAlign:'center', background:'#F8FBFF', marginBottom:14 }}>
+                  <div style={{ fontSize:36, marginBottom:8 }}>📸</div>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#1565C0', marginBottom:4 }}>
+                    {photoPreviews.length > 0 ? 'Add More Photos' : 'Tap to Upload Photos'}
                   </div>
-                ))}
-              </div>
-              <div style={{ background:'#FEF3C7', border:'1px solid #FCD34D', borderRadius:8, padding:'10px 12px', fontSize:12, color:'#92400E', marginBottom:16 }}>
-                💡 Tap photos to mark as uploaded. Real upload coming soon — send photos via WhatsApp after listing.
-              </div>
+                  <div style={{ fontSize:12, color:'#94A3B8' }}>
+                    {photoPreviews.length > 0 ? `${photoPreviews.length}/10 photos selected` : 'Up to 10 photos · JPG, PNG, HEIC'}
+                  </div>
+                </div>
+              </label>
+
+              {/* Preview grid */}
+              {photoPreviews.length > 0 && (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8, marginBottom:14 }}>
+                  {photoPreviews.map((src, i) => (
+                    <div key={i} style={{ position:'relative', aspectRatio:'4/3', borderRadius:8, overflow:'hidden', border:'2px solid #E2E8F0' }}>
+                      <img src={src} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                      <button onClick={() => removePhoto(i)}
+                        style={{ position:'absolute', top:4, right:4, width:20, height:20, borderRadius:'50%', background:'rgba(0,0,0,.6)', border:'none', color:'#fff', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }}>×</button>
+                      {i === 0 && <span style={{ position:'absolute', bottom:4, left:4, background:'#1565C0', color:'#fff', fontSize:8, fontWeight:700, padding:'2px 5px', borderRadius:4 }}>COVER</span>}
+                    </div>
+                  ))}
+                  {photoPreviews.length < 10 && (
+                    <label style={{ cursor:'pointer' }}>
+                      <input type="file" accept="image/*" multiple onChange={handleFileSelect} style={{ display:'none' }}/>
+                      <div style={{ aspectRatio:'4/3', border:'2px dashed #E2E8F0', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, color:'#CBD5E1' }}>+</div>
+                    </label>
+                  )}
+                </div>
+              )}
+
               <div style={{ marginBottom:14 }}>
                 <label style={lbl}>Description</label>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe your car — service history, condition, features, reason for selling..." rows={4} style={{ ...inp, resize:'vertical' }}/>
@@ -1221,7 +1279,9 @@ export function ListCarPage({ user }) {
               </div>
               <div style={{ display:'flex', justifyContent:'space-between' }}>
                 <button onClick={() => setStep(3)} style={{ background:'#fff', color:'#475569', border:'1.5px solid #E2E8F0', padding:'11px 20px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>← Back</button>
-                <button onClick={handleSubmit} style={{ background:'#16A34A', color:'#fff', border:'none', padding:'11px 24px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Submit Listing ✓</button>
+                <button onClick={handleSubmit} disabled={!!uploadProgress} style={{ background: uploadProgress?'#94A3B8':'#16A34A', color:'#fff', border:'none', padding:'11px 24px', borderRadius:8, fontSize:13, fontWeight:700, cursor: uploadProgress?'default':'pointer', fontFamily:'Outfit,sans-serif' }}>
+                  {uploadProgress || 'Submit Listing ✓'}
+                </button>
               </div>
             </div>
           )}
@@ -1240,8 +1300,11 @@ export function ListCarPage({ user }) {
         <div className="listcar-sidebar">
           <div style={{ fontSize:11, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:10, fontFamily:'Outfit,sans-serif' }}>Live Preview</div>
           <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, overflow:'hidden' }}>
-            <div style={{ height:130, background:'#C8DCF0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, color:'#94A3B8' }}>
-              {photos.some(Boolean) ? '📸 Photos added' : 'Add photos to preview'}
+            <div style={{ height:130, background:'#C8DCF0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, color:'#94A3B8', overflow:'hidden' }}>
+              {photoPreviews[0]
+                ? <img src={photoPreviews[0]} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                : photoPreviews.length > 0 ? '📸 Photos added' : 'Add photos to preview'
+              }
             </div>
             <div style={{ padding:14 }}>
               <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540', marginBottom:2 }}>{price ? fmt(price) : 'KSH —'}</div>
