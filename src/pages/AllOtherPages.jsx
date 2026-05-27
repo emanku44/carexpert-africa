@@ -1331,6 +1331,67 @@ export function ListCarPage({ user }) {
 // ─────────────────────────────────────────────────────────────
 // DASHBOARD PAGE
 // ─────────────────────────────────────────────────────────────
+function SavedArticlesTab({ user }) {
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user) return
+    supabase.from('saved_articles')
+      .select('id, created_at, articles(id, title, slug, cover_image_url, category, author_name, read_time, published_at, excerpt)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setArticles((data || []).map(s => s.articles).filter(Boolean))
+        setLoading(false)
+      })
+  }, [user])
+
+  const unsave = async (articleId) => {
+    await supabase.from('saved_articles').delete().eq('user_id', user.id).eq('article_id', articleId)
+    setArticles(prev => prev.filter(a => a.id !== articleId))
+  }
+
+  if (loading) return <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading...</div>
+
+  return (
+    <div>
+      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:14 }}>
+        Saved Articles <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({articles.length})</span>
+      </div>
+      {articles.length === 0 ? (
+        <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+          <div style={{ fontSize:32, marginBottom:12 }}>📰</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:6 }}>No saved articles yet</div>
+          <div style={{ fontSize:13, color:'#94A3B8', marginBottom:16 }}>Click 🔖 Save on any article to find it here.</div>
+          <Link to="/news" style={{ background:'#1565C0', color:'#fff', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>Browse News</Link>
+        </div>
+      ) : (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px,1fr))', gap:12 }}>
+          {articles.map(a => (
+            <div key={a.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden' }}>
+              <div style={{ height:120, background:'linear-gradient(135deg,#EEF5FF,#DBEAFE)', overflow:'hidden' }}>
+                {a.cover_image_url
+                  ? <img src={a.cover_image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  : <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32 }}>📰</div>}
+              </div>
+              <div style={{ padding:12 }}>
+                <span style={{ background:'#EEF5FF', color:'#1565C0', fontSize:9, fontWeight:700, padding:'2px 8px', borderRadius:100, textTransform:'uppercase' }}>{a.category}</span>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', margin:'6px 0 4px', lineHeight:1.4 }}>{a.title}</div>
+                <div style={{ fontSize:11, color:'#94A3B8', marginBottom:10 }}>By {a.author_name} · {a.read_time} min read</div>
+                <div style={{ display:'flex', gap:6 }}>
+                  <Link to={`/news/${a.slug}`} style={{ flex:1, background:'#F0F6FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'7px 0', borderRadius:6, fontSize:11, fontWeight:700, textDecoration:'none', textAlign:'center', fontFamily:'Outfit,sans-serif' }}>Read →</Link>
+                  <button onClick={() => unsave(a.id)} style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'7px 10px', borderRadius:6, fontSize:11, cursor:'pointer' }}>✕</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SavedSearchesList({ user }) {
   const [searches, setSearches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -1411,6 +1472,7 @@ export function DashboardPage({ user }) {
     { id:'listings', label:'My Listings', icon:'🚗', badge: myListings.length },
     { id:'saved', label:'Saved Cars', icon:'❤️', badge: savedCars.length },
     { id:'searches', label:'Saved Searches', icon:'🔖' },
+    { id:'articles', label:'Saved Articles', icon:'📰' },
     { id:'leads', label:'Leads', icon:'💬' },
     { id:'alerts', label:'Alerts', icon:'🔔' },
   ]
@@ -1573,6 +1635,10 @@ export function DashboardPage({ user }) {
             </div>
           )}
 
+          {tab === 'articles' && (
+            <SavedArticlesTab user={user} />
+          )}
+
           {tab === 'leads' && (
             <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
               <div style={{ fontSize:32, marginBottom:12 }}>💬</div>
@@ -1597,6 +1663,33 @@ export function DashboardPage({ user }) {
 // ─────────────────────────────────────────────────────────────
 // NEWS PAGE
 // ─────────────────────────────────────────────────────────────
+function NewsSubscribeInline() {
+  const [email, setEmail] = useState('')
+  const [done, setDone] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const subscribe = async () => {
+    if (!email.trim()) return
+    setLoading(true)
+    const { error } = await supabase.from('subscribers').insert({ email: email.trim() })
+    setLoading(false)
+    setDone(true)
+  }
+
+  if (done) return <div style={{ background:'rgba(255,255,255,.15)', borderRadius:8, padding:'10px 16px', color:'#fff', fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700 }}>🎉 You're subscribed!</div>
+
+  return (
+    <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Your email address"
+        style={{ padding:'10px 14px', borderRadius:8, border:'none', fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', minWidth:200, flex:1 }}/>
+      <button onClick={subscribe} disabled={loading || !email.trim()}
+        style={{ background: email.trim() ? '#4DA6FF' : '#94A3B8', color:'#0A2540', border:'none', padding:'10px 20px', borderRadius:8, fontSize:13, fontWeight:800, cursor: email.trim() ? 'pointer' : 'default', fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}>
+        {loading ? 'Subscribing...' : 'Subscribe Free →'}
+      </button>
+    </div>
+  )
+}
+
 export function NewsReviewsPage({ user }) {
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
@@ -1681,6 +1774,17 @@ export function NewsReviewsPage({ user }) {
                   </div>
                 </div>
               </Link>
+            )}
+
+            {/* Subscribe banner between featured and grid */}
+            {!searchQ && activeCategory === 'All' && rest.length > 2 && (
+              <div style={{ background:'linear-gradient(135deg,#0A2540,#1565C0)', borderRadius:14, padding:'24px 20px', marginBottom:24, display:'flex', alignItems:'center', gap:20, flexWrap:'wrap' }}>
+                <div style={{ flex:1, minWidth:200 }}>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#fff', marginBottom:4 }}>📬 Stay Updated</div>
+                  <div style={{ fontSize:13, color:'rgba(255,255,255,.6)' }}>Get Kenya car news, reviews and market insights straight to your inbox.</div>
+                </div>
+                <NewsSubscribeInline />
+              </div>
             )}
 
             {/* Grid */}
