@@ -957,15 +957,63 @@ export function ValuationPage({ user }) {
 // PRICING PAGE
 // ─────────────────────────────────────────────────────────────
 export function PricingPage({ user }) {
+  const [dealers, setDealers] = useState([])
+
+  useEffect(() => {
+    supabase.from('dealers').select('name, location').order('created_at', { ascending: true })
+      .then(({ data }) => setDealers(data || []))
+  }, [])
+
+  const PLACEHOLDER_DEALERS = [
+    { name:'Nairobi Kars Ltd', location:'Westlands' },
+    { name:'AutoMart Kenya', location:'Mombasa' },
+    { name:'Prime Motors', location:'Karen' },
+    { name:'Capital Cars', location:'Nakuru' },
+    { name:'Safari Motors', location:'Kisumu' },
+    { name:'Prestige Auto', location:'Langata' },
+    { name:'East Africa Motors', location:'Westlands' },
+    { name:'Savannah Auto', location:'Eldoret' },
+  ]
+
+  const displayDealers = dealers.length > 0 ? dealers : PLACEHOLDER_DEALERS
+  const items = [...displayDealers, ...displayDealers, ...displayDealers]
+
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
-      <style>{MOBILE_CSS}</style>
+      <style>{MOBILE_CSS}{`
+        @keyframes scroll-dealers-p { 0% { transform: translateX(0); } 100% { transform: translateX(-33.333%); } }
+      `}</style>
       <Navbar user={user} />
       <div style={{ background:'linear-gradient(135deg,#0A2540,#1565C0)', padding:'44px 16px', textAlign:'center' }}>
         <div style={{ color:'#4DA6FF', fontSize:11, fontWeight:700, letterSpacing:'1.8px', textTransform:'uppercase', marginBottom:10 }}>Simple Pricing</div>
         <h1 style={{ fontFamily:'Outfit,sans-serif', fontSize:28, fontWeight:800, color:'#fff', marginBottom:8 }}>Choose Your Plan</h1>
         <p style={{ color:'rgba(255,255,255,.55)', fontSize:14 }}>Start free. Upgrade when you're ready to sell faster.</p>
       </div>
+
+      {/* Dealers banner */}
+      <div style={{ background:'#060F1A', padding:'18px 0', overflow:'hidden' }}>
+        <div style={{ textAlign:'center', fontFamily:'Outfit,sans-serif', fontSize:10, fontWeight:700, color:'rgba(255,255,255,.3)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:12 }}>
+          Trusted by Dealers Across Kenya
+        </div>
+        <div style={{ overflow:'hidden', position:'relative' }}>
+          <div style={{ position:'absolute', left:0, top:0, bottom:0, width:60, background:'linear-gradient(to right, #060F1A, transparent)', zIndex:2 }}/>
+          <div style={{ position:'absolute', right:0, top:0, bottom:0, width:60, background:'linear-gradient(to left, #060F1A, transparent)', zIndex:2 }}/>
+          <div style={{ display:'flex', animation:'scroll-dealers-p 28s linear infinite', width:'max-content' }}>
+            {items.map((d, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'0 28px', borderRight:'1px solid rgba(255,255,255,.06)', whiteSpace:'nowrap' }}>
+                <div style={{ width:26, height:26, borderRadius:'50%', background:'rgba(77,166,255,.15)', border:'1px solid rgba(77,166,255,.25)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:10, fontWeight:800, color:'#4DA6FF', flexShrink:0 }}>
+                  {d.name[0]}
+                </div>
+                <div>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:12, fontWeight:700, color:'#fff' }}>{d.name}</div>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,.35)' }}>📍 {d.location}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div style={{ maxWidth:900, margin:'0 auto', padding:16 }}>
         <div className="pricing-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14, marginTop:24 }}>
           {[
@@ -988,7 +1036,23 @@ export function PricingPage({ user }) {
             </div>
           ))}
         </div>
-        <div style={{ background:'#0A2540', borderRadius:14, padding:24, marginTop:24, textAlign:'center' }}>
+
+        {/* Social proof */}
+        <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:24, marginTop:24, textAlign:'center' }}>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540', marginBottom:16 }}>Joining {displayDealers.length}+ Dealers on CarExpert Africa</div>
+          <div style={{ display:'flex', justifyContent:'center', flexWrap:'wrap', gap:10, marginBottom:16 }}>
+            {displayDealers.slice(0, 6).map((d, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:6, background:'#F8FAFC', border:'1px solid #E8EDF3', borderRadius:100, padding:'6px 12px' }}>
+                <div style={{ width:22, height:22, borderRadius:'50%', background:'#0A2540', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:9, fontWeight:800, color:'#fff', flexShrink:0 }}>{d.name[0]}</div>
+                <span style={{ fontSize:11, fontWeight:600, color:'#475569' }}>{d.name}</span>
+              </div>
+            ))}
+            {displayDealers.length > 6 && <div style={{ background:'#EEF5FF', border:'1px solid #BDD5FF', borderRadius:100, padding:'6px 12px', fontSize:11, fontWeight:700, color:'#1565C0' }}>+{displayDealers.length - 6} more</div>}
+          </div>
+          <div style={{ fontSize:12, color:'#94A3B8' }}>Ready to grow your dealership? Join Kenya's fastest-growing car marketplace.</div>
+        </div>
+
+        <div style={{ background:'#0A2540', borderRadius:14, padding:24, marginTop:14, textAlign:'center' }}>
           <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#fff', marginBottom:8 }}>Enterprise / Fleet Dealers</div>
           <div style={{ fontSize:13, color:'rgba(255,255,255,.55)', marginBottom:16 }}>Managing 50+ vehicles? Get custom pricing, dedicated support, and API access.</div>
           <a href="mailto:hello@carexpertafrica.com" style={{ background:'#4DA6FF', color:'#0A2540', padding:'12px 28px', borderRadius:9, fontWeight:800, fontSize:13, textDecoration:'none', fontFamily:'Outfit,sans-serif', display:'inline-block' }}>Contact Us →</a>
