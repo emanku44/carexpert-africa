@@ -531,7 +531,7 @@ export default function ListingsPage({ user }) {
       <style>{`
         .listings-layout { display: grid; grid-template-columns: 268px 1fr; min-height: calc(100vh - 96px); }
         .listings-sidebar { background: #fff; border-right: 1px solid #E8EDF3; overflow-y: auto; }
-        .listings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .listings-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
         .mobile-filter-btn { display: none !important; }
         .mobile-sidebar-overlay { display: none; }
         @media (max-width: 768px) {
