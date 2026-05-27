@@ -957,53 +957,91 @@ export function ValuationPage({ user }) {
 // PRICING PAGE
 // ─────────────────────────────────────────────────────────────
 export function PricingPage({ user }) {
+  const [activeTab, setActiveTab] = useState('plans')
   const [dealers, setDealers] = useState([])
+  const [stats, setStats] = useState(null)
+  const [loadingStats, setLoadingStats] = useState(true)
+  const [animVal, setAnimVal] = useState(0)
 
   useEffect(() => {
     supabase.from('dealers').select('name, location').order('created_at', { ascending: true })
       .then(({ data }) => setDealers(data || []))
+    // fetch real stats from listings
+    supabase.from('listings').select('status, views, featured, make, body_type, created_at, price')
+      .then(({ data }) => {
+        if (!data || data.length === 0) { setLoadingStats(false); return }
+        const approved = data.filter(l => l.status === 'approved')
+        const totalViews = approved.reduce((a, l) => a + (l.views || 0), 0)
+        const avgViews = approved.length > 0 ? Math.round(totalViews / approved.length) : 0
+        const featuredListings = approved.filter(l => l.featured)
+        const featuredAvgViews = featuredListings.length > 0 ? Math.round(featuredListings.reduce((a,l) => a+(l.views||0),0) / featuredListings.length) : 0
+        const makeCounts = {}
+        approved.forEach(l => { if (l.make) makeCounts[l.make] = (makeCounts[l.make]||0)+1 })
+        const topMakes = Object.entries(makeCounts).sort((a,b) => b[1]-a[1]).slice(0,5)
+        const bodyCounts = {}
+        approved.forEach(l => { if (l.body_type) bodyCounts[l.body_type] = (bodyCounts[l.body_type]||0)+1 })
+        const topBodies = Object.entries(bodyCounts).sort((a,b) => b[1]-a[1]).slice(0,5)
+        const prices = approved.map(l => l.price).filter(Boolean)
+        const avgPrice = prices.length > 0 ? Math.round(prices.reduce((a,b)=>a+b,0)/prices.length/50000)*50000 : 0
+        setStats({ total: data.length, approved: approved.length, totalViews, avgViews, featuredAvgViews, topMakes, topBodies, avgPrice, featuredCount: featuredListings.length })
+        setLoadingStats(false)
+      })
   }, [])
 
-  const PLACEHOLDER_DEALERS = [
-    { name:'Nairobi Kars Ltd', location:'Westlands' },
-    { name:'AutoMart Kenya', location:'Mombasa' },
-    { name:'Prime Motors', location:'Karen' },
-    { name:'Capital Cars', location:'Nakuru' },
-    { name:'Safari Motors', location:'Kisumu' },
-    { name:'Prestige Auto', location:'Langata' },
-    { name:'East Africa Motors', location:'Westlands' },
-    { name:'Savannah Auto', location:'Eldoret' },
-  ]
+  useEffect(() => {
+    if (activeTab !== 'results') return
+    setAnimVal(0)
+    const t = setTimeout(() => setAnimVal(100), 100)
+    return () => clearTimeout(t)
+  }, [activeTab])
 
+  const PLACEHOLDER_DEALERS = [
+    { name:'Nairobi Kars Ltd', location:'Westlands' },{ name:'AutoMart Kenya', location:'Mombasa' },
+    { name:'Prime Motors', location:'Karen' },{ name:'Capital Cars', location:'Nakuru' },
+    { name:'Safari Motors', location:'Kisumu' },{ name:'Prestige Auto', location:'Langata' },
+    { name:'East Africa Motors', location:'Westlands' },{ name:'Savannah Auto', location:'Eldoret' },
+  ]
   const displayDealers = dealers.length > 0 ? dealers : PLACEHOLDER_DEALERS
   const items = [...displayDealers, ...displayDealers, ...displayDealers]
+
+  const fmtV = n => 'KSH ' + Number(n).toLocaleString()
 
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
       <style>{MOBILE_CSS}{`
         @keyframes scroll-dealers-p { 0% { transform: translateX(0); } 100% { transform: translateX(-33.333%); } }
+        @keyframes bar-grow { from { width: 0%; } to { width: var(--w); } }
+        .stat-bar { transition: width 1.2s cubic-bezier(.4,0,.2,1); }
       `}</style>
       <Navbar user={user} />
       <div style={{ background:'linear-gradient(135deg,#0A2540,#1565C0)', padding:'44px 16px', textAlign:'center' }}>
-        <div style={{ color:'#4DA6FF', fontSize:11, fontWeight:700, letterSpacing:'1.8px', textTransform:'uppercase', marginBottom:10 }}>Simple Pricing</div>
-        <h1 style={{ fontFamily:'Outfit,sans-serif', fontSize:28, fontWeight:800, color:'#fff', marginBottom:8 }}>Choose Your Plan</h1>
-        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14 }}>Start free. Upgrade when you're ready to sell faster.</p>
+        <div style={{ color:'#4DA6FF', fontSize:11, fontWeight:700, letterSpacing:'1.8px', textTransform:'uppercase', marginBottom:10 }}>CarExpert Africa</div>
+        <h1 style={{ fontFamily:'Outfit,sans-serif', fontSize:28, fontWeight:800, color:'#fff', marginBottom:8 }}>Plans & Performance</h1>
+        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14 }}>Transparent pricing. Real results.</p>
       </div>
 
-      {/* Dealers banner */}
-      <div style={{ background:'#060F1A', padding:'18px 0', overflow:'hidden' }}>
-        <div style={{ textAlign:'center', fontFamily:'Outfit,sans-serif', fontSize:10, fontWeight:700, color:'rgba(255,255,255,.3)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:12 }}>
-          Trusted by Dealers Across Kenya
+      {/* Tabs */}
+      <div style={{ background:'#fff', borderBottom:'1px solid #E8EDF3' }}>
+        <div style={{ display:'flex', maxWidth:900, margin:'0 auto', padding:'0 16px' }}>
+          {[['plans','💳 Pricing Plans'],['results','📊 Why List on CEA?'],['faq','❓ FAQ']].map(([id, label]) => (
+            <button key={id} onClick={() => setActiveTab(id)}
+              style={{ padding:'14px 20px', border:'none', background:'none', fontSize:13, fontWeight:activeTab===id?700:500, color:activeTab===id?'#1565C0':'#64748B', cursor:'pointer', borderBottom:`2px solid ${activeTab===id?'#1565C0':'transparent'}`, fontFamily:'DM Sans,sans-serif', whiteSpace:'nowrap' }}>
+              {label}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {/* Dealers scroll */}
+      <div style={{ background:'#060F1A', padding:'16px 0', overflow:'hidden' }}>
+        <div style={{ textAlign:'center', fontFamily:'Outfit,sans-serif', fontSize:10, fontWeight:700, color:'rgba(255,255,255,.3)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:10 }}>Trusted by Dealers Across Kenya</div>
         <div style={{ overflow:'hidden', position:'relative' }}>
           <div style={{ position:'absolute', left:0, top:0, bottom:0, width:60, background:'linear-gradient(to right, #060F1A, transparent)', zIndex:2 }}/>
           <div style={{ position:'absolute', right:0, top:0, bottom:0, width:60, background:'linear-gradient(to left, #060F1A, transparent)', zIndex:2 }}/>
           <div style={{ display:'flex', animation:'scroll-dealers-p 28s linear infinite', width:'max-content' }}>
             {items.map((d, i) => (
               <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'0 28px', borderRight:'1px solid rgba(255,255,255,.06)', whiteSpace:'nowrap' }}>
-                <div style={{ width:26, height:26, borderRadius:'50%', background:'rgba(77,166,255,.15)', border:'1px solid rgba(77,166,255,.25)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:10, fontWeight:800, color:'#4DA6FF', flexShrink:0 }}>
-                  {d.name[0]}
-                </div>
+                <div style={{ width:26, height:26, borderRadius:'50%', background:'rgba(77,166,255,.15)', border:'1px solid rgba(77,166,255,.25)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:10, fontWeight:800, color:'#4DA6FF', flexShrink:0 }}>{d.name[0]}</div>
                 <div>
                   <div style={{ fontFamily:'Outfit,sans-serif', fontSize:12, fontWeight:700, color:'#fff' }}>{d.name}</div>
                   <div style={{ fontSize:10, color:'rgba(255,255,255,.35)' }}>📍 {d.location}</div>
@@ -1014,53 +1052,207 @@ export function PricingPage({ user }) {
         </div>
       </div>
 
-      <div style={{ maxWidth:900, margin:'0 auto', padding:16 }}>
-        <div className="pricing-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14, marginTop:24 }}>
-          {[
-            { name:'Free', price:'KSH 0', period:'forever', color:'#475569', features:['1 active listing','5 photos','Standard placement','WhatsApp contact button'], cta:'Get Started', href:'/auth' },
-            { name:'Standard', price:'KSH 1,500', period:'per month', color:'#1565C0', features:['5 active listings','20 photos per listing','Priority placement','Featured badge','Analytics dashboard'], cta:'Start Standard', href:'/auth', featured:true },
-            { name:'Dealer Pro', price:'KSH 7,500', period:'per month', color:'#0A2540', features:['Unlimited listings','Unlimited photos','Top placement','Dealer profile page','Lead tracking','Verified dealer badge'], cta:'Contact Sales', href:'mailto:hello@carexpertafrica.com' },
-          ].map(plan => (
-            <div key={plan.name} style={{ background:'#fff', border:`2px solid ${plan.featured?'#1565C0':'#E8EDF3'}`, borderRadius:14, padding:20, position:'relative', boxShadow: plan.featured?'0 8px 32px rgba(21,101,192,.15)':'none' }}>
-              {plan.featured && <div style={{ position:'absolute', top:-12, left:'50%', transform:'translateX(-50%)', background:'#1565C0', color:'#fff', fontSize:10, fontWeight:700, padding:'3px 14px', borderRadius:100, whiteSpace:'nowrap', fontFamily:'Outfit,sans-serif' }}>MOST POPULAR</div>}
-              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:4 }}>{plan.name}</div>
-              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:24, fontWeight:800, color:plan.color, marginBottom:2 }}>{plan.price}</div>
-              <div style={{ fontSize:11, color:'#94A3B8', marginBottom:18 }}>{plan.period}</div>
-              {plan.features.map(f => (
-                <div key={f} style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:8 }}>
-                  <span style={{ color:'#16A34A', fontWeight:700, fontSize:13, flexShrink:0 }}>✓</span>
-                  <span style={{ fontSize:12, color:'#475569' }}>{f}</span>
+      <div style={{ maxWidth:900, margin:'0 auto', padding:'24px 16px' }}>
+
+        {/* PLANS TAB */}
+        {activeTab === 'plans' && (
+          <>
+            <div className="pricing-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14, marginBottom:24 }}>
+              {[
+                { name:'Free', price:'KSH 0', period:'forever', color:'#475569', features:['1 active listing','5 photos per listing','Standard placement','WhatsApp contact button','Basic analytics'], cta:'Get Started', href:'/auth' },
+                { name:'Standard', price:'KSH 1,500', period:'per month', color:'#1565C0', features:['5 active listings','20 photos per listing','Priority placement','Featured badge','Full analytics dashboard','Saved search alerts'], cta:'Start Standard', href:'/auth', featured:true },
+                { name:'Dealer Pro', price:'KSH 7,500', period:'per month', color:'#0A2540', features:['Unlimited listings','Unlimited photos','Top placement always','Dealer profile page','Lead tracking CRM','Verified dealer badge','Offer requests from buyers'], cta:'Contact Sales', href:'mailto:hello@carexpertafrica.com' },
+              ].map(plan => (
+                <div key={plan.name} style={{ background:'#fff', border:`2px solid ${plan.featured?'#1565C0':'#E8EDF3'}`, borderRadius:14, padding:20, position:'relative', boxShadow:plan.featured?'0 8px 32px rgba(21,101,192,.15)':'none' }}>
+                  {plan.featured && <div style={{ position:'absolute', top:-12, left:'50%', transform:'translateX(-50%)', background:'#1565C0', color:'#fff', fontSize:10, fontWeight:700, padding:'3px 14px', borderRadius:100, whiteSpace:'nowrap', fontFamily:'Outfit,sans-serif' }}>MOST POPULAR</div>}
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:4 }}>{plan.name}</div>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:24, fontWeight:800, color:plan.color, marginBottom:2 }}>{plan.price}</div>
+                  <div style={{ fontSize:11, color:'#94A3B8', marginBottom:18 }}>{plan.period}</div>
+                  {plan.features.map(f => (
+                    <div key={f} style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:8 }}>
+                      <span style={{ color:'#16A34A', fontWeight:700, fontSize:13, flexShrink:0 }}>✓</span>
+                      <span style={{ fontSize:12, color:'#475569' }}>{f}</span>
+                    </div>
+                  ))}
+                  <a href={plan.href} style={{ display:'block', textAlign:'center', background:plan.featured?'#1565C0':'#F0F6FF', color:plan.featured?'#fff':'#1565C0', border:`1.5px solid ${plan.featured?'transparent':'#BDD5FF'}`, padding:'11px', borderRadius:8, fontSize:13, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif', marginTop:16 }}>{plan.cta}</a>
                 </div>
               ))}
-              <a href={plan.href} style={{ display:'block', textAlign:'center', background:plan.featured?'#1565C0':'#F0F6FF', color:plan.featured?'#fff':'#1565C0', border:`1.5px solid ${plan.featured?'transparent':'#BDD5FF'}`, padding:'11px', borderRadius:8, fontSize:13, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif', marginTop:16 }}>{plan.cta}</a>
             </div>
-          ))}
-        </div>
-
-        {/* Social proof */}
-        <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:24, marginTop:24, textAlign:'center' }}>
-          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540', marginBottom:16 }}>Joining {displayDealers.length}+ Dealers on CarExpert Africa</div>
-          <div style={{ display:'flex', justifyContent:'center', flexWrap:'wrap', gap:10, marginBottom:16 }}>
-            {displayDealers.slice(0, 6).map((d, i) => (
-              <div key={i} style={{ display:'flex', alignItems:'center', gap:6, background:'#F8FAFC', border:'1px solid #E8EDF3', borderRadius:100, padding:'6px 12px' }}>
-                <div style={{ width:22, height:22, borderRadius:'50%', background:'#0A2540', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:9, fontWeight:800, color:'#fff', flexShrink:0 }}>{d.name[0]}</div>
-                <span style={{ fontSize:11, fontWeight:600, color:'#475569' }}>{d.name}</span>
+            <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:24, marginBottom:14, textAlign:'center' }}>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:14 }}>Joining {displayDealers.length}+ Dealers on CarExpert Africa</div>
+              <div style={{ display:'flex', justifyContent:'center', flexWrap:'wrap', gap:8, marginBottom:14 }}>
+                {displayDealers.slice(0,6).map((d,i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:6, background:'#F8FAFC', border:'1px solid #E8EDF3', borderRadius:100, padding:'6px 12px' }}>
+                    <div style={{ width:20, height:20, borderRadius:'50%', background:'#0A2540', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:9, fontWeight:800, color:'#fff', flexShrink:0 }}>{d.name[0]}</div>
+                    <span style={{ fontSize:11, fontWeight:600, color:'#475569' }}>{d.name}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-            {displayDealers.length > 6 && <div style={{ background:'#EEF5FF', border:'1px solid #BDD5FF', borderRadius:100, padding:'6px 12px', fontSize:11, fontWeight:700, color:'#1565C0' }}>+{displayDealers.length - 6} more</div>}
-          </div>
-          <div style={{ fontSize:12, color:'#94A3B8' }}>Ready to grow your dealership? Join Kenya's fastest-growing car marketplace.</div>
-        </div>
+            </div>
+            <div style={{ background:'#0A2540', borderRadius:14, padding:24, textAlign:'center' }}>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#fff', marginBottom:8 }}>Enterprise / Fleet Dealers</div>
+              <div style={{ fontSize:13, color:'rgba(255,255,255,.55)', marginBottom:16 }}>Managing 50+ vehicles? Custom pricing, dedicated support, API access.</div>
+              <a href="mailto:hello@carexpertafrica.com" style={{ background:'#4DA6FF', color:'#0A2540', padding:'12px 28px', borderRadius:9, fontWeight:800, fontSize:13, textDecoration:'none', fontFamily:'Outfit,sans-serif', display:'inline-block' }}>Contact Us →</a>
+            </div>
+          </>
+        )}
 
-        <div style={{ background:'#0A2540', borderRadius:14, padding:24, marginTop:14, textAlign:'center' }}>
-          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#fff', marginBottom:8 }}>Enterprise / Fleet Dealers</div>
-          <div style={{ fontSize:13, color:'rgba(255,255,255,.55)', marginBottom:16 }}>Managing 50+ vehicles? Get custom pricing, dedicated support, and API access.</div>
-          <a href="mailto:hello@carexpertafrica.com" style={{ background:'#4DA6FF', color:'#0A2540', padding:'12px 28px', borderRadius:9, fontWeight:800, fontSize:13, textDecoration:'none', fontFamily:'Outfit,sans-serif', display:'inline-block' }}>Contact Us →</a>
-        </div>
+        {/* RESULTS TAB */}
+        {activeTab === 'results' && (
+          <div>
+            {loadingStats ? (
+              <div style={{ textAlign:'center', padding:60, color:'#94A3B8' }}>Loading platform data...</div>
+            ) : (
+              <>
+                {/* Hero stats */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px,1fr))', gap:12, marginBottom:24 }}>
+                  {[
+                    ['🚗', stats?.approved || 0, 'Live Listings', '#EEF5FF', '#1565C0'],
+                    ['👁', stats?.totalViews || 0, 'Total Views', '#F0FDF4', '#16A34A'],
+                    ['⭐', stats?.featuredCount || 0, 'Featured Cars', '#FFFBEB', '#D97706'],
+                    ['📊', stats?.avgViews || 0, 'Avg Views/Listing', '#F5F3FF', '#7C3AED'],
+                  ].map(([icon, val, label, bg, color]) => (
+                    <div key={label} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, textAlign:'center' }}>
+                      <div style={{ width:40, height:40, borderRadius:10, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, margin:'0 auto 10px' }}>{icon}</div>
+                      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:22, fontWeight:900, color, marginBottom:3 }}>{Number(val).toLocaleString()}</div>
+                      <div style={{ fontSize:11, color:'#94A3B8' }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Featured vs Standard */}
+                <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:20, marginBottom:14 }}>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:6, display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Featured vs Standard Performance
+                  </div>
+                  <div style={{ fontSize:12, color:'#94A3B8', marginBottom:18 }}>Average views per listing on the platform</div>
+                  {[
+                    ['⭐ Featured Listings', stats?.featuredAvgViews || 0, '#F59E0B', stats?.featuredAvgViews || 0],
+                    ['📋 Standard Listings', stats?.avgViews || 0, '#1565C0', stats?.avgViews || 0],
+                  ].map(([label, val, color]) => {
+                    const max = Math.max(stats?.featuredAvgViews || 1, stats?.avgViews || 1)
+                    const pct = max > 0 ? (val / max) * 100 : 0
+                    return (
+                      <div key={label} style={{ marginBottom:14 }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                          <span style={{ fontSize:13, fontWeight:600, color:'#0A2540' }}>{label}</span>
+                          <span style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:800, color }}>{val.toLocaleString()} views avg</span>
+                        </div>
+                        <div style={{ height:10, borderRadius:100, background:'#F0F4F8', overflow:'hidden' }}>
+                          <div className="stat-bar" style={{ height:'100%', borderRadius:100, background:color, width: animVal > 0 ? `${pct}%` : '0%', transition:'width 1.2s cubic-bezier(.4,0,.2,1)' }}/>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {stats?.featuredAvgViews > stats?.avgViews && (
+                    <div style={{ background:'#FFFBEB', border:'1px solid #FCD34D', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#92400E', marginTop:8 }}>
+                      ⭐ Featured listings get <strong>{Math.round((stats.featuredAvgViews / Math.max(stats.avgViews, 1) - 1) * 100)}% more views</strong> than standard listings
+                    </div>
+                  )}
+                </div>
+
+                {/* Top makes */}
+                {stats?.topMakes?.length > 0 && (
+                  <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:20, marginBottom:14 }}>
+                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:4, display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Most Listed Makes
+                    </div>
+                    <div style={{ fontSize:12, color:'#94A3B8', marginBottom:16 }}>What buyers are searching for most on CEA</div>
+                    {stats.topMakes.map(([make, count], i) => {
+                      const max = stats.topMakes[0][1]
+                      const pct = (count / max) * 100
+                      const colors = ['#1565C0','#0D9488','#7C3AED','#D97706','#DC2626']
+                      return (
+                        <div key={make} style={{ marginBottom:12 }}>
+                          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                              <span style={{ fontFamily:'Outfit,sans-serif', fontSize:11, fontWeight:800, color:'#94A3B8', width:16 }}>#{i+1}</span>
+                              <span style={{ fontSize:13, fontWeight:700, color:'#0A2540' }}>{make}</span>
+                            </div>
+                            <span style={{ fontSize:12, color:'#94A3B8' }}>{count} listing{count!==1?'s':''}</span>
+                          </div>
+                          <div style={{ height:8, borderRadius:100, background:'#F0F4F8', overflow:'hidden' }}>
+                            <div className="stat-bar" style={{ height:'100%', borderRadius:100, background:colors[i], width: animVal > 0 ? `${pct}%` : '0%', transition:`width ${1 + i*0.15}s cubic-bezier(.4,0,.2,1)` }}/>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Body types */}
+                {stats?.topBodies?.length > 0 && (
+                  <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:20, marginBottom:14 }}>
+                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:4, display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Most Popular Body Types
+                    </div>
+                    <div style={{ fontSize:12, color:'#94A3B8', marginBottom:16 }}>Body styles with highest buyer demand</div>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(130px,1fr))', gap:10 }}>
+                      {stats.topBodies.map(([body, count], i) => {
+                        const icons = { SUV:'🚙', Sedan:'🚗', Pickup:'🛻', Hatchback:'🚘', Minivan:'🚐', Coupe:'🏎', Wagon:'🚗', Truck:'🚚' }
+                        const colors = ['#1565C0','#0D9488','#7C3AED','#D97706','#DC2626']
+                        return (
+                          <div key={body} style={{ background:'#F8FAFC', border:`2px solid ${i===0?colors[0]:'#E8EDF3'}`, borderRadius:10, padding:'14px 10px', textAlign:'center' }}>
+                            <div style={{ fontSize:28, marginBottom:6 }}>{icons[body] || '🚗'}</div>
+                            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:12, fontWeight:700, color:'#0A2540' }}>{body}</div>
+                            <div style={{ fontSize:20, fontWeight:900, color:colors[i], fontFamily:'Outfit,sans-serif' }}>{count}</div>
+                            <div style={{ fontSize:10, color:'#94A3B8' }}>listings</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Why list CTA */}
+                <div style={{ background:'linear-gradient(135deg,#0A2540,#1565C0)', borderRadius:14, padding:28, textAlign:'center' }}>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#fff', marginBottom:8 }}>Ready to Sell Your Car Faster?</div>
+                  <div style={{ fontSize:14, color:'rgba(255,255,255,.6)', marginBottom:20 }}>Join {displayDealers.length}+ dealers and thousands of private sellers reaching buyers across Kenya every day.</div>
+                  <div style={{ display:'flex', justifyContent:'center', gap:12, flexWrap:'wrap' }}>
+                    <Link to="/list-car" style={{ background:'#4DA6FF', color:'#0A2540', padding:'12px 24px', borderRadius:9, fontWeight:800, fontSize:13, textDecoration:'none', fontFamily:'Outfit,sans-serif', display:'inline-block' }}>List a Car Free →</Link>
+                    <button onClick={() => setActiveTab('plans')} style={{ background:'rgba(255,255,255,.1)', color:'#fff', border:'1.5px solid rgba(255,255,255,.25)', padding:'12px 24px', borderRadius:9, fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>View Plans</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* FAQ TAB */}
+        {activeTab === 'faq' && (
+          <div>
+            {[
+              ['How long does it take to get my listing live?', 'All listings are reviewed by our team and go live within 1–2 hours during business hours (Mon–Sat, 8am–6pm EAT). You\'ll be notified once approved.'],
+              ['How do buyers contact me?', 'Buyers can contact you directly via WhatsApp or phone call using the details you provide. All enquiries go straight to you — no middleman.'],
+              ['Can I list multiple cars on the Free plan?', 'The Free plan allows 1 active listing at a time. Upgrade to Standard for 5 listings, or Dealer Pro for unlimited.'],
+              ['How do featured listings work?', 'Featured listings appear at the top of search results and on the homepage. They get significantly more views than standard listings. Featured status can be purchased from the dashboard.'],
+              ['What photos should I upload?', 'Upload at least 6 clear photos: front, rear, driver side, passenger side, dashboard/interior, and engine bay. Good photos dramatically increase buyer enquiries.'],
+              ['Is my phone number shown publicly?', 'Yes — buyers contact you directly. If you prefer privacy, you can use a separate WhatsApp number or our messaging feature (coming soon).'],
+              ['Can I edit my listing after submitting?', 'Yes — go to your Dashboard → My Listings → Edit. Any major changes may require re-approval.'],
+              ['How do I get a dealer cash offer?', 'Use our free Valuation tool at /valuation. After getting your estimate, click "Get Dealer Offer" and fill in your contact details. Verified dealers in our network will respond within 24 hours.'],
+              ['What payment methods are accepted?', 'M-Pesa and card payments are coming soon. For now, contact us at hello@carexpertafrica.com to upgrade your plan.'],
+              ['How do I become a verified dealer?', 'Contact us at hello@carexpertafrica.com with your business registration details. Verified dealers get a badge and priority placement.'],
+            ].map(([q, a], i) => <FaqItem key={i} q={q} a={a} />)}
+          </div>
+        )}
       </div>
     </div>
   )
 }
+
+function FaqItem({ q, a }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, marginBottom:8, overflow:'hidden' }}>
+      <div onClick={() => setOpen(!open)} style={{ padding:'16px 18px', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer' }}>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', paddingRight:12 }}>{q}</div>
+        <span style={{ fontSize:18, color:'#94A3B8', flexShrink:0, transform:open?'rotate(45deg)':'none', transition:'transform .2s' }}>+</span>
+      </div>
+      {open && <div style={{ padding:'0 18px 16px', fontSize:13, color:'#475569', lineHeight:1.7, borderTop:'1px solid #F0F4F8' }}>{a}</div>}
+    </div>
+  )
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // AUTH PAGE
