@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import { signUp, signIn, supabase } from '../lib/supabase'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
 
 const MOBILE_CSS = `
@@ -547,27 +547,150 @@ export function CarDetailPage({ user }) {
 // ─────────────────────────────────────────────────────────────
 // VALUATION PAGE
 // ─────────────────────────────────────────────────────────────
-const BASE_PRICES = { Toyota:4500000, 'Mercedes-Benz':5500000, BMW:4200000, Audi:4800000, Mazda:2800000, Subaru:2200000, Nissan:2000000 }
-const COND_MULT = { Excellent:1.08, Good:1.0, Fair:0.88, Poor:0.72 }
-const kmMult = km => km<50000?1.08:km<80000?1.0:km<120000?0.92:0.82
-const yrMult = y => { const a=2025-y; return a<=2?1.12:a<=4?1.05:a<=6?0.95:a<=8?0.85:0.72 }
+
+// Base market prices (KSH) — Kenya market averages by make
+const VAL_BASE = {
+  Toyota: { default:3500000, 'Land Cruiser 300':18000000, 'Land Cruiser 200':9000000, 'Land Cruiser Prado 150':6500000, 'Land Cruiser Prado 120':3800000, 'Land Cruiser 100 Series':3200000, 'Hilux':3200000, 'Fortuner':4200000, 'Harrier':3800000, 'Alphard':5500000, 'Vellfire':5200000, 'Crown':3200000, 'Camry':2600000, 'RAV4':2800000, 'Noah':1800000, 'Voxy':1900000, 'Fielder':1400000, 'Corolla':1600000 },
+  Nissan: { default:1800000, 'Patrol':4500000, 'Navara':2800000, 'X-Trail':2200000, 'Elgrand':3200000, 'Serena':2000000 },
+  'Mercedes-Benz': { default:4500000, 'S-Class':9000000, 'GLS':8500000, 'GLE':6500000, 'E-Class':4500000, 'C-Class':3200000, 'G-Class':12000000, 'Sprinter':3500000 },
+  BMW: { default:3500000, 'X7':9000000, 'X5':5500000, 'X6':5000000, 'X3':3800000, '7 Series':6500000, '5 Series':3500000, '3 Series':2800000 },
+  Subaru: { default:2000000, 'Forester':2200000, 'Outback':2500000, 'WRX':3200000 },
+  Mazda: { default:2000000, 'CX-5':2800000, 'CX-7':2200000, 'CX-9':3500000 },
+  Audi: { default:3800000, 'Q7':5500000, 'Q5':4200000, 'A6':3800000, 'A4':3000000 },
+  Volkswagen: { default:2200000, 'Touareg':4500000, 'Tiguan':2800000, 'Amarok':3200000 },
+  Honda: { default:1800000, 'Pilot':3200000, 'CR-V':2400000 },
+  Mitsubishi: { default:2200000, 'Pajero':3500000, 'Outlander':2600000, 'L200':2800000 },
+  'Land Rover': { default:6500000, 'Range Rover':9500000, 'Range Rover Sport':7500000, 'Defender 110':8500000, 'Discovery':5500000 },
+  Lexus: { default:4500000, 'LX':9500000, 'GX':6000000, 'RX':4500000 },
+  Porsche: { default:7500000, 'Cayenne':7500000, 'Macan':5500000 },
+  Haval: { default:2800000, 'H6':2800000, 'H9':4200000 },
+  Isuzu: { default:2500000, 'D-Max':3200000, 'MU-X':3800000 },
+  Ford: { default:2200000, 'Ranger':2800000, 'Everest':3500000 },
+  Hyundai: { default:1600000, 'Santa Fe':2800000, 'Tucson':2200000 },
+  Kia: { default:1600000, 'Sorento':2600000, 'Sportage':2200000 },
+  Suzuki: { default:1200000, 'Jimny':2200000, 'Grand Vitara':1800000 },
+}
+
+const getBase = (make, model) => {
+  const makeData = VAL_BASE[make]
+  if (!makeData) return 2000000
+  return makeData[model] || makeData.default
+}
+
+const condMult = { 'Excellent':1.10, 'Good':1.0, 'Fair':0.85, 'Poor':0.68 }
+
+const kmMult = (km) => {
+  if (km < 20000) return 1.15
+  if (km < 40000) return 1.08
+  if (km < 60000) return 1.03
+  if (km < 80000) return 1.0
+  if (km < 100000) return 0.94
+  if (km < 130000) return 0.87
+  if (km < 160000) return 0.79
+  if (km < 200000) return 0.70
+  return 0.60
+}
+
+const yearMult = (yr) => {
+  const age = 2025 - yr
+  if (age <= 1) return 1.15
+  if (age <= 2) return 1.08
+  if (age <= 3) return 1.02
+  if (age <= 4) return 0.97
+  if (age <= 5) return 0.92
+  if (age <= 6) return 0.86
+  if (age <= 7) return 0.80
+  if (age <= 8) return 0.74
+  if (age <= 10) return 0.65
+  if (age <= 12) return 0.55
+  if (age <= 15) return 0.44
+  return 0.35
+}
+
+const txMult = (tx) => tx === 'Automatic' ? 1.05 : tx === 'CVT' ? 1.03 : 1.0
+const fuelMult = (f) => f === 'Hybrid' ? 1.08 : f === 'Electric' ? 1.12 : f === 'Diesel' ? 1.03 : 1.0
+
+const VAL_MAKES = Object.keys(VAL_BASE).sort()
+const VAL_MODELS = {
+  Toyota: ['Land Cruiser 300','Land Cruiser 200','Land Cruiser Prado 150','Land Cruiser Prado 120','Land Cruiser 100 Series','Hilux','Fortuner','Harrier','RAV4','Alphard','Vellfire','Crown','Camry','Noah','Voxy','Fielder','Corolla','Probox'],
+  Nissan: ['Patrol','Navara','X-Trail','Elgrand','Serena','Note','March'],
+  'Mercedes-Benz': ['S-Class','GLS','GLE','GLC','E-Class','C-Class','G-Class','ML','Sprinter','Vito'],
+  BMW: ['X7','X5','X6','X3','X1','7 Series','5 Series','3 Series'],
+  Subaru: ['Forester','Outback','Legacy','WRX','XV'],
+  Mazda: ['CX-5','CX-7','CX-9','CX-3','Demio','Axela'],
+  Audi: ['Q7','Q5','Q3','A6','A4','A3'],
+  Volkswagen: ['Touareg','Tiguan','Amarok','Golf','Passat'],
+  Honda: ['Pilot','CR-V','HR-V','Fit','Accord'],
+  Mitsubishi: ['Pajero','Outlander','L200','Eclipse Cross'],
+  'Land Rover': ['Range Rover','Range Rover Sport','Defender 110','Defender 90','Discovery','Discovery Sport'],
+  Lexus: ['LX','GX','RX','NX','IS','GS'],
+  Porsche: ['Cayenne','Macan','Panamera'],
+  Haval: ['H9','H6','Jolion'],
+  Isuzu: ['D-Max','MU-X'],
+  Ford: ['Everest','Ranger','Explorer'],
+  Hyundai: ['Santa Fe','Tucson','Palisade'],
+  Kia: ['Sorento','Sportage','Carnival'],
+  Suzuki: ['Jimny','Grand Vitara','Vitara'],
+}
 
 export function ValuationPage({ user }) {
+  const navigate = useNavigate()
+  const [step, setStep] = useState(1) // 1=form, 2=result, 3=dealer-offer
   const [make, setMake] = useState('Toyota')
-  const [model, setModel] = useState('')
+  const [model, setModel] = useState('Land Cruiser Prado 150')
+  const [variant, setVariant] = useState('')
   const [year, setYear] = useState(2019)
   const [km, setKm] = useState(60000)
-  const [cond, setCond] = useState('Excellent')
+  const [cond, setCond] = useState('Good')
+  const [transmission, setTransmission] = useState('Automatic')
+  const [fuel, setFuel] = useState('Petrol')
+  const [colour, setColour] = useState('')
+  const [engineCc, setEngineCc] = useState('')
+  const [location, setLocation] = useState('Nairobi — Westlands')
   const [result, setResult] = useState(null)
+  // Dealer offer form
+  const [offerName, setOfferName] = useState('')
+  const [offerPhone, setOfferPhone] = useState('')
+  const [offerEmail, setOfferEmail] = useState('')
+  const [offerNotes, setOfferNotes] = useState('')
+  const [offerSubmitted, setOfferSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const calculate = () => {
-    const base = BASE_PRICES[make] || 3000000
-    const mid = Math.round(base * COND_MULT[cond] * kmMult(km) * yrMult(year) / 50000) * 50000
-    setResult({ low: Math.round(mid*.88/50000)*50000, mid, high: Math.round(mid*1.12/50000)*50000 })
+    const base = getBase(make, model)
+    const raw = base * condMult[cond] * kmMult(km) * yearMult(year) * txMult(transmission) * fuelMult(fuel)
+    const mid = Math.round(raw / 50000) * 50000
+    const low = Math.round(mid * 0.88 / 50000) * 50000
+    const high = Math.round(mid * 1.12 / 50000) * 50000
+    const dealerOffer = Math.round(mid * 0.78 / 50000) * 50000
+    const privateSale = Math.round(mid * 1.05 / 50000) * 50000
+    setResult({ low, mid, high, dealerOffer, privateSale })
+    setStep(2)
   }
 
-  const inp = { width:'100%', padding:'11px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:14, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC', boxSizing:'border-box' }
+  const handleDealerOffer = async () => {
+    if (!offerName.trim() || !offerPhone.trim()) return
+    setSubmitting(true)
+    await supabase.from('dealer_offer_requests').insert({
+      make, model, year, mileage: km, condition: cond,
+      colour: colour || null, engine_cc: engineCc ? Number(engineCc) : null,
+      transmission, fuel_type: fuel, location,
+      estimated_low: result.low, estimated_mid: result.mid, estimated_high: result.high,
+      contact_name: offerName.trim(), contact_phone: offerPhone.trim(),
+      contact_email: offerEmail.trim() || null, notes: offerNotes.trim() || null
+    })
+    setSubmitting(false)
+    setOfferSubmitted(true)
+  }
+
+  const goListCar = () => {
+    const p = new URLSearchParams({ make, model, variant, year, km, transmission, fuel, colour, engine_cc: engineCc, condition: cond, location })
+    navigate(`/list-car?${p.toString()}`)
+  }
+
+  const inp = { width:'100%', padding:'11px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC', boxSizing:'border-box' }
   const lbl = { display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }
+  const fmtV = n => 'KSH ' + Number(n).toLocaleString()
 
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
@@ -576,68 +699,255 @@ export function ValuationPage({ user }) {
       <div style={{ background:'linear-gradient(135deg,#0A2540,#0D3B6E)', padding:'36px 16px', textAlign:'center' }}>
         <div style={{ color:'#4DA6FF', fontSize:11, fontWeight:700, letterSpacing:'1.8px', textTransform:'uppercase', marginBottom:10 }}>Free Tool</div>
         <h1 style={{ fontFamily:'Outfit,sans-serif', fontSize:26, fontWeight:800, color:'#fff', marginBottom:8 }}>What Is Your Car Worth?</h1>
-        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14, maxWidth:400, margin:'0 auto' }}>Instant market valuation based on real Kenyan listings data.</p>
+        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14, maxWidth:440, margin:'0 auto' }}>
+          Instant market valuation based on real Kenyan listings data. Get a dealer cash offer or list it yourself.
+        </p>
       </div>
-      <div style={{ maxWidth:680, margin:'0 auto', padding:16 }}>
-        <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:20, marginBottom:14 }}>
-          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:16 }}>Tell us about your car</div>
-          <div className="valuation-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-            <div>
-              <label style={lbl}>Make</label>
-              <select value={make} onChange={e => setMake(e.target.value)} style={inp}>
-                {Object.keys(BASE_PRICES).map(o => <option key={o}>{o}</option>)}
-              </select>
+
+      <div style={{ maxWidth:720, margin:'0 auto', padding:16 }}>
+
+        {step === 1 && (
+          <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:20 }}>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:16, display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Tell us about your car
             </div>
-            <div>
-              <label style={lbl}>Model</label>
-              <input value={model} onChange={e => setModel(e.target.value)} placeholder="e.g. Land Cruiser" style={inp}/>
+            <div className="valuation-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+              <div>
+                <label style={lbl}>Make</label>
+                <select value={make} onChange={e => { setMake(e.target.value); setModel('') }} style={inp}>
+                  {VAL_MAKES.map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Model</label>
+                <select value={model} onChange={e => setModel(e.target.value)} style={inp}>
+                  <option value="">Select model...</option>
+                  {(VAL_MODELS[make] || []).map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Variant / Trim <span style={{ fontWeight:400, textTransform:'none' }}>(optional)</span></label>
+                <input value={variant} onChange={e => setVariant(e.target.value)} placeholder="e.g. VX, Sahara, ZX" style={inp}/>
+              </div>
+              <div>
+                <label style={lbl}>Year</label>
+                <select value={year} onChange={e => setYear(Number(e.target.value))} style={inp}>
+                  {Array.from({length:26},(_,i) => 2025-i).map(y => <option key={y}>{y}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Mileage (km)</label>
+                <input type="number" value={km} onChange={e => setKm(Number(e.target.value))} placeholder="e.g. 60000" style={inp}/>
+              </div>
+              <div>
+                <label style={lbl}>Engine (cc) <span style={{ fontWeight:400, textTransform:'none' }}>(optional)</span></label>
+                <input type="number" value={engineCc} onChange={e => setEngineCc(e.target.value)} placeholder="e.g. 2700" style={inp}/>
+              </div>
+              <div>
+                <label style={lbl}>Transmission</label>
+                <select value={transmission} onChange={e => setTransmission(e.target.value)} style={inp}>
+                  {['Automatic','Manual','CVT','Semi-Automatic'].map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Fuel Type</label>
+                <select value={fuel} onChange={e => setFuel(e.target.value)} style={inp}>
+                  {['Petrol','Diesel','Hybrid','Electric'].map(f => <option key={f}>{f}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Colour <span style={{ fontWeight:400, textTransform:'none' }}>(optional)</span></label>
+                <select value={colour} onChange={e => setColour(e.target.value)} style={inp}>
+                  <option value="">Select colour...</option>
+                  {['Pearl White','White','Black','Silver','Grey','Blue','Red','Brown','Beige','Gold','Maroon','Green','Orange'].map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Location</label>
+                <select value={location} onChange={e => setLocation(e.target.value)} style={inp}>
+                  {['Nairobi — Westlands','Nairobi — CBD','Nairobi — Karen','Mombasa','Kisumu','Nakuru','Eldoret','Thika'].map(l => <option key={l}>{l}</option>)}
+                </select>
+              </div>
             </div>
-            <div>
-              <label style={lbl}>Year</label>
-              <select value={year} onChange={e => setYear(Number(e.target.value))} style={inp}>
-                {Array.from({length:16},(_,i)=>2025-i).map(y => <option key={y}>{y}</option>)}
-              </select>
+
+            <div style={{ marginBottom:18 }}>
+              <label style={lbl}>Condition</label>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+                {[['Excellent','★','Showroom-like, full service history, no issues'],['Good','✓','Well maintained, minor wear, all systems work'],['Fair','~','Visible wear, some repairs needed'],['Poor','!','Major issues, accident damage, high repair cost']].map(([c,icon,desc]) => (
+                  <div key={c} onClick={() => setCond(c)} style={{ border:`2px solid ${cond===c?'#1565C0':'#E2E8F0'}`, borderRadius:10, padding:'12px 8px', textAlign:'center', cursor:'pointer', background:cond===c?'#EEF5FF':'#fff' }}>
+                    <div style={{ fontSize:20, marginBottom:4 }}>{icon}</div>
+                    <div style={{ fontSize:12, fontWeight:700, color:cond===c?'#1565C0':'#0A2540', fontFamily:'Outfit,sans-serif', marginBottom:4 }}>{c}</div>
+                    <div style={{ fontSize:9, color:'#94A3B8', lineHeight:1.3 }}>{desc}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div>
-              <label style={lbl}>Mileage (km)</label>
-              <input type="number" value={km} onChange={e => setKm(Number(e.target.value))} placeholder="e.g. 60000" style={inp}/>
-            </div>
-          </div>
-          <div style={{ marginTop:14 }}>
-            <label style={lbl}>Condition</label>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
-              {['Excellent','Good','Fair','Poor'].map(c => (
-                <div key={c} onClick={() => setCond(c)} style={{ border:`2px solid ${cond===c?'#1565C0':'#E2E8F0'}`, borderRadius:10, padding:'10px 6px', textAlign:'center', cursor:'pointer', background:cond===c?'#EEF5FF':'#fff' }}>
-                  <div style={{ fontSize:18, marginBottom:4 }}>{c==='Excellent'?'★':c==='Good'?'✓':c==='Fair'?'~':'!'}</div>
-                  <div style={{ fontSize:12, fontWeight:700, color:cond===c?'#1565C0':'#475569', fontFamily:'Outfit,sans-serif' }}>{c}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <button onClick={calculate} style={{ width:'100%', background:'#1565C0', color:'#fff', border:'none', padding:14, borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginTop:18 }}>
-            Get My Free Valuation →
-          </button>
-        </div>
-        {result && (
-          <div style={{ background:'#0A2540', borderRadius:14, padding:22, marginBottom:14 }}>
-            <div style={{ fontSize:11, color:'rgba(255,255,255,.5)', fontWeight:700, textTransform:'uppercase', letterSpacing:'.8px', marginBottom:6, textAlign:'center' }}>Estimated Market Value</div>
-            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:26, fontWeight:800, color:'#fff', textAlign:'center', marginBottom:4 }}>{fmt(result.low)} – {fmt(result.high)}</div>
-            <div style={{ fontSize:14, color:'#4DA6FF', textAlign:'center', fontWeight:600, marginBottom:18 }}>Best estimate: {fmt(result.mid)}</div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
-              {[['Low',result.low,'#475569'],['Mid',result.mid,'#4DA6FF'],['High',result.high,'#34D399']].map(([label,val,color]) => (
-                <div key={label} style={{ background:'rgba(255,255,255,.06)', borderRadius:8, padding:12, textAlign:'center' }}>
-                  <div style={{ fontSize:10, color:'rgba(255,255,255,.4)', fontWeight:700, textTransform:'uppercase', marginBottom:4 }}>{label}</div>
-                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:800, color }}>{fmt(val)}</div>
-                </div>
-              ))}
-            </div>
+
+            <button onClick={calculate} disabled={!model}
+              style={{ width:'100%', background: model ? '#1565C0' : '#94A3B8', color:'#fff', border:'none', padding:14, borderRadius:10, fontSize:14, fontWeight:700, cursor: model ? 'pointer' : 'default', fontFamily:'Outfit,sans-serif' }}>
+              Get My Free Valuation →
+            </button>
           </div>
         )}
-        <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:20 }}>
-          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:12 }}>Want a More Accurate Valuation?</div>
-          <div style={{ fontSize:13, color:'#64748B', lineHeight:1.6, marginBottom:14 }}>Upload photos and we'll connect you with certified valuers across Kenya for a professional report.</div>
-          <Link to="/list-car" style={{ display:'block', background:'#1565C0', color:'#fff', padding:'12px', borderRadius:9, fontWeight:700, fontSize:13, textDecoration:'none', fontFamily:'Outfit,sans-serif', textAlign:'center' }}>List Your Car →</Link>
-        </div>
+
+        {step === 2 && result && (
+          <>
+            {/* Main result */}
+            <div style={{ background:'#0A2540', borderRadius:14, padding:24, marginBottom:14 }}>
+              <div style={{ textAlign:'center', marginBottom:20 }}>
+                <div style={{ fontSize:11, color:'rgba(255,255,255,.5)', fontWeight:700, textTransform:'uppercase', letterSpacing:'.8px', marginBottom:6 }}>
+                  {year} {make} {model}{variant ? ` — ${variant}` : ''} · {Number(km).toLocaleString()} km · {cond}
+                </div>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, color:'rgba(255,255,255,.5)', marginBottom:4 }}>Estimated Market Value Range</div>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:30, fontWeight:900, color:'#fff', marginBottom:6 }}>{fmtV(result.low)} – {fmtV(result.high)}</div>
+                <div style={{ fontSize:14, color:'#4DA6FF', fontWeight:700 }}>Best estimate: {fmtV(result.mid)}</div>
+              </div>
+
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:20 }}>
+                {[['Low',result.low,'#94A3B8','Conservative'],['Mid',result.mid,'#4DA6FF','Most Likely'],['High',result.high,'#34D399','Optimistic']].map(([label,val,color,sub]) => (
+                  <div key={label} style={{ background:'rgba(255,255,255,.06)', borderRadius:10, padding:'12px 8px', textAlign:'center', border:`1px solid ${label==='Mid'?'rgba(77,166,255,.4)':'rgba(255,255,255,.1)'}` }}>
+                    <div style={{ fontSize:9, color:'rgba(255,255,255,.4)', fontWeight:700, textTransform:'uppercase', marginBottom:2 }}>{label}</div>
+                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:800, color, marginBottom:2 }}>{fmtV(val)}</div>
+                    <div style={{ fontSize:9, color:'rgba(255,255,255,.35)' }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Private vs dealer */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                <div style={{ background:'rgba(255,255,255,.06)', borderRadius:10, padding:14, border:'1px solid rgba(255,255,255,.1)' }}>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,.4)', fontWeight:700, textTransform:'uppercase', marginBottom:4 }}>Private Sale</div>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#34D399' }}>{fmtV(result.privateSale)}</div>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,.4)', marginTop:3 }}>Best price, takes longer</div>
+                </div>
+                <div style={{ background:'rgba(255,255,255,.06)', borderRadius:10, padding:14, border:'1px solid rgba(255,255,255,.1)' }}>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,.4)', fontWeight:700, textTransform:'uppercase', marginBottom:4 }}>Dealer Cash Offer</div>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#F59E0B' }}>{fmtV(result.dealerOffer)}</div>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,.4)', marginTop:3 }}>Fast sale, lower price</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Factors */}
+            <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:18, marginBottom:14 }}>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ width:3, height:14, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> What Affects This Value
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                {[
+                  ['Age', `${2025-year} years old`, yearMult(year) >= 1 ? '✅ Adds value' : yearMult(year) >= 0.85 ? '⚠️ Moderate impact' : '📉 Significant depreciation'],
+                  ['Mileage', `${Number(km).toLocaleString()} km`, kmMult(km) >= 1 ? '✅ Low mileage premium' : kmMult(km) >= 0.87 ? '⚠️ Average mileage' : '📉 High mileage discount'],
+                  ['Condition', cond, condMult[cond] >= 1.05 ? '✅ Top condition' : condMult[cond] >= 0.95 ? '⚠️ Average condition' : '📉 Reduces value'],
+                  ['Transmission', transmission, txMult(transmission) > 1 ? '✅ Automatic premium' : '— No premium'],
+                  ['Fuel Type', fuel, fuelMult(fuel) > 1 ? '✅ Fuel type premium' : '— Standard'],
+                  ['Make/Model', make, getBase(make, model) > 3000000 ? '✅ High-demand model' : '— Standard demand'],
+                ].map(([label, value, impact]) => (
+                  <div key={label} style={{ background:'#F8FAFC', borderRadius:8, padding:'10px 12px' }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', marginBottom:3 }}>{label}</div>
+                    <div style={{ fontSize:12, fontWeight:700, color:'#0A2540', marginBottom:2 }}>{value}</div>
+                    <div style={{ fontSize:11, color:'#64748B' }}>{impact}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:14 }}>
+              <button onClick={() => setStep(1)}
+                style={{ background:'#fff', color:'#475569', border:'1.5px solid #E2E8F0', padding:'14px 8px', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textAlign:'center' }}>
+                🔄 Recalculate
+              </button>
+              <button onClick={goListCar}
+                style={{ background:'#1565C0', color:'#fff', border:'none', padding:'14px 8px', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textAlign:'center' }}>
+                🚗 List This Car
+              </button>
+              <button onClick={() => setStep(3)}
+                style={{ background:'#F59E0B', color:'#fff', border:'none', padding:'14px 8px', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textAlign:'center' }}>
+                💰 Get Dealer Offer
+              </button>
+            </div>
+
+            <div style={{ background:'#EEF5FF', border:'1px solid #BDD5FF', borderRadius:10, padding:'12px 14px', fontSize:11, color:'#475569', lineHeight:1.6 }}>
+              <strong style={{ color:'#1565C0' }}>Note:</strong> This is an estimate based on CarExpert Africa market data. Actual value depends on service history, accident history, specific trim, photos, and current buyer demand. Values are in Kenya Shillings.
+            </div>
+          </>
+        )}
+
+        {step === 3 && result && (
+          <div>
+            {offerSubmitted ? (
+              <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:48, textAlign:'center' }}>
+                <div style={{ fontSize:48, marginBottom:16 }}>💰</div>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:22, fontWeight:800, color:'#0A2540', marginBottom:8 }}>Request Sent!</div>
+                <div style={{ fontSize:14, color:'#64748B', lineHeight:1.6, marginBottom:8, maxWidth:400, margin:'0 auto 16px' }}>
+                  Your offer request for the <strong>{year} {make} {model}</strong> has been sent to dealers in our network. They will contact you within 24 hours.
+                </div>
+                <div style={{ background:'#F0FDF4', border:'1px solid #86EFAC', borderRadius:10, padding:14, marginBottom:24, display:'inline-block' }}>
+                  <div style={{ fontSize:12, color:'#16A34A', fontWeight:600 }}>Your estimated value: {fmtV(result.mid)}</div>
+                  <div style={{ fontSize:12, color:'#16A34A', fontWeight:600 }}>Expected dealer offer: {fmtV(result.dealerOffer)} – {fmtV(result.mid)}</div>
+                </div>
+                <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
+                  <button onClick={() => { setStep(1); setOfferSubmitted(false) }}
+                    style={{ background:'#F8FAFC', color:'#475569', border:'1.5px solid #E2E8F0', padding:'10px 20px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>
+                    Value Another Car
+                  </button>
+                  <button onClick={goListCar}
+                    style={{ background:'#1565C0', color:'#fff', border:'none', padding:'10px 20px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>
+                    List It Instead →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ background:'#0A2540', borderRadius:14, padding:18, marginBottom:14, display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
+                  <div>
+                    <div style={{ fontSize:11, color:'rgba(255,255,255,.5)', marginBottom:4 }}>{year} {make} {model} · {cond}</div>
+                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#fff' }}>Expected offer: {fmtV(result.dealerOffer)} – {fmtV(result.mid)}</div>
+                  </div>
+                  <button onClick={() => setStep(2)} style={{ background:'rgba(255,255,255,.1)', color:'#fff', border:'1.5px solid rgba(255,255,255,.2)', padding:'8px 14px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>← Back</button>
+                </div>
+
+                <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:20 }}>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:6, display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ width:3, height:15, background:'#F59E0B', borderRadius:2, display:'inline-block' }}/> Get a Cash Offer from Dealers
+                  </div>
+                  <div style={{ fontSize:13, color:'#64748B', marginBottom:18, lineHeight:1.6 }}>
+                    We'll send your car details to verified dealers in our network. They'll review and contact you with their best cash offer within 24 hours. No obligation.
+                  </div>
+
+                  <div className="valuation-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+                    <div>
+                      <label style={lbl}>Your Name *</label>
+                      <input value={offerName} onChange={e => setOfferName(e.target.value)} placeholder="John Kamau" style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Phone / WhatsApp *</label>
+                      <input type="tel" value={offerPhone} onChange={e => setOfferPhone(e.target.value)} placeholder="+254 7XX XXX XXX" style={inp}/>
+                    </div>
+                    <div style={{ gridColumn:'1/-1' }}>
+                      <label style={lbl}>Email <span style={{ fontWeight:400, textTransform:'none' }}>(optional)</span></label>
+                      <input type="email" value={offerEmail} onChange={e => setOfferEmail(e.target.value)} placeholder="you@example.com" style={inp}/>
+                    </div>
+                    <div style={{ gridColumn:'1/-1' }}>
+                      <label style={lbl}>Any additional details <span style={{ fontWeight:400, textTransform:'none' }}>(optional)</span></label>
+                      <textarea value={offerNotes} onChange={e => setOfferNotes(e.target.value)} placeholder="e.g. Full service history, recent tyres, sunroof, no accidents..." rows={3}
+                        style={{ ...inp, resize:'vertical' }}/>
+                    </div>
+                  </div>
+
+                  <div style={{ background:'#FFFBEB', border:'1px solid #FCD34D', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#92400E', marginBottom:16 }}>
+                    🔒 Your details will only be shared with verified CEA dealers. No spam, no cold calls from unknown parties.
+                  </div>
+
+                  <button onClick={handleDealerOffer} disabled={submitting || !offerName.trim() || !offerPhone.trim()}
+                    style={{ width:'100%', background: offerName.trim() && offerPhone.trim() ? '#F59E0B' : '#94A3B8', color: offerName.trim() && offerPhone.trim() ? '#0A2540' : '#fff', border:'none', padding:14, borderRadius:10, fontSize:14, fontWeight:800, cursor: offerName.trim() && offerPhone.trim() ? 'pointer' : 'default', fontFamily:'Outfit,sans-serif' }}>
+                    {submitting ? 'Sending to Dealers...' : '💰 Send to Dealers in CEA Network →'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1025,28 +1335,36 @@ const VARIANTS = {
 const FEATURES_LIST = ['Sunroof','Leather Seats','Reverse Camera','Navigation','Cruise Control','Alloy Wheels','Push Start','Heated Seats','360 Camera','Parking Sensors','Apple CarPlay','Tow Bar','Roof Rack','Bull Bar','Window Tint']
 
 export function ListCarPage({ user }) {
+  const [searchParams] = useSearchParams()
   const [step, setStep] = useState(1)
-  const [make, setMake] = useState('Toyota')
-  const [model, setModel] = useState('')
-  const [variant, setVariant] = useState('')
-  const [year, setYear] = useState('2020')
-  const [km, setKm] = useState('')
-  const [engineCc, setEngineCc] = useState('')
+  const [make, setMake] = useState(searchParams.get('make') || 'Toyota')
+  const [model, setModel] = useState(searchParams.get('model') || '')
+  const [variant, setVariant] = useState(searchParams.get('variant') || '')
+  const [year, setYear] = useState(searchParams.get('year') || '2020')
+  const [km, setKm] = useState(searchParams.get('km') || '')
+  const [engineCc, setEngineCc] = useState(searchParams.get('engine_cc') || '')
   const [bodyType, setBodyType] = useState('SUV')
-  const [fuel, setFuel] = useState('Petrol')
-  const [transmission, setTx] = useState('Automatic')
+  const [fuel, setFuel] = useState(searchParams.get('fuel') || 'Petrol')
+  const [transmission, setTx] = useState(searchParams.get('transmission') || 'Automatic')
   const [drive, setDrive] = useState('AWD')
-  const [colour, setColour] = useState('')
-  const [condition, setCondition] = useState('Used — Excellent')
+  const [colour, setColour] = useState(searchParams.get('colour') || '')
+  const [condition, setCondition] = useState(() => {
+    const c = searchParams.get('condition')
+    if (!c) return 'Used — Excellent'
+    if (c === 'Excellent') return 'Used — Excellent'
+    if (c === 'Good') return 'Used — Good'
+    if (c === 'Fair') return 'Used — Fair'
+    return 'Used — Excellent'
+  })
   const [price, setPrice] = useState('')
   const [nego, setNego] = useState(false)
   const [selFeats, setSelFeats] = useState(new Set())
-  const [selectedFiles, setSelectedFiles] = useState([]) // File objects
-  const [photoPreviews, setPhotoPreviews] = useState([]) // data URLs for preview
+  const [selectedFiles, setSelectedFiles] = useState([])
+  const [photoPreviews, setPhotoPreviews] = useState([])
   const [uploadProgress, setUploadProgress] = useState('')
   const [contactName, setContactName] = useState('')
   const [phone, setPhone] = useState('')
-  const [location, setLocation] = useState('Nairobi — Westlands')
+  const [location, setLocation] = useState(searchParams.get('location') || 'Nairobi — Westlands')
   const [description, setDescription] = useState('')
 
   const toggleFeat = f => setSelFeats(prev => { const n=new Set(prev); n.has(f)?n.delete(f):n.add(f); return n })
@@ -1137,6 +1455,11 @@ export function ListCarPage({ user }) {
         <div>
           {step === 1 && (
             <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:18 }}>
+              {searchParams.get('make') && (
+                <div style={{ background:'#F0FDF4', border:'1px solid #86EFAC', borderRadius:8, padding:'10px 14px', marginBottom:14, fontSize:12, color:'#16A34A', fontWeight:600 }}>
+                  ✓ Pre-filled from your valuation — review and complete the remaining details
+                </div>
+              )}
               <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:16, display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Vehicle Information
               </div>

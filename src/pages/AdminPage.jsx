@@ -452,6 +452,92 @@ function ArticlesTab() {
   )
 }
 
+function DealerOffersTab() {
+  const [offers, setOffers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.from('dealer_offer_requests').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => { setOffers(data || []); setLoading(false) })
+  }, [])
+
+  const updateStatus = async (id, status) => {
+    await supabase.from('dealer_offer_requests').update({ status }).eq('id', id)
+    setOffers(prev => prev.map(o => o.id === id ? { ...o, status } : o))
+  }
+
+  const fmtV = n => 'KSH ' + Number(n).toLocaleString()
+  const statusColor = s => s === 'open' ? '#D97706' : s === 'contacted' ? '#1565C0' : s === 'sold' ? '#16A34A' : '#94A3B8'
+  const statusBg = s => s === 'open' ? '#FEF3C7' : s === 'contacted' ? '#EEF5FF' : s === 'sold' ? '#DCFCE7' : '#F8FAFC'
+
+  if (loading) return <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading...</div>
+
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540' }}>
+          Dealer Offer Requests <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({offers.length})</span>
+        </div>
+        <div style={{ display:'flex', gap:8 }}>
+          {['open','contacted','sold','closed'].map(s => (
+            <span key={s} style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:100, background:statusBg(s), color:statusColor(s) }}>
+              {offers.filter(o => o.status === s).length} {s}
+            </span>
+          ))}
+        </div>
+      </div>
+      {offers.length === 0 ? (
+        <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+          <div style={{ fontSize:32, marginBottom:12 }}>💰</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540' }}>No offer requests yet</div>
+        </div>
+      ) : offers.map(o => (
+        <div key={o.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:12, alignItems:'start' }}>
+            <div>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexWrap:'wrap' }}>
+                <span style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:800, color:'#0A2540' }}>{o.year} {o.make} {o.model}</span>
+                <span style={{ fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100, background:statusBg(o.status), color:statusColor(o.status), fontFamily:'Outfit,sans-serif' }}>{o.status}</span>
+              </div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:12, fontSize:12, color:'#64748B', marginBottom:8 }}>
+                <span>📅 {o.year} · {Number(o.mileage || 0).toLocaleString()} km · {o.condition}</span>
+                <span>⚙️ {o.transmission} · {o.fuel_type}</span>
+                {o.colour && <span>🎨 {o.colour}</span>}
+                {o.location && <span>📍 {o.location}</span>}
+              </div>
+              <div style={{ display:'flex', gap:16, fontSize:12, marginBottom:8 }}>
+                <span style={{ color:'#94A3B8' }}>Est. Low: <strong style={{ color:'#0A2540' }}>{fmtV(o.estimated_low)}</strong></span>
+                <span style={{ color:'#94A3B8' }}>Est. Mid: <strong style={{ color:'#1565C0' }}>{fmtV(o.estimated_mid)}</strong></span>
+                <span style={{ color:'#94A3B8' }}>Est. High: <strong style={{ color:'#0A2540' }}>{fmtV(o.estimated_high)}</strong></span>
+              </div>
+              <div style={{ display:'flex', gap:16, fontSize:12, color:'#475569' }}>
+                <span>👤 {o.contact_name}</span>
+                <a href={`tel:${o.contact_phone}`} style={{ color:'#1565C0', textDecoration:'none' }}>📞 {o.contact_phone}</a>
+                {o.contact_email && <a href={`mailto:${o.contact_email}`} style={{ color:'#1565C0', textDecoration:'none' }}>✉️ {o.contact_email}</a>}
+              </div>
+              {o.notes && <div style={{ marginTop:6, fontSize:11, color:'#64748B', fontStyle:'italic' }}>"{o.notes}"</div>}
+              <div style={{ fontSize:10, color:'#94A3B8', marginTop:4 }}>{new Date(o.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:6, flexShrink:0 }}>
+              <a href={`https://wa.me/${(o.contact_phone||'').replace(/\D/g,'')}?text=Hi ${o.contact_name}, this is CarExpert Africa regarding your ${o.year} ${o.make} ${o.model} offer request.`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ background:'#25D366', color:'#fff', border:'none', padding:'7px 12px', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none', textAlign:'center' }}>
+                WhatsApp
+              </a>
+              {['contacted','sold','closed'].map(s => (
+                o.status !== s && <button key={s} onClick={() => updateStatus(o.id, s)}
+                  style={{ background:'#F8FAFC', color:'#475569', border:'1.5px solid #E2E8F0', padding:'6px 10px', borderRadius:7, fontSize:10, fontWeight:600, cursor:'pointer', textTransform:'capitalize' }}>
+                  → {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const ADMIN_MOBILE_CSS = `
   @media (max-width: 768px) {
     .admin-layout { grid-template-columns: 1fr !important; }
@@ -536,7 +622,7 @@ export default function AdminPage({ user }) {
           {counts.pending>0 && <span style={{ background:'#EF4444', color:'#fff', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100 }}>{counts.pending}</span>}
         </div>
         <div className="admin-desktop-tabs" style={{ display:'flex', gap:12, alignItems:'center' }}>
-          {['listings','users','dealers','analytics','articles'].map(t => (
+          {['listings','users','dealers','analytics','articles','offers'].map(t => (
             <span key={t} onClick={()=>setAdminTab(t)} style={{ color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', fontSize:12, cursor:'pointer', fontWeight:adminTab===t?700:400, textTransform:'capitalize' }}>{t}{t==='listings'&&counts.pending>0?` (${counts.pending})`:''}</span>
           ))}
           <div style={{ width:30, height:30, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:11, fontWeight:700, color:'#fff' }}>{user?.email?.[0]?.toUpperCase()||'A'}</div>
@@ -545,7 +631,7 @@ export default function AdminPage({ user }) {
 
       {/* Mobile tab bar */}
       <div className="admin-nav-tabs" style={{ display:'none', background:'#0A2540', overflowX:'auto', borderBottom:'1px solid rgba(255,255,255,.1)' }}>
-        {['listings','users','dealers','analytics','articles'].map(t => (
+        {['listings','users','dealers','analytics','articles','offers'].map(t => (
           <button key={t} onClick={()=>setAdminTab(t)} style={{ flexShrink:0, padding:'11px 16px', border:'none', background:'none', fontSize:12, fontWeight:adminTab===t?700:500, color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', cursor:'pointer', borderBottom:`2px solid ${adminTab===t?'#4DA6FF':'transparent'}`, textTransform:'capitalize', fontFamily:'DM Sans,sans-serif' }}>
             {t}{t==='listings'&&counts.pending>0?` (${counts.pending})`:''}
           </button>
@@ -595,6 +681,7 @@ export default function AdminPage({ user }) {
           {adminTab==='dealers'   && <DealersTab listings={listings}/>}
           {adminTab==='analytics' && <AnalyticsTab listings={listings}/>}
           {adminTab==='articles' && <ArticlesTab/>}
+          {adminTab==='offers' && <DealerOffersTab/>}
         </main>
       </div>
       <Toast msg={toast.msg} type={toast.type} show={toast.show}/>
