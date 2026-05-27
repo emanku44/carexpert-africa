@@ -274,6 +274,184 @@ function AnalyticsTab({ listings }) {
   )
 }
 
+function ArticlesTab() {
+  const [articles, setArticles] = useState([])
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState({ title:'', slug:'', excerpt:'', content:'', cover_image_url:'', author_name:'CarExpert Africa', category:'News', tags:'', read_time:3, published:false })
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+  const CATEGORIES = ['News','Review','Buying Guide','Tips','Market Insight','EV','Lifestyle']
+
+  useEffect(() => {
+    supabase.from('articles').select('id,title,slug,category,published,published_at,views,author_name,read_time').order('created_at', { ascending: false })
+      .then(({ data }) => setArticles(data || []))
+  }, [])
+
+  const openNew = () => {
+    setEditing('new')
+    setForm({ title:'', slug:'', excerpt:'', content:'', cover_image_url:'', author_name:'CarExpert Africa', category:'News', tags:'', read_time:3, published:false })
+  }
+
+  const openEdit = async (id) => {
+    const { data } = await supabase.from('articles').select('*').eq('id', id).single()
+    if (data) {
+      setForm({ ...data, tags: (data.tags || []).join(', ') })
+      setEditing(id)
+    }
+  }
+
+  const makeSlug = (title) => title.toLowerCase().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').slice(0, 80)
+
+  const save = async () => {
+    if (!form.title.trim()) { setMsg('Title is required'); return }
+    setSaving(true)
+    const payload = {
+      ...form,
+      slug: form.slug || makeSlug(form.title),
+      tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+      read_time: Number(form.read_time),
+      published_at: form.published && !form.published_at ? new Date().toISOString() : form.published_at,
+      updated_at: new Date().toISOString()
+    }
+    const { data: { user: u } } = await supabase.auth.getUser()
+    if (editing === 'new') {
+      payload.author_id = u?.id
+      const { error } = await supabase.from('articles').insert(payload)
+      if (error) { setMsg('Error: ' + error.message); setSaving(false); return }
+      setMsg('✓ Article created!')
+    } else {
+      const { error } = await supabase.from('articles').update(payload).eq('id', editing)
+      if (error) { setMsg('Error: ' + error.message); setSaving(false); return }
+      setMsg('✓ Saved!')
+    }
+    setSaving(false)
+    const { data } = await supabase.from('articles').select('id,title,slug,category,published,published_at,views,author_name,read_time').order('created_at', { ascending: false })
+    setArticles(data || [])
+    setTimeout(() => { setMsg(''); setEditing(null) }, 1500)
+  }
+
+  const deleteArticle = async (id) => {
+    if (!window.confirm('Delete this article?')) return
+    await supabase.from('articles').delete().eq('id', id)
+    setArticles(prev => prev.filter(a => a.id !== id))
+  }
+
+  const inp = { width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#fff', boxSizing:'border-box' }
+  const lbl = { display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }
+
+  if (editing !== null) {
+    return (
+      <div>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, flexWrap:'wrap', gap:8 }}>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540' }}>
+            {editing === 'new' ? '✏️ New Article' : '✏️ Edit Article'}
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={() => setEditing(null)} style={{ background:'#F8FAFC', color:'#64748B', border:'1.5px solid #E2E8F0', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>← Back</button>
+            <button onClick={save} disabled={saving} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>
+              {saving ? 'Saving...' : form.published ? '🌐 Save & Publish' : '💾 Save Draft'}
+            </button>
+          </div>
+        </div>
+        {msg && <div style={{ background: msg.startsWith('✓') ? '#DCFCE7' : '#FEE2E2', color: msg.startsWith('✓') ? '#16A34A' : '#DC2626', borderRadius:8, padding:'10px 14px', fontSize:13, fontWeight:600, marginBottom:14 }}>{msg}</div>}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 280px', gap:16 }}>
+          <div>
+            <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:18, marginBottom:14 }}>
+              <div style={{ marginBottom:14 }}>
+                <label style={lbl}>Title *</label>
+                <input value={form.title} onChange={e => setForm(f => ({ ...f, title:e.target.value, slug: makeSlug(e.target.value) }))} placeholder="Article title" style={{ ...inp, fontSize:16, fontWeight:600 }}/>
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={lbl}>Slug (URL) <span style={{ fontWeight:400, textTransform:'none', color:'#94A3B8' }}>— auto-generated</span></label>
+                <input value={form.slug} onChange={e => setForm(f => ({ ...f, slug:e.target.value }))} placeholder="article-url-slug" style={inp}/>
+                <div style={{ fontSize:11, color:'#94A3B8', marginTop:4 }}>carexpertafrica.com/news/{form.slug || 'article-slug'}</div>
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={lbl}>Excerpt <span style={{ fontWeight:400, textTransform:'none', color:'#94A3B8' }}>— shown on listing cards</span></label>
+                <textarea value={form.excerpt} onChange={e => setForm(f => ({ ...f, excerpt:e.target.value }))} placeholder="Short description (1-2 sentences)..." rows={2} style={{ ...inp, resize:'vertical' }}/>
+              </div>
+              <div>
+                <label style={lbl}>Content <span style={{ fontWeight:400, textTransform:'none', color:'#94A3B8' }}>— use ## for headings, > for quotes, - for bullet points</span></label>
+                <textarea value={form.content} onChange={e => setForm(f => ({ ...f, content:e.target.value }))} placeholder={`## Introduction\n\nWrite your article here...\n\n## Key Points\n\n- Point 1\n- Point 2\n\n> A great quote goes here`} rows={20} style={{ ...inp, resize:'vertical', fontFamily:'monospace', fontSize:13, lineHeight:1.7 }}/>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:14 }}>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:14 }}>Publish Settings</div>
+              <div onClick={() => setForm(f => ({ ...f, published:!f.published }))}
+                style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', border:`1.5px solid ${form.published?'#16A34A':'#E2E8F0'}`, borderRadius:8, cursor:'pointer', marginBottom:14, background:form.published?'#F0FDF4':'#F8FAFC' }}>
+                <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${form.published?'#16A34A':'#CBD5E1'}`, background:form.published?'#16A34A':'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:'#fff' }}>{form.published?'✓':''}</div>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:form.published?'#16A34A':'#475569' }}>{form.published ? '🌐 Published' : '📝 Draft'}</div>
+                  <div style={{ fontSize:11, color:'#94A3B8' }}>{form.published ? 'Visible to everyone' : 'Only visible to admins'}</div>
+                </div>
+              </div>
+              <div style={{ marginBottom:12 }}>
+                <label style={lbl}>Category</label>
+                <select value={form.category} onChange={e => setForm(f => ({ ...f, category:e.target.value }))} style={inp}>
+                  {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div style={{ marginBottom:12 }}>
+                <label style={lbl}>Author Name</label>
+                <input value={form.author_name} onChange={e => setForm(f => ({ ...f, author_name:e.target.value }))} style={inp}/>
+              </div>
+              <div style={{ marginBottom:12 }}>
+                <label style={lbl}>Read Time (minutes)</label>
+                <input type="number" value={form.read_time} onChange={e => setForm(f => ({ ...f, read_time:e.target.value }))} min={1} max={60} style={inp}/>
+              </div>
+              <div style={{ marginBottom:12 }}>
+                <label style={lbl}>Tags <span style={{ fontWeight:400, textTransform:'none' }}>comma separated</span></label>
+                <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags:e.target.value }))} placeholder="toyota, suv, review" style={inp}/>
+              </div>
+              <div>
+                <label style={lbl}>Cover Image URL</label>
+                <input value={form.cover_image_url} onChange={e => setForm(f => ({ ...f, cover_image_url:e.target.value }))} placeholder="https://..." style={inp}/>
+                {form.cover_image_url && <img src={form.cover_image_url} alt="" style={{ width:'100%', height:120, objectFit:'cover', borderRadius:8, marginTop:8, border:'1px solid #E8EDF3' }} onError={e => e.target.style.display='none'}/>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540' }}>Articles <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({articles.length})</span></div>
+        <button onClick={openNew} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'9px 18px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>+ New Article</button>
+      </div>
+      {articles.length === 0 ? (
+        <div style={{ textAlign:'center', padding:60, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+          <div style={{ fontSize:40, marginBottom:16 }}>📰</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:700, color:'#0A2540', marginBottom:8 }}>No articles yet</div>
+          <button onClick={openNew} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Write First Article</button>
+        </div>
+      ) : articles.map(a => (
+        <div key={a.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10, display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+              <span style={{ fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100, background:a.published?'#DCFCE7':'#FEF3C7', color:a.published?'#16A34A':'#D97706', fontFamily:'Outfit,sans-serif' }}>
+                {a.published ? '🌐 Live' : '📝 Draft'}
+              </span>
+              <span style={{ background:'#EEF5FF', color:'#1565C0', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100 }}>{a.category}</span>
+            </div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{a.title}</div>
+            <div style={{ fontSize:11, color:'#94A3B8' }}>By {a.author_name} · {a.read_time} min · {a.views || 0} views · /news/{a.slug}</div>
+          </div>
+          <div style={{ display:'flex', gap:8, flexShrink:0 }}>
+            <a href={`/news/${a.slug}`} target="_blank" rel="noopener noreferrer" style={{ background:'#F0F6FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'7px 12px', borderRadius:7, fontSize:11, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>View →</a>
+            <button onClick={() => openEdit(a.id)} style={{ background:'#F8FAFC', color:'#475569', border:'1.5px solid #E2E8F0', padding:'7px 12px', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Edit</button>
+            <button onClick={() => deleteArticle(a.id)} style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'7px 10px', borderRadius:7, fontSize:11, cursor:'pointer' }}>✕</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const ADMIN_MOBILE_CSS = `
   @media (max-width: 768px) {
     .admin-layout { grid-template-columns: 1fr !important; }
@@ -358,8 +536,8 @@ export default function AdminPage({ user }) {
           {counts.pending>0 && <span style={{ background:'#EF4444', color:'#fff', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100 }}>{counts.pending}</span>}
         </div>
         <div className="admin-desktop-tabs" style={{ display:'flex', gap:12, alignItems:'center' }}>
-          {['listings','users','dealers','analytics'].map(t => (
-            <span key={t} onClick={()=>setAdminTab(t)} style={{ color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', fontSize:12, cursor:'pointer', fontWeight:adminTab===t?700:400, textTransform:'capitalize', display: window.innerWidth < 400 && t !== adminTab ? 'none' : 'block' }}>{t}</span>
+          {['listings','users','dealers','analytics','articles'].map(t => (
+            <span key={t} onClick={()=>setAdminTab(t)} style={{ color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', fontSize:12, cursor:'pointer', fontWeight:adminTab===t?700:400, textTransform:'capitalize' }}>{t}{t==='listings'&&counts.pending>0?` (${counts.pending})`:''}</span>
           ))}
           <div style={{ width:30, height:30, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:11, fontWeight:700, color:'#fff' }}>{user?.email?.[0]?.toUpperCase()||'A'}</div>
         </div>
@@ -367,7 +545,7 @@ export default function AdminPage({ user }) {
 
       {/* Mobile tab bar */}
       <div className="admin-nav-tabs" style={{ display:'none', background:'#0A2540', overflowX:'auto', borderBottom:'1px solid rgba(255,255,255,.1)' }}>
-        {['listings','users','dealers','analytics'].map(t => (
+        {['listings','users','dealers','analytics','articles'].map(t => (
           <button key={t} onClick={()=>setAdminTab(t)} style={{ flexShrink:0, padding:'11px 16px', border:'none', background:'none', fontSize:12, fontWeight:adminTab===t?700:500, color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', cursor:'pointer', borderBottom:`2px solid ${adminTab===t?'#4DA6FF':'transparent'}`, textTransform:'capitalize', fontFamily:'DM Sans,sans-serif' }}>
             {t}{t==='listings'&&counts.pending>0?` (${counts.pending})`:''}
           </button>
@@ -416,6 +594,7 @@ export default function AdminPage({ user }) {
           {adminTab==='users'     && <UsersTab/>}
           {adminTab==='dealers'   && <DealersTab listings={listings}/>}
           {adminTab==='analytics' && <AnalyticsTab listings={listings}/>}
+          {adminTab==='articles' && <ArticlesTab/>}
         </main>
       </div>
       <Toast msg={toast.msg} type={toast.type} show={toast.show}/>

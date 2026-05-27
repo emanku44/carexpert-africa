@@ -6,6 +6,7 @@ import ListingsPage from './pages/ListingsPage'
 import AdminPage from './pages/AdminPage'
 import { TermsPage } from './pages/TermsPage'
 import EditListingPage from './pages/EditListingPage'
+import ArticlePage from './pages/ArticlePage'
 import {
   AuthPage, ListCarPage, DashboardPage,
   ValuationPage, PricingPage, NewsReviewsPage,
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/auth"         element={<AuthPage user={user} />} />
         <Route path="/pricing"      element={<PricingPage user={user} />} />
         <Route path="/news"         element={<NewsReviewsPage user={user} />} />
+        <Route path="/news/:slug"   element={<ArticlePage user={user} />} />
         <Route path="/list-car"     element={<ProtectedRoute user={user}><ListCarPage user={user} /></ProtectedRoute>} />
         <Route path="/dashboard"    element={<ProtectedRoute user={user}><DashboardPage user={user} /></ProtectedRoute>} />
         <Route path="/admin"        element={<AdminRoute user={user}><AdminPage user={user} /></AdminRoute>} />

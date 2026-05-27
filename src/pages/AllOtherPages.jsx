@@ -1598,42 +1598,119 @@ export function DashboardPage({ user }) {
 // NEWS PAGE
 // ─────────────────────────────────────────────────────────────
 export function NewsReviewsPage({ user }) {
-  const ARTICLES = [
-    { title:'Top 5 Family Cars Under KSH 3M in Kenya 2025', category:'Buying Guide', date:'May 2025', read:'5 min', emoji:'🚗' },
-    { title:'Toyota Land Cruiser 300: Is It Worth the Price?', category:'Review', date:'Apr 2025', read:'7 min', emoji:'⭐' },
-    { title:'How to Spot a Flood-Damaged Car at Import Auctions', category:'Tips', date:'Apr 2025', read:'4 min', emoji:'🔍' },
-    { title:'Electric Cars in Kenya: What You Need to Know', category:'Market Insight', date:'Mar 2025', read:'6 min', emoji:'⚡' },
-    { title:'Negotiating Car Prices in Kenya: Expert Tips', category:'Tips', date:'Mar 2025', read:'3 min', emoji:'💡' },
-    { title:'2025 Kenya Car Market Report: Prices & Trends', category:'Market Insight', date:'Feb 2025', read:'8 min', emoji:'📊' },
-  ]
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [activeCategory, setActiveCategory] = useState('All')
+  const [searchQ, setSearchQ] = useState('')
+  const navigate = useNavigate()
+
+  const CATEGORIES = ['All', 'News', 'Review', 'Buying Guide', 'Tips', 'Market Insight', 'EV']
+
+  useEffect(() => {
+    supabase.from('articles').select('id,title,slug,excerpt,cover_image_url,author_name,read_time,published_at,category,tags,views')
+      .eq('published', true).order('published_at', { ascending: false })
+      .then(({ data }) => { setArticles(data || []); setLoading(false) })
+  }, [])
+
+  const filtered = articles.filter(a => {
+    if (activeCategory !== 'All' && a.category !== activeCategory) return false
+    if (searchQ && !a.title.toLowerCase().includes(searchQ.toLowerCase())) return false
+    return true
+  })
+
+  const featured = filtered[0]
+  const rest = filtered.slice(1)
+
   return (
     <div style={{ fontFamily:'DM Sans,sans-serif', background:'#F7F9FC', minHeight:'100vh' }}>
       <style>{MOBILE_CSS}</style>
       <Navbar user={user} />
       <div style={{ background:'linear-gradient(135deg,#0A2540,#1565C0)', padding:'36px 16px', textAlign:'center' }}>
-        <h1 style={{ fontFamily:'Outfit,sans-serif', fontSize:26, fontWeight:800, color:'#fff', marginBottom:8 }}>News & Reviews</h1>
-        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14 }}>Kenya car market insights, buying guides, and expert reviews</p>
+        <div style={{ color:'#4DA6FF', fontSize:11, fontWeight:700, letterSpacing:'1.8px', textTransform:'uppercase', marginBottom:10 }}>CarExpert Africa</div>
+        <h1 style={{ fontFamily:'Outfit,sans-serif', fontSize:28, fontWeight:800, color:'#fff', marginBottom:8 }}>News & Reviews</h1>
+        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14, marginBottom:20 }}>Kenya car market insights, buying guides, and expert reviews</p>
+        <div style={{ maxWidth:400, margin:'0 auto', position:'relative' }}>
+          <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search articles..."
+            style={{ width:'100%', padding:'11px 16px 11px 40px', borderRadius:100, border:'none', fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', boxSizing:'border-box' }}/>
+          <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:14 }}>🔍</span>
+        </div>
       </div>
-      <div style={{ maxWidth:900, margin:'0 auto', padding:16 }}>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:14, marginTop:8 }}>
-          {ARTICLES.map(a => (
-            <div key={a.title} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden', cursor:'pointer' }}
-              onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-2px)' }}
-              onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.transform='none' }}>
-              <div style={{ height:100, background:'linear-gradient(135deg,#EEF5FF,#DBEAFE)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:40 }}>{a.emoji}</div>
-              <div style={{ padding:14 }}>
-                <div style={{ display:'flex', gap:6, marginBottom:8 }}>
-                  <span style={{ background:'#EEF5FF', color:'#1565C0', border:'1px solid #BDD5FF', borderRadius:100, padding:'2px 8px', fontSize:10, fontWeight:700 }}>{a.category}</span>
-                </div>
-                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:8, lineHeight:1.4 }}>{a.title}</div>
-                <div style={{ fontSize:11, color:'#94A3B8' }}>{a.date} · {a.read} read</div>
-              </div>
-            </div>
+
+      {/* Category tabs */}
+      <div style={{ background:'#fff', borderBottom:'1px solid #E8EDF3', overflowX:'auto' }}>
+        <div style={{ display:'flex', maxWidth:1200, margin:'0 auto', padding:'0 16px' }}>
+          {CATEGORIES.map(cat => (
+            <button key={cat} onClick={() => setActiveCategory(cat)}
+              style={{ flexShrink:0, padding:'12px 16px', border:'none', background:'none', fontSize:12, fontWeight:activeCategory===cat?700:500, color:activeCategory===cat?'#1565C0':'#64748B', cursor:'pointer', borderBottom:`2px solid ${activeCategory===cat?'#1565C0':'transparent'}`, fontFamily:'DM Sans,sans-serif' }}>
+              {cat}
+            </button>
           ))}
         </div>
-        <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>
-          <div style={{ fontSize:13 }}>More articles coming soon. <Link to="/list-car" style={{ color:'#1565C0', fontWeight:600, textDecoration:'none' }}>List your car →</Link></div>
-        </div>
+      </div>
+
+      <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 16px' }}>
+        {loading ? (
+          <div style={{ textAlign:'center', padding:60, color:'#94A3B8' }}>Loading articles...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign:'center', padding:60 }}>
+            <div style={{ fontSize:40, marginBottom:16 }}>📰</div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:700, color:'#0A2540', marginBottom:8 }}>No articles yet</div>
+            <div style={{ fontSize:13, color:'#94A3B8' }}>Check back soon for news and reviews</div>
+          </div>
+        ) : (
+          <>
+            {/* Featured article */}
+            {featured && !searchQ && activeCategory === 'All' && (
+              <Link to={`/news/${featured.slug}`} style={{ textDecoration:'none', display:'block', marginBottom:24 }}>
+                <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:16, overflow:'hidden', display:'grid', gridTemplateColumns:'1fr 1fr', transition:'all .2s' }}
+                  onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.boxShadow='0 8px 32px rgba(21,101,192,.12)' }}
+                  onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.boxShadow='none' }}>
+                  <div style={{ height:260, background:'linear-gradient(135deg,#EEF5FF,#DBEAFE)', overflow:'hidden' }}>
+                    {featured.cover_image_url ? <img src={featured.cover_image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:64 }}>📰</div>}
+                  </div>
+                  <div style={{ padding:28, display:'flex', flexDirection:'column', justifyContent:'center' }}>
+                    <div style={{ display:'flex', gap:6, marginBottom:12 }}>
+                      <span style={{ background:'#1565C0', color:'#fff', fontSize:10, fontWeight:700, padding:'3px 10px', borderRadius:100 }}>FEATURED</span>
+                      <span style={{ background:'#EEF5FF', color:'#1565C0', border:'1px solid #BDD5FF', fontSize:10, fontWeight:700, padding:'3px 10px', borderRadius:100 }}>{featured.category}</span>
+                    </div>
+                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540', lineHeight:1.3, marginBottom:10 }}>{featured.title}</div>
+                    {featured.excerpt && <div style={{ fontSize:13, color:'#64748B', lineHeight:1.6, marginBottom:14 }}>{featured.excerpt}</div>}
+                    <div style={{ fontSize:11, color:'#94A3B8' }}>
+                      By {featured.author_name} · {featured.read_time} min read · {featured.published_at ? new Date(featured.published_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : ''}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )}
+
+            {/* Grid */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
+              {(searchQ || activeCategory !== 'All' ? filtered : rest).map(a => (
+                <Link key={a.id} to={`/news/${a.slug}`} style={{ textDecoration:'none' }}>
+                  <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden', height:'100%', transition:'all .2s' }}
+                    onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.1)' }}
+                    onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
+                    <div style={{ height:160, background:'linear-gradient(135deg,#EEF5FF,#DBEAFE)', overflow:'hidden' }}>
+                      {a.cover_image_url ? <img src={a.cover_image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>📰</div>}
+                    </div>
+                    <div style={{ padding:16 }}>
+                      <div style={{ display:'flex', gap:6, marginBottom:8, flexWrap:'wrap' }}>
+                        <span style={{ background:'#EEF5FF', color:'#1565C0', border:'1px solid #BDD5FF', fontSize:9, fontWeight:700, padding:'2px 8px', borderRadius:100, textTransform:'uppercase' }}>{a.category}</span>
+                        {(a.tags || []).slice(0,2).map(tag => <span key={tag} style={{ background:'#F8FAFC', color:'#94A3B8', border:'1px solid #E8EDF3', fontSize:9, fontWeight:600, padding:'2px 7px', borderRadius:100 }}>#{tag}</span>)}
+                      </div>
+                      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', lineHeight:1.4, marginBottom:8 }}>{a.title}</div>
+                      {a.excerpt && <div style={{ fontSize:12, color:'#64748B', lineHeight:1.5, marginBottom:10, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{a.excerpt}</div>}
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <div style={{ fontSize:11, color:'#94A3B8' }}>By {a.author_name} · {a.read_time} min</div>
+                        <div style={{ fontSize:11, color:'#94A3B8' }}>{a.views || 0} views</div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
