@@ -2266,6 +2266,106 @@ export function DashboardPage({ user }) {
 // ─────────────────────────────────────────────────────────────
 // NEWS PAGE
 // ─────────────────────────────────────────────────────────────
+function VideosTab({ videos }) {
+  const [search, setSearch] = useState('')
+  const [activeFilter, setActiveFilter] = useState('All')
+  const FILTERS = ['All', 'Review', 'Buying Guide', 'Tips', 'News', 'Market Insight']
+
+  const getYouTubeId = (url) => {
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/)
+    return m ? m[1] : null
+  }
+
+  const filtered = videos.filter(v => {
+    if (activeFilter !== 'All' && v.category !== activeFilter) return false
+    if (search && !v.title.toLowerCase().includes(search.toLowerCase()) && !(v.creator_name||'').toLowerCase().includes(search.toLowerCase())) return false
+    return true
+  })
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, flexWrap:'wrap', gap:12 }}>
+        <div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#0A2540', marginBottom:4 }}>🎬 Videos</div>
+          <div style={{ fontSize:13, color:'#94A3B8' }}>{filtered.length} video{filtered.length !== 1 ? 's' : ''} from Kenya's top automotive creators</div>
+        </div>
+        <div style={{ position:'relative' }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search videos..."
+            style={{ padding:'9px 12px 9px 34px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#fff', width:200 }}/>
+          <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', fontSize:13 }}>🔍</span>
+        </div>
+      </div>
+
+      {/* Filter chips */}
+      <div style={{ display:'flex', gap:6, marginBottom:20, flexWrap:'wrap' }}>
+        {FILTERS.map(f => (
+          <button key={f} onClick={() => setActiveFilter(f)}
+            style={{ padding:'5px 14px', borderRadius:100, border:`1.5px solid ${activeFilter===f?'#1565C0':'#E2E8F0'}`, background:activeFilter===f?'#1565C0':'#fff', color:activeFilter===f?'#fff':'#64748B', fontSize:12, fontWeight:activeFilter===f?700:500, cursor:'pointer', fontFamily:'DM Sans,sans-serif' }}>
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div style={{ textAlign:'center', padding:60, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+          <div style={{ fontSize:48, marginBottom:12 }}>🎬</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:700, color:'#0A2540', marginBottom:8 }}>No videos yet</div>
+          <div style={{ fontSize:13, color:'#94A3B8' }}>Videos from Kenya's top automotive creators will appear here</div>
+        </div>
+      ) : (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px,1fr))', gap:20 }}>
+          {filtered.map(v => {
+            const ytId = getYouTubeId(v.youtube_url)
+            return (
+              <div key={v.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden', transition:'all .2s' }}
+                onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.1)' }}
+                onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.boxShadow='none' }}>
+                {/* YouTube embed */}
+                <div style={{ position:'relative', paddingBottom:'56.25%', height:0, overflow:'hidden', background:'#000' }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${ytId}?rel=0`}
+                    title={v.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%' }}
+                  />
+                </div>
+                <div style={{ padding:14 }}>
+                  <div style={{ display:'flex', gap:6, marginBottom:8, flexWrap:'wrap' }}>
+                    <span style={{ background:'#EEF5FF', color:'#1565C0', border:'1px solid #BDD5FF', fontSize:9, fontWeight:700, padding:'2px 8px', borderRadius:100, textTransform:'uppercase' }}>{v.category}</span>
+                    {(v.tags || []).slice(0,2).map(tag => (
+                      <span key={tag} style={{ background:'#F8FAFC', color:'#94A3B8', border:'1px solid #E8EDF3', fontSize:9, fontWeight:600, padding:'2px 7px', borderRadius:100 }}>#{tag}</span>
+                    ))}
+                  </div>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', lineHeight:1.4, marginBottom:6 }}>{v.title}</div>
+                  {v.description && <div style={{ fontSize:12, color:'#64748B', lineHeight:1.5, marginBottom:8, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{v.description}</div>}
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <div style={{ width:22, height:22, borderRadius:'50%', background:'#0A2540', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:800, color:'#fff', fontFamily:'Outfit,sans-serif', flexShrink:0 }}>
+                        {(v.creator_name||'?')[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontSize:11, fontWeight:700, color:'#0A2540' }}>{v.creator_name || 'Creator'}</div>
+                        {v.creator_channel && <div style={{ fontSize:10, color:'#94A3B8' }}>{v.creator_channel}</div>}
+                      </div>
+                    </div>
+                    <a href={v.youtube_url} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize:11, fontWeight:700, color:'#EF4444', textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
+                      ▶ YouTube
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function NewsSubscribeInline() {
   const [email, setEmail] = useState('')
   const [done, setDone] = useState(false)
@@ -2295,6 +2395,7 @@ function NewsSubscribeInline() {
 
 export function NewsReviewsPage({ user }) {
   const [articles, setArticles] = useState([])
+  const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('All')
   const [searchQ, setSearchQ] = useState('')
@@ -2302,18 +2403,20 @@ export function NewsReviewsPage({ user }) {
   const navigate = useNavigate()
 
   const PER_PAGE = 12
-  const CATEGORIES = ['All', 'News', 'Review', 'Buying Guide', 'Tips', 'Market Insight', 'EV']
+  const CATEGORIES = ['All', 'News', 'Review', 'Buying Guide', 'Tips', 'Market Insight', 'Videos']
 
   useEffect(() => {
     supabase.from('articles').select('id,title,slug,excerpt,cover_image_url,author_name,read_time,published_at,category,tags,views')
       .eq('published', true).order('published_at', { ascending: false })
       .then(({ data }) => { setArticles(data || []); setLoading(false) })
+    supabase.from('videos').select('*').eq('published', true).order('created_at', { ascending: false })
+      .then(({ data }) => setVideos(data || []))
   }, [])
 
   // reset to page 1 when filters change
   useEffect(() => { setPage(1) }, [activeCategory, searchQ])
 
-  const filtered = articles.filter(a => {
+  const filtered = activeCategory === 'Videos' ? [] : articles.filter(a => {
     if (activeCategory !== 'All' && a.category !== activeCategory) return false
     if (searchQ && !a.title.toLowerCase().includes(searchQ.toLowerCase()) &&
         !(a.excerpt || '').toLowerCase().includes(searchQ.toLowerCase())) return false
@@ -2350,8 +2453,11 @@ export function NewsReviewsPage({ user }) {
             <button key={cat} onClick={() => setActiveCategory(cat)}
               style={{ flexShrink:0, padding:'12px 16px', border:'none', background:'none', fontSize:12, fontWeight:activeCategory===cat?700:500, color:activeCategory===cat?'#1565C0':'#64748B', cursor:'pointer', borderBottom:`2px solid ${activeCategory===cat?'#1565C0':'transparent'}`, fontFamily:'DM Sans,sans-serif' }}>
               {cat}
-              {cat !== 'All' && articles.filter(a => a.category === cat).length > 0 && (
+              {cat !== 'All' && cat !== 'Videos' && articles.filter(a => a.category === cat).length > 0 && (
                 <span style={{ marginLeft:4, fontSize:10, color:'#94A3B8' }}>({articles.filter(a => a.category === cat).length})</span>
+              )}
+              {cat === 'Videos' && videos.length > 0 && (
+                <span style={{ marginLeft:4, fontSize:10, color:'#94A3B8' }}>({videos.length})</span>
               )}
             </button>
           ))}
@@ -2359,7 +2465,9 @@ export function NewsReviewsPage({ user }) {
       </div>
 
       <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 16px' }}>
-        {loading ? (
+        {activeCategory === 'Videos' ? (
+          <VideosTab videos={videos} />
+        ) : loading ? (
           <div style={{ textAlign:'center', padding:60, color:'#94A3B8' }}>Loading articles...</div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign:'center', padding:60 }}>

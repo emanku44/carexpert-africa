@@ -452,6 +452,135 @@ function ArticlesTab() {
   )
 }
 
+function VideosAdminTab() {
+  const [videos, setVideos] = useState([])
+  const [form, setForm] = useState({ title:'', youtube_url:'', description:'', creator_name:'', creator_channel:'', category:'Review', tags:'', published:true })
+  const [adding, setAdding] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+  const CATEGORIES = ['Review','Buying Guide','Tips','News','Market Insight']
+
+  useEffect(() => {
+    supabase.from('videos').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => setVideos(data || []))
+  }, [])
+
+  const getYouTubeId = (url) => {
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/)
+    return m ? m[1] : null
+  }
+
+  const save = async () => {
+    if (!form.title.trim() || !form.youtube_url.trim()) { setMsg('Title and YouTube URL are required'); return }
+    const ytId = getYouTubeId(form.youtube_url)
+    if (!ytId) { setMsg('Invalid YouTube URL'); return }
+    setSaving(true)
+    const payload = { ...form, youtube_id: ytId, tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [] }
+    const { data, error } = await supabase.from('videos').insert(payload).select().single()
+    setSaving(false)
+    if (error) { setMsg('Error: ' + error.message); return }
+    setVideos(prev => [data, ...prev])
+    setMsg('✓ Video added!')
+    setForm({ title:'', youtube_url:'', description:'', creator_name:'', creator_channel:'', category:'Review', tags:'', published:true })
+    setAdding(false)
+    setTimeout(() => setMsg(''), 2000)
+  }
+
+  const deleteVideo = async (id) => {
+    if (!window.confirm('Delete this video?')) return
+    await supabase.from('videos').delete().eq('id', id)
+    setVideos(prev => prev.filter(v => v.id !== id))
+  }
+
+  const inp = { width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#fff', boxSizing:'border-box' }
+  const lbl = { display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }
+
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540' }}>Videos <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({videos.length})</span></div>
+        <button onClick={() => setAdding(!adding)} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'9px 18px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>
+          {adding ? '✕ Cancel' : '+ Add Video'}
+        </button>
+      </div>
+
+      {msg && <div style={{ background: msg.startsWith('✓') ? '#DCFCE7' : '#FEE2E2', color: msg.startsWith('✓') ? '#16A34A' : '#DC2626', borderRadius:8, padding:'10px 14px', fontSize:13, fontWeight:600, marginBottom:14 }}>{msg}</div>}
+
+      {adding && (
+        <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:18, marginBottom:16 }}>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:14 }}>Add YouTube Video</div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+            <div style={{ gridColumn:'1/-1' }}>
+              <label style={lbl}>YouTube URL *</label>
+              <input value={form.youtube_url} onChange={e => setForm(f => ({ ...f, youtube_url:e.target.value }))} placeholder="https://www.youtube.com/watch?v=..." style={inp}/>
+              {form.youtube_url && getYouTubeId(form.youtube_url) && (
+                <div style={{ marginTop:8, borderRadius:8, overflow:'hidden', height:140 }}>
+                  <iframe src={`https://www.youtube.com/embed/${getYouTubeId(form.youtube_url)}`} title="preview" frameBorder="0" allowFullScreen style={{ width:'100%', height:'100%' }}/>
+                </div>
+              )}
+            </div>
+            <div style={{ gridColumn:'1/-1' }}>
+              <label style={lbl}>Title *</label>
+              <input value={form.title} onChange={e => setForm(f => ({ ...f, title:e.target.value }))} placeholder="Video title" style={inp}/>
+            </div>
+            <div>
+              <label style={lbl}>Creator Name</label>
+              <input value={form.creator_name} onChange={e => setForm(f => ({ ...f, creator_name:e.target.value }))} placeholder="e.g. Nairobi Garage" style={inp}/>
+            </div>
+            <div>
+              <label style={lbl}>Channel</label>
+              <input value={form.creator_channel} onChange={e => setForm(f => ({ ...f, creator_channel:e.target.value }))} placeholder="e.g. @nairobigarage" style={inp}/>
+            </div>
+            <div>
+              <label style={lbl}>Category</label>
+              <select value={form.category} onChange={e => setForm(f => ({ ...f, category:e.target.value }))} style={inp}>
+                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={lbl}>Tags (comma separated)</label>
+              <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags:e.target.value }))} placeholder="toyota, review, suv" style={inp}/>
+            </div>
+            <div style={{ gridColumn:'1/-1' }}>
+              <label style={lbl}>Description</label>
+              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description:e.target.value }))} placeholder="Brief description..." rows={2} style={{ ...inp, resize:'vertical' }}/>
+            </div>
+          </div>
+          <button onClick={save} disabled={saving}
+            style={{ background:'#1565C0', color:'#fff', border:'none', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>
+            {saving ? 'Saving...' : '✓ Add Video'}
+          </button>
+        </div>
+      )}
+
+      {videos.length === 0 ? (
+        <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+          <div style={{ fontSize:32, marginBottom:12 }}>🎬</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540' }}>No videos yet</div>
+        </div>
+      ) : videos.map(v => (
+        <div key={v.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14, marginBottom:10, display:'grid', gridTemplateColumns:'120px 1fr auto', gap:12, alignItems:'center' }}>
+          <div style={{ borderRadius:8, overflow:'hidden', height:68, background:'#000' }}>
+            <img src={`https://img.youtube.com/vi/${v.youtube_id}/mqdefault.jpg`} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+          </div>
+          <div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:3 }}>{v.title}</div>
+            <div style={{ fontSize:11, color:'#94A3B8' }}>
+              {v.creator_name && <span>By {v.creator_name} · </span>}
+              <span style={{ background:'#EEF5FF', color:'#1565C0', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:100 }}>{v.category}</span>
+            </div>
+          </div>
+          <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+            <a href={v.youtube_url} target="_blank" rel="noopener noreferrer"
+              style={{ background:'#FEE2E2', color:'#EF4444', border:'none', padding:'6px 10px', borderRadius:7, fontSize:11, fontWeight:700, textDecoration:'none' }}>▶ View</a>
+            <button onClick={() => deleteVideo(v.id)} style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'6px 10px', borderRadius:7, fontSize:11, cursor:'pointer' }}>✕</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function DealerOffersTab() {
   const [offers, setOffers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -622,7 +751,7 @@ export default function AdminPage({ user }) {
           {counts.pending>0 && <span style={{ background:'#EF4444', color:'#fff', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100 }}>{counts.pending}</span>}
         </div>
         <div className="admin-desktop-tabs" style={{ display:'flex', gap:12, alignItems:'center' }}>
-          {['listings','users','dealers','analytics','articles','offers'].map(t => (
+          {['listings','users','dealers','analytics','articles','videos','offers'].map(t => (
             <span key={t} onClick={()=>setAdminTab(t)} style={{ color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', fontSize:12, cursor:'pointer', fontWeight:adminTab===t?700:400, textTransform:'capitalize' }}>{t}{t==='listings'&&counts.pending>0?` (${counts.pending})`:''}</span>
           ))}
           <div style={{ width:30, height:30, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:11, fontWeight:700, color:'#fff' }}>{user?.email?.[0]?.toUpperCase()||'A'}</div>
@@ -631,7 +760,7 @@ export default function AdminPage({ user }) {
 
       {/* Mobile tab bar */}
       <div className="admin-nav-tabs" style={{ display:'none', background:'#0A2540', overflowX:'auto', borderBottom:'1px solid rgba(255,255,255,.1)' }}>
-        {['listings','users','dealers','analytics','articles','offers'].map(t => (
+        {['listings','users','dealers','analytics','articles','videos','offers'].map(t => (
           <button key={t} onClick={()=>setAdminTab(t)} style={{ flexShrink:0, padding:'11px 16px', border:'none', background:'none', fontSize:12, fontWeight:adminTab===t?700:500, color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', cursor:'pointer', borderBottom:`2px solid ${adminTab===t?'#4DA6FF':'transparent'}`, textTransform:'capitalize', fontFamily:'DM Sans,sans-serif' }}>
             {t}{t==='listings'&&counts.pending>0?` (${counts.pending})`:''}
           </button>
@@ -681,6 +810,7 @@ export default function AdminPage({ user }) {
           {adminTab==='dealers'   && <DealersTab listings={listings}/>}
           {adminTab==='analytics' && <AnalyticsTab listings={listings}/>}
           {adminTab==='articles' && <ArticlesTab/>}
+          {adminTab==='videos' && <VideosAdminTab/>}
           {adminTab==='offers' && <DealerOffersTab/>}
         </main>
       </div>
