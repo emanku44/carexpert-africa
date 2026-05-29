@@ -436,7 +436,7 @@ export default function HomePage({ user }) {
                 style={{ background:'#F8FBFF', border:'1.5px solid #E8EDF3', borderRadius:12, padding:'14px 8px 12px', textAlign:'center', cursor:'pointer', transition:'all .2s' }}
                 onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.background='#EEF5FF'; e.currentTarget.style.transform='translateY(-2px)' }}
                 onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.background='#F8FBFF'; e.currentTarget.style.transform='none' }}>
-                <img src={BODY_SVGS[b.t]} alt={b.t} style={{ width:'100%', height:64, objectFit:'contain', marginBottom:4, filter: selectedBodies.has(b.t) ? 'none' : 'grayscale(20%)' }}/>
+                <img src={BODY_SVGS[b.t]} alt={b.t} style={{ width:'100%', height:64, objectFit:'contain', marginBottom:4 }}/>
                 <div style={{ fontFamily:'Outfit, sans-serif', fontSize:12, fontWeight:700, color:'#0A2540', marginBottom:2 }}>{b.t}</div>
                 <div style={{ fontSize:10, color:'#94A3B8' }}>{count > 0 ? `${count} cars` : 'Browse'}</div>
               </div>
