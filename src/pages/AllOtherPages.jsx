@@ -10,6 +10,8 @@ const MOBILE_CSS = `
     .detail-sidebar { order: -1; }
     .detail-price-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; border-radius: 0 !important; margin: 0 !important; }
     .detail-main-pad { padding-bottom: 160px !important; }
+    .detail-finance-desktop { display: none !important; }
+    .detail-finance-mobile { display: block !important; }
     .auth-grid { grid-template-columns: 1fr !important; }
     .auth-left { display: none !important; }
     .listcar-grid { grid-template-columns: 1fr !important; }
@@ -54,6 +56,7 @@ export function CarDetailPage({ user }) {
   const [offerSubmitted, setOfferSubmitted] = useState(false)
   const [copyMsg, setCopyMsg] = useState('')
   const [driveOpen, setDriveOpen] = useState(false)
+  const [contactOpen, setContactOpen] = useState(true)
   const [driveDate, setDriveDate] = useState(null)
   const [driveTime, setDriveTime] = useState('')
   const [driveName, setDriveName] = useState('')
@@ -310,47 +313,59 @@ export function CarDetailPage({ user }) {
         {/* Sidebar */}
         <div className="detail-sidebar">
           <div className="detail-price-bar" style={{ background:'#0A2540', borderRadius:12, padding:16, marginBottom:14, color:'#fff' }}>
-            <div style={{ fontSize:10, color:'rgba(255,255,255,.5)', fontWeight:700, textTransform:'uppercase', letterSpacing:'.8px', marginBottom:2 }}>Asking Price</div>
-            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:26, fontWeight:800, marginBottom:car.negotiable?4:12 }}>KSH {Number(car.price).toLocaleString()}</div>
-            {car.negotiable && <div style={{ fontSize:11, color:'#4DA6FF', fontWeight:600, marginBottom:12 }}>Price negotiable</div>}
-            <div style={{ display:'flex', gap:8, marginBottom:8 }}>
-              <a href={waLink} target="_blank" rel="noopener noreferrer"
-                style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#25D366', color:'#fff', border:'none', padding:'11px 8px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
-                📱 WhatsApp
-              </a>
-              {car.phone && (
-                <a href={`tel:${car.phone}`}
-                  style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'rgba(255,255,255,.12)', color:'#fff', border:'1.5px solid rgba(255,255,255,.2)', padding:'11px 8px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
-                  📞 Call
-                </a>
-              )}
+            {/* Collapsible header */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: contactOpen ? 12 : 0, cursor:'pointer' }} onClick={() => setContactOpen(o => !o)}>
+              <div>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,.5)', fontWeight:700, textTransform:'uppercase', letterSpacing:'.8px', marginBottom:2 }}>Asking Price</div>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:26, fontWeight:800 }}>KSH {Number(car.price).toLocaleString()}</div>
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                {car.negotiable && <span style={{ fontSize:10, color:'#4DA6FF', fontWeight:700, background:'rgba(77,166,255,.15)', padding:'3px 8px', borderRadius:100 }}>Negotiable</span>}
+                <span style={{ fontSize:18, color:'rgba(255,255,255,.5)', transform: contactOpen ? 'rotate(180deg)' : 'none', transition:'transform .2s', display:'block' }}>⌄</span>
+              </div>
             </div>
-            <button onClick={() => setOfferOpen(true)}
-              style={{ width:'100%', background:'rgba(255,255,255,.1)', color:'#fff', border:'1.5px solid rgba(255,255,255,.25)', padding:'10px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginBottom:8 }}>
-              🤝 Make an Offer
-            </button>
-            <button onClick={() => setDriveOpen(true)}
-              style={{ width:'100%', background:'rgba(255,255,255,.1)', color:'#fff', border:'1.5px solid rgba(255,255,255,.25)', padding:'10px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginBottom:8 }}>
-              📅 Book a Test Drive
-            </button>
-            {car.contact_name && (
+            {contactOpen && (
               <>
-                <div style={{ height:1, background:'rgba(255,255,255,.1)', margin:'12px 0' }}/>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ width:34, height:34, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:13, fontFamily:'Outfit,sans-serif', flexShrink:0 }}>
-                    {car.contact_name[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontSize:13, fontWeight:700 }}>{car.contact_name}</div>
-                    <div style={{ fontSize:11, color:'rgba(255,255,255,.5)' }}>{car.location}</div>
-                  </div>
+                <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                  <a href={waLink} target="_blank" rel="noopener noreferrer"
+                    style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#25D366', color:'#fff', border:'none', padding:'11px 8px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
+                    📱 WhatsApp
+                  </a>
+                  {car.phone && (
+                    <a href={`tel:${car.phone}`}
+                      style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'rgba(255,255,255,.12)', color:'#fff', border:'1.5px solid rgba(255,255,255,.2)', padding:'11px 8px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
+                      📞 Call
+                    </a>
+                  )}
                 </div>
+                <button onClick={() => setOfferOpen(true)}
+                  style={{ width:'100%', background:'rgba(255,255,255,.1)', color:'#fff', border:'1.5px solid rgba(255,255,255,.25)', padding:'10px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginBottom:8 }}>
+                  🤝 Make an Offer
+                </button>
+                <button onClick={() => setDriveOpen(true)}
+                  style={{ width:'100%', background:'rgba(255,255,255,.1)', color:'#fff', border:'1.5px solid rgba(255,255,255,.25)', padding:'10px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', marginBottom:8 }}>
+                  📅 Book a Test Drive
+                </button>
+                {car.contact_name && (
+                  <>
+                    <div style={{ height:1, background:'rgba(255,255,255,.1)', margin:'12px 0' }}/>
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <div style={{ width:34, height:34, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:13, fontFamily:'Outfit,sans-serif', flexShrink:0 }}>
+                        {car.contact_name[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:700 }}>{car.contact_name}</div>
+                        <div style={{ fontSize:11, color:'rgba(255,255,255,.5)' }}>{car.location}</div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>
 
-          {/* Finance calculator */}
-          <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
+          {/* Finance calculator — hidden on mobile, shown at bottom instead */}
+          <div className="detail-finance-desktop" style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
             <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
               <span style={{ width:3, height:13, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Finance Calculator
             </div>
@@ -373,6 +388,31 @@ export function CarDetailPage({ user }) {
               <div style={{ fontSize:10, color:'#94A3B8', marginTop:2 }}>Based on KSH {Number(car.price - deposit).toLocaleString()} financed</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Finance calculator — mobile only, shown at bottom */}
+      <div className="detail-finance-mobile" style={{ display:'none', maxWidth:1200, margin:'0 16px 80px', background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16 }}>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ width:3, height:13, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Finance Calculator
+        </div>
+        {[
+          { label:'Deposit', value:deposit, setValue:setDeposit, min:0, max:car.price*0.8, step:50000, display:`KSH ${Number(deposit).toLocaleString()}` },
+          { label:'Loan Term', value:term, setValue:setTerm, min:12, max:72, step:6, display:`${term} months` },
+          { label:'Interest Rate', value:rate, setValue:setRate, min:8, max:25, step:0.5, display:`${rate}%` },
+        ].map(({ label, value, setValue, min, max, step, display }) => (
+          <div key={label} style={{ marginBottom:12 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, marginBottom:5 }}>
+              <span style={{ fontWeight:700, color:'#64748B', textTransform:'uppercase', fontSize:10 }}>{label}</span>
+              <span style={{ fontWeight:700, color:'#0A2540', fontFamily:'Outfit,sans-serif' }}>{display}</span>
+            </div>
+            <input type="range" min={min} max={max} value={value} step={step} onChange={e => setValue(Number(e.target.value))} style={{ width:'100%', accentColor:'#1565C0' }}/>
+          </div>
+        ))}
+        <div style={{ background:'#EEF5FF', borderRadius:8, padding:12, textAlign:'center', border:'1px solid #BDD5FF' }}>
+          <div style={{ fontSize:11, color:'#64748B', marginBottom:3 }}>Est. Monthly Payment</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:800, color:'#1565C0' }}>KSH {Number(monthly()).toLocaleString()}</div>
+          <div style={{ fontSize:10, color:'#94A3B8', marginTop:2 }}>Based on KSH {Number(car.price - deposit).toLocaleString()} financed</div>
         </div>
       </div>
 
