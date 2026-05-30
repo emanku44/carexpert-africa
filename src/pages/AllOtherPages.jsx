@@ -307,6 +307,16 @@ export function CarDetailPage({ user }) {
     setDriveSubmitted(true)
   }
 
+  const waLink = `https://wa.me/${(car?.phone||'').replace(/\D/g,'')}?text=Hi, I saw your ${car?.year} ${car?.make} ${car?.model}${car?.variant ? ` — ${car?.variant}` : ''} on CarExpert Africa. Is it still available?`
+
+  useSEO({
+    title: car ? `${car.year} ${car.make} ${car.model}${car.variant ? ` — ${car.variant}` : ''} for KSH ${Number(car.price).toLocaleString()}` : 'Listing',
+    description: car ? `${car.year} ${car.make} ${car.model}${car.variant ? ` ${car.variant}` : ''}, ${car.mileage ? Number(car.mileage).toLocaleString() + 'km' : ''}, ${car.condition || ''}, ${car.location || 'Kenya'}. KSH ${Number(car?.price||0).toLocaleString()}`.slice(0, 160) : '',
+    image: car?.listing_photos?.[0]?.url,
+    url: window.location.href,
+    type: 'product',
+  })
+
   if (loading) return (
     <div style={{ fontFamily:'DM Sans,sans-serif', minHeight:'100vh', background:'#F7F9FC' }}>
       <style>{MOBILE_CSS}</style><Navbar user={user} />
@@ -325,15 +335,6 @@ export function CarDetailPage({ user }) {
     </div>
   )
 
-  const waLink = `https://wa.me/${(car.phone||'').replace(/\D/g,'')}?text=Hi, I saw your ${car.year} ${car.make} ${car.model}${car.variant ? ` — ${car.variant}` : ''} on CarExpert Africa. Is it still available?`
-
-  useSEO({
-    title: `${car.year} ${car.make} ${car.model}${car.variant ? ` — ${car.variant}` : ''} for KSH ${Number(car.price).toLocaleString()}`,
-    description: `${car.year} ${car.make} ${car.model}${car.variant ? ` ${car.variant}` : ''}, ${car.mileage ? Number(car.mileage).toLocaleString() + 'km' : ''}, ${car.condition || ''}, ${car.location || 'Kenya'}. KSH ${Number(car.price).toLocaleString()}${car.negotiable ? ' negotiable' : ''}. ${car.description || ''}`.slice(0, 160),
-    image: car.listing_photos?.[0]?.url,
-    url: window.location.href,
-    type: 'product',
-  })
   const SPEC_FIELDS = [
     ['Make',car.make],['Model',car.model],['Variant',car.variant||'—'],['Year',car.year],
     ['Mileage',car.mileage?`${Number(car.mileage).toLocaleString()} km`:'—'],['Condition',car.condition||'—'],
