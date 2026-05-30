@@ -170,7 +170,6 @@ const VARIANTS = {
   'D-Max': ['Base','LS','V-Cross','X-Series','4x2','4x4','Single Cab','Spacecab','Double Cab'],
   'MU-X': ['LS-U','LS-T','X Series','Ultimate'],
 }
-const MAKES = Object.keys(CAR_DATA).sort()
 
 export default function EditListingPage({ user }) {
   const { id } = useParams()
