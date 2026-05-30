@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import { signUp, signIn, supabase } from '../lib/supabase'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import useSEO from './useSEO'
 const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
 
 const MOBILE_CSS = `
@@ -34,6 +35,159 @@ const MOBILE_CSS = `
     .spec-grid > div { border-right: none !important; }
   }
 `
+
+// ─────────────────────────────────────────────────────────────
+// NTSA PLATE CHECK
+// ─────────────────────────────────────────────────────────────
+function NTSACheck() {
+  const [plate, setPlate] = useState('')
+  const [result, setResult] = useState(null)
+
+  const formatPlate = (raw) => {
+    // Kenya plate formats: KAA 000A, KBZ 123X, GOVT 001 etc
+    const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    if (clean.length <= 3) return clean
+    if (clean.length <= 6) return clean.slice(0,3) + ' ' + clean.slice(3)
+    return clean.slice(0,3) + ' ' + clean.slice(3,6) + clean.slice(6)
+  }
+
+  const check = () => {
+    const clean = plate.replace(/\s/g, '').toUpperCase()
+    // Validate Kenya plate format
+    const isPrivate = /^K[A-Z]{2}\d{3}[A-Z]$/.test(clean)
+    const isGovt = /^GK\d{3}[A-Z]$/.test(clean) || /^GOVT\d+$/.test(clean)
+    const isPersonalized = /^[A-Z]{4,8}$/.test(clean)
+    const isDiplomatic = /^CD\d+$/.test(clean)
+
+    if (!clean || clean.length < 6) { setResult({ error: 'Please enter a valid plate number' }); return }
+
+    setResult({
+      plate: formatPlate(clean),
+      type: isGovt ? 'Government Vehicle' : isDiplomatic ? 'Diplomatic' : isPersonalized ? 'Personalized' : isPrivate ? 'Private Vehicle' : 'Commercial/Other',
+      region: clean.startsWith('KA') ? 'Nairobi' : clean.startsWith('KB') ? 'Central' : clean.startsWith('KC') ? 'Coast' : clean.startsWith('KD') ? 'Nyanza' : clean.startsWith('KE') ? 'Rift Valley' : clean.startsWith('KF') ? 'Eastern' : clean.startsWith('KG') ? 'North Eastern' : clean.startsWith('KH') ? 'Western' : 'Kenya',
+      valid: isPrivate || isGovt || isPersonalized || isDiplomatic,
+      note: 'For full NTSA vehicle history including ownership and fines, visit ntsa.go.ke or use the NTSA portal with the official plate number.'
+    })
+  }
+
+  return (
+    <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:12 }}>
+      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
+        <span style={{ width:3, height:14, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> 🔍 NTSA Plate Check
+      </div>
+      <div style={{ fontSize:12, color:'#64748B', marginBottom:12 }}>Verify the vehicle registration plate before buying</div>
+      <div style={{ display:'flex', gap:8 }}>
+        <input value={plate} onChange={e => setPlate(formatPlate(e.target.value))} placeholder="e.g. KDG 123A" maxLength={10}
+          style={{ flex:1, padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:14, fontFamily:'DM Sans,sans-serif', outline:'none', textTransform:'uppercase', letterSpacing:2, fontWeight:700 }}
+          onKeyDown={e => e.key === 'Enter' && check()}/>
+        <button onClick={check} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'10px 20px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Check</button>
+      </div>
+      {result && (
+        <div style={{ marginTop:12, background: result.error ? '#FEE2E2' : result.valid ? '#F0FDF4' : '#FFFBEB', borderRadius:8, padding:'12px 14px', border:`1px solid ${result.error ? '#FECACA' : result.valid ? '#86EFAC' : '#FCD34D'}` }}>
+          {result.error ? (
+            <div style={{ fontSize:13, color:'#DC2626' }}>{result.error}</div>
+          ) : (
+            <>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:900, color:'#0A2540', letterSpacing:3 }}>{result.plate}</div>
+                <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:100, background: result.valid ? '#DCFCE7' : '#FEE2E2', color: result.valid ? '#16A34A' : '#DC2626' }}>
+                  {result.valid ? '✓ Valid Format' : '⚠ Unusual Format'}
+                </span>
+              </div>
+              <div style={{ display:'flex', gap:16, fontSize:12, color:'#475569', marginBottom:6 }}>
+                <span>Type: <strong>{result.type}</strong></span>
+                <span>Region: <strong>{result.region}</strong></span>
+              </div>
+              <div style={{ fontSize:11, color:'#64748B', lineHeight:1.5 }}>{result.note}</div>
+              <a href={`https://www.ntsa.go.ke`} target="_blank" rel="noopener noreferrer"
+                style={{ display:'inline-block', marginTop:8, fontSize:11, fontWeight:700, color:'#1565C0', textDecoration:'none' }}>
+                Full check on NTSA portal →
+              </a>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// SELLER RATINGS
+// ─────────────────────────────────────────────────────────────
+function SellerRatings({ listingId, sellerId, sellerName }) {
+  const [ratings, setRatings] = useState([])
+  const [showForm, setShowForm] = useState(false)
+  const [name, setName] = useState('')
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+
+  useEffect(() => {
+    if (!sellerId) return
+    supabase.from('seller_ratings').select('*').eq('seller_id', sellerId).order('created_at', { ascending: false }).limit(10)
+      .then(({ data }) => setRatings(data || []))
+  }, [sellerId])
+
+  const avgRating = ratings.length > 0 ? (ratings.reduce((a, r) => a + r.rating, 0) / ratings.length).toFixed(1) : null
+
+  const submit = async () => {
+    if (!rating || !name.trim()) return
+    await supabase.from('seller_ratings').insert({ seller_id: sellerId, reviewer_name: name.trim(), rating, comment: comment.trim() || null, listing_id: listingId })
+    setSubmitted(true)
+    setRatings(prev => [{ id: Date.now(), reviewer_name: name, rating, comment, created_at: new Date().toISOString() }, ...prev])
+  }
+
+  const stars = (n, size = 14) => '★'.repeat(n) + '☆'.repeat(5 - n)
+
+  return (
+    <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:12 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ width:3, height:14, background:'#1565C0', borderRadius:2, display:'inline-block' }}/>
+          ⭐ Seller Ratings {avgRating && <span style={{ fontSize:12, color:'#D97706' }}>{avgRating}/5</span>}
+          <span style={{ fontSize:11, color:'#94A3B8', fontWeight:400 }}>({ratings.length})</span>
+        </div>
+        {!showForm && !submitted && (
+          <button onClick={() => setShowForm(true)} style={{ background:'#EEF5FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'5px 12px', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>+ Rate Seller</button>
+        )}
+      </div>
+
+      {showForm && !submitted && (
+        <div style={{ background:'#F8FAFC', borderRadius:10, padding:14, marginBottom:14, border:'1.5px solid #E8EDF3' }}>
+          <div style={{ fontSize:12, fontWeight:700, color:'#0A2540', marginBottom:10 }}>Rate {sellerName || 'this seller'}</div>
+          <div style={{ display:'flex', gap:4, marginBottom:12 }}>
+            {[1,2,3,4,5].map(n => (
+              <button key={n} onClick={() => setRating(n)}
+                style={{ fontSize:28, background:'none', border:'none', cursor:'pointer', color: n <= rating ? '#F59E0B' : '#E2E8F0', padding:0 }}>★</button>
+            ))}
+          </div>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name"
+            style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', marginBottom:8, boxSizing:'border-box' }}/>
+          <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="Share your experience with this seller (optional)" rows={2}
+            style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', resize:'none', marginBottom:10, boxSizing:'border-box' }}/>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={() => setShowForm(false)} style={{ flex:1, background:'#F0F4F8', color:'#64748B', border:'none', padding:'9px', borderRadius:7, fontSize:12, fontWeight:600, cursor:'pointer' }}>Cancel</button>
+            <button onClick={submit} disabled={!rating || !name.trim()} style={{ flex:2, background: rating && name.trim() ? '#1565C0' : '#94A3B8', color:'#fff', border:'none', padding:'9px', borderRadius:7, fontSize:12, fontWeight:700, cursor: rating && name.trim() ? 'pointer' : 'default', fontFamily:'Outfit,sans-serif' }}>Submit Rating</button>
+          </div>
+        </div>
+      )}
+      {submitted && <div style={{ background:'#DCFCE7', color:'#16A34A', borderRadius:8, padding:'10px 14px', fontSize:13, fontWeight:600, marginBottom:12 }}>✓ Thanks for your rating!</div>}
+
+      {ratings.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'20px 0', color:'#94A3B8', fontSize:12 }}>No ratings yet. Be the first to rate this seller.</div>
+      ) : ratings.slice(0, 3).map(r => (
+        <div key={r.id} style={{ borderBottom:'1px solid #F0F4F8', paddingBottom:10, marginBottom:10 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:12, fontWeight:700, color:'#0A2540' }}>{r.reviewer_name}</div>
+            <div style={{ color:'#F59E0B', fontSize:13 }}>{stars(r.rating)}</div>
+          </div>
+          {r.comment && <div style={{ fontSize:12, color:'#64748B', lineHeight:1.5 }}>{r.comment}</div>}
+          <div style={{ fontSize:10, color:'#94A3B8', marginTop:4 }}>{new Date(r.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 // ─────────────────────────────────────────────────────────────
 // CAR DETAIL PAGE
@@ -172,6 +326,14 @@ export function CarDetailPage({ user }) {
   )
 
   const waLink = `https://wa.me/${(car.phone||'').replace(/\D/g,'')}?text=Hi, I saw your ${car.year} ${car.make} ${car.model}${car.variant ? ` — ${car.variant}` : ''} on CarExpert Africa. Is it still available?`
+
+  useSEO({
+    title: `${car.year} ${car.make} ${car.model}${car.variant ? ` — ${car.variant}` : ''} for KSH ${Number(car.price).toLocaleString()}`,
+    description: `${car.year} ${car.make} ${car.model}${car.variant ? ` ${car.variant}` : ''}, ${car.mileage ? Number(car.mileage).toLocaleString() + 'km' : ''}, ${car.condition || ''}, ${car.location || 'Kenya'}. KSH ${Number(car.price).toLocaleString()}${car.negotiable ? ' negotiable' : ''}. ${car.description || ''}`.slice(0, 160),
+    image: car.listing_photos?.[0]?.url,
+    url: window.location.href,
+    type: 'product',
+  })
   const SPEC_FIELDS = [
     ['Make',car.make],['Model',car.model],['Variant',car.variant||'—'],['Year',car.year],
     ['Mileage',car.mileage?`${Number(car.mileage).toLocaleString()} km`:'—'],['Condition',car.condition||'—'],
@@ -245,6 +407,9 @@ export function CarDetailPage({ user }) {
             </div>
           </div>
 
+          {/* NTSA Plate Check */}
+          <NTSACheck />
+
           {/* Description */}
           {car.description && (
             <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:12 }}>
@@ -254,6 +419,9 @@ export function CarDetailPage({ user }) {
               <p style={{ fontSize:13, color:'#475569', lineHeight:1.7, margin:0 }}>{car.description}</p>
             </div>
           )}
+
+          {/* Seller Ratings */}
+          <SellerRatings listingId={id} sellerId={car.user_id} sellerName={car.contact_name} />
 
           {/* Map */}
           {car.location && (
@@ -2589,24 +2757,49 @@ export function DashboardPage({ user }) {
                   <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:6 }}>No listings yet</div>
                   <Link to="/list-car" style={{ background:'#1565C0', color:'#fff', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>+ List a Car</Link>
                 </div>
-              ) : myListings.map(l => (
-                <div key={l.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:14, marginBottom:10, display:'grid', gridTemplateColumns:'72px 1fr auto', gap:12, alignItems:'center' }}>
-                  <div style={{ width:72, height:52, borderRadius:7, background:'#EEF5FF', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    {l.listing_photos?.[0]?.url ? <img src={l.listing_photos[0].url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <span style={{ fontSize:10, color:'#94A3B8' }}>No photo</span>}
-                  </div>
-                  <div>
-                    <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:2 }}>{l.year} {l.make} {l.model}</div>
-                    <div style={{ fontSize:11, color:'#94A3B8' }}>KSH {Number(l.price).toLocaleString()} · {Number(l.mileage).toLocaleString()} km · {l.fuel_type}</div>
-                    <div style={{ fontSize:11, color:'#64748B', marginTop:2 }}>{l.views || 0} views</div>
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'flex-end' }}>
-                    <span style={{ fontSize:9, fontWeight:700, padding:'3px 8px', borderRadius:100, background:l.status==='approved'?'#DCFCE7':l.status==='pending'?'#FEF3C7':'#FEE2E2', color:l.status==='approved'?'#16A34A':l.status==='pending'?'#D97706':'#EF4444', fontFamily:'Outfit,sans-serif' }}>
-                      {l.status==='approved'?'● Live':l.status==='pending'?'● Pending':'● Declined'}
-                    </span>
-                    <Link to={`/edit-listing/${l.id}`} style={{ background:'#F0F6FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'5px 10px', borderRadius:6, fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>Edit</Link>
+              ) : myListings.map(l => {
+                const daysLeft = l.expires_at ? Math.ceil((new Date(l.expires_at) - new Date()) / 86400000) : null
+                const isExpiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0
+                const isExpired = daysLeft !== null && daysLeft <= 0
+                const wasBumped = l.bumped_at && (Date.now() - new Date(l.bumped_at)) < 7 * 86400000
+
+                const handleBump = async () => {
+                  await supabase.from('listings').update({ bumped_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', l.id)
+                  alert('✓ Listing bumped to top! It will appear first in search results.')
+                }
+
+                return (
+                <div key={l.id} style={{ background:'#fff', border:`1.5px solid ${isExpired?'#FECACA':isExpiringSoon?'#FCD34D':'#E8EDF3'}`, borderRadius:12, padding:14, marginBottom:10 }}>
+                  {/* Expiry warning */}
+                  {isExpired && <div style={{ background:'#FEE2E2', color:'#DC2626', fontSize:11, fontWeight:700, padding:'6px 10px', borderRadius:7, marginBottom:10 }}>⚠️ This listing has expired. Renew it to keep it visible.</div>}
+                  {isExpiringSoon && <div style={{ background:'#FFFBEB', color:'#D97706', fontSize:11, fontWeight:700, padding:'6px 10px', borderRadius:7, marginBottom:10 }}>⏰ Expires in {daysLeft} day{daysLeft!==1?'s':''}</div>}
+                  {wasBumped && <div style={{ background:'#F0FDF4', color:'#16A34A', fontSize:11, fontWeight:700, padding:'6px 10px', borderRadius:7, marginBottom:10 }}>🚀 Bumped — showing at top of results</div>}
+
+                  <div style={{ display:'grid', gridTemplateColumns:'72px 1fr auto', gap:12, alignItems:'center' }}>
+                    <div style={{ width:72, height:52, borderRadius:7, background:'#EEF5FF', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      {l.listing_photos?.[0]?.url ? <img src={l.listing_photos[0].url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <span style={{ fontSize:10, color:'#94A3B8' }}>No photo</span>}
+                    </div>
+                    <div>
+                      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:2 }}>{l.year} {l.make} {l.model}{l.variant?` — ${l.variant}`:''}</div>
+                      <div style={{ fontSize:11, color:'#94A3B8' }}>KSH {Number(l.price).toLocaleString()} · {Number(l.mileage||0).toLocaleString()} km</div>
+                      <div style={{ display:'flex', gap:8, marginTop:3, fontSize:11, color:'#64748B' }}>
+                        <span>👁 {l.views||0}</span>
+                        {l.verified && <span style={{ color:'#16A34A', fontWeight:700 }}>✓ Verified</span>}
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'flex-end' }}>
+                      <span style={{ fontSize:9, fontWeight:700, padding:'3px 8px', borderRadius:100, background:l.status==='approved'?'#DCFCE7':l.status==='pending'?'#FEF3C7':'#FEE2E2', color:l.status==='approved'?'#16A34A':l.status==='pending'?'#D97706':'#EF4444', fontFamily:'Outfit,sans-serif' }}>
+                        {l.status==='approved'?'● Live':l.status==='pending'?'● Pending':'● Declined'}
+                      </span>
+                      <Link to={`/edit-listing/${l.id}`} style={{ background:'#F0F6FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'5px 10px', borderRadius:6, fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>Edit</Link>
+                      {l.status === 'approved' && !wasBumped && (
+                        <button onClick={handleBump} style={{ background:'#FFFBEB', color:'#D97706', border:'1.5px solid #FCD34D', padding:'5px 10px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>🚀 Bump</button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
@@ -2815,6 +3008,8 @@ export function NewsReviewsPage({ user }) {
 
   const PER_PAGE = 12
   const CATEGORIES = ['All', 'News', 'Review', 'Buying Guide', 'Tips', 'Market Insight', 'Videos']
+
+  useSEO({ title: 'News & Reviews', description: 'Kenya car market news, expert reviews, buying guides and automotive insights from CarExpert Africa.' })
 
   useEffect(() => {
     supabase.from('articles').select('id,title,slug,excerpt,cover_image_url,author_name,read_time,published_at,category,tags,views')

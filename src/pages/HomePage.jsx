@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import Navbar from '../components/Navbar'
 import { getFeaturedListings, supabase } from '../lib/supabase'
+import useSEO from './useSEO'
 
 const MAKES = ['Toyota','Mercedes-Benz','Mazda','Audi','Volkswagen','Subaru','BMW','Lexus','Nissan','Mitsubishi','Porsche','Suzuki','Honda','Isuzu']
 const BODY_IMGS = {
@@ -151,6 +152,7 @@ function DealersBanner() {
 }
 
 export default function HomePage({ user }) {
+  useSEO({ title: 'Buy & Sell Cars in Kenya', description: 'Kenya\'s #1 car marketplace. Buy and sell new and used cars in Nairobi, Mombasa, Kisumu and across Kenya. Free listings, real prices, trusted sellers.' })
   const navigate = useNavigate()
   const [make, setMake]                 = useState('')
   const [model, setModel]               = useState('')
@@ -463,7 +465,7 @@ export default function HomePage({ user }) {
       <footer style={{ background:'#060F1A', padding:'24px 16px', textAlign:'center' }}>
         <div style={{ fontFamily:'Outfit, sans-serif', fontSize:16, fontWeight:800, color:'#fff', marginBottom:6 }}>CarExpert<span style={{ color:'#4DA6FF' }}>Africa</span>®</div>
         <div style={{ display:'flex', justifyContent:'center', gap:16, marginBottom:8 }}>
-          {[['Terms','/terms'],['Pricing','/pricing'],['News','/news'],['List a Car','/list-car']].map(([l,to]) => (
+          {[['Terms','/terms'],['Privacy','/privacy'],['Pricing','/pricing'],['News','/news'],['Compare','/compare'],['List a Car','/list-car']].map(([l,to]) => (
             <Link key={l} to={to} style={{ fontSize:11, color:'rgba(255,255,255,.4)', textDecoration:'none' }}>{l}</Link>
           ))}
         </div>

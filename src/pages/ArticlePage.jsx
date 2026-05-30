@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { supabase } from '../lib/supabase'
+import useSEO from './useSEO'
 
 function timeAgo(date) {
   const s = Math.floor((new Date() - new Date(date)) / 1000)
@@ -178,6 +179,14 @@ export default function ArticlePage({ user }) {
     else if (type === 'twitter') window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank')
     else if (type === 'copy') { navigator.clipboard.writeText(url); setCopyMsg('Copied!'); setTimeout(() => setCopyMsg(''), 2000) }
   }
+
+  useSEO({
+    title: article?.title,
+    description: article?.excerpt,
+    image: article?.cover_image_url,
+    url: window.location.href,
+    type: 'article',
+  })
 
   if (loading) return (
     <div style={{ fontFamily:'DM Sans,sans-serif', minHeight:'100vh', background:'#F7F9FC' }}>

@@ -109,6 +109,8 @@ const VARIANTS = {
   'A6': ['40 TDI','45 TDI','45 TFSI','55 TFSI','S6','RS6'],
 }
 
+import useSEO from './useSEO'
+
 const fmt = (n) => 'KSH ' + Number(n).toLocaleString()
 
 function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, formatLabel }) {
@@ -266,6 +268,8 @@ function SavedSearchesQuickList({ user, onApply }) {
 export default function ListingsPage({ user }) {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+
+  useSEO({ title: 'Browse Cars for Sale in Kenya', description: 'Find your perfect car in Kenya. Browse thousands of listings — Toyota, Nissan, Mercedes, BMW and more. Filter by make, model, price, location.' })
 
   const [listings, setListings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -646,7 +650,7 @@ export default function ListingsPage({ user }) {
             <>
             <div className="listings-grid">
               {filtered.slice((page-1)*15, page*15).map(car => (
-                <div key={car.id} onClick={() => navigate(`/listings/${car.id}`)} style={{ background: '#fff', border: '1.5px solid #E8EDF3', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', transition: 'all .2s' }}
+                <div key={car.id} style={{ background: '#fff', border: '1.5px solid #E8EDF3', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', transition: 'all .2s' }}
                   onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.1)' }}
                   onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
                   <div style={{ height: 180, background: '#EEF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
@@ -674,11 +678,7 @@ export default function ListingsPage({ user }) {
                         target="_blank" rel="noopener noreferrer"
                         style={{ flex: 1, background: '#25D366', color: '#fff', border: 'none', padding: '9px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}
                         onClick={e => e.stopPropagation()}>WhatsApp</a>
-                      {car.phone && (
-                        <a href={`tel:${car.phone}`}
-                          style={{ flex: 1, background: '#F0F6FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '9px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}
-                          onClick={e => e.stopPropagation()}>📞 Call</a>
-                      )}
+                      <Link to={`/listings/${car.id}`} style={{ flex: 1, background: '#F0F6FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '9px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}>View →</Link>
                     </div>
                   </div>
                 </div>
