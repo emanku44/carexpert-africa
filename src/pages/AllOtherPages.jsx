@@ -82,6 +82,12 @@ function NTSACheck() {
           onKeyDown={e => e.key === 'Enter' && check()}/>
         <button onClick={check} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'10px 20px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Check</button>
       </div>
+      {plate.length >= 6 && (
+        <a href="https://www.ntsa.go.ke/index.php?view=motorVehicleSearch" target="_blank" rel="noopener noreferrer"
+          style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop:8, fontSize:11, fontWeight:700, color:'#475569', textDecoration:'none', background:'#F8FAFC', border:'1.5px solid #E2E8F0', padding:'6px 12px', borderRadius:7 }}>
+          🔍 Search <strong>{plate}</strong> directly on NTSA portal
+        </a>
+      )}
       {result && (
         <div style={{ marginTop:12, background: result.error ? '#FEE2E2' : result.valid ? '#F0FDF4' : '#FFFBEB', borderRadius:8, padding:'12px 14px', border:`1px solid ${result.error ? '#FECACA' : result.valid ? '#86EFAC' : '#FCD34D'}` }}>
           {result.error ? (
@@ -99,9 +105,9 @@ function NTSACheck() {
                 <span>Region: <strong>{result.region}</strong></span>
               </div>
               <div style={{ fontSize:11, color:'#64748B', lineHeight:1.5 }}>{result.note}</div>
-              <a href={`https://www.ntsa.go.ke`} target="_blank" rel="noopener noreferrer"
-                style={{ display:'inline-block', marginTop:8, fontSize:11, fontWeight:700, color:'#1565C0', textDecoration:'none' }}>
-                Full check on NTSA portal →
+              <a href="https://www.ntsa.go.ke/index.php?view=motorVehicleSearch" target="_blank" rel="noopener noreferrer"
+                style={{ display:'inline-block', marginTop:8, fontSize:11, fontWeight:700, color:'#1565C0', textDecoration:'none', background:'#EEF5FF', border:'1.5px solid #BDD5FF', padding:'6px 14px', borderRadius:7 }}>
+                🔍 Check on NTSA Portal →
               </a>
             </>
           )}
