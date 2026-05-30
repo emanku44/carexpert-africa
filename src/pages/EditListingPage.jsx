@@ -170,6 +170,7 @@ const VARIANTS = {
   'D-Max': ['Base','LS','V-Cross','X-Series','4x2','4x4','Single Cab','Spacecab','Double Cab'],
   'MU-X': ['LS-U','LS-T','X Series','Ultimate'],
 }
+const MAKES = Object.keys(CAR_DATA).sort()
 
 export default function EditListingPage({ user }) {
   const { id } = useParams()
@@ -194,6 +195,7 @@ export default function EditListingPage({ user }) {
   const [colour, setColour]       = useState('')
   const [condition, setCondition] = useState('Used — Excellent')
   const [price, setPrice]         = useState('')
+  const [originalPrice, setOriginalPrice] = useState(null)
   const [nego, setNego]           = useState(false)
   const [description, setDescription] = useState('')
   const [contactName, setContactName] = useState('')
@@ -234,6 +236,7 @@ export default function EditListingPage({ user }) {
     setColour(data.colour || data.color || '')
     setCondition(data.condition || 'Used — Excellent')
     setPrice(String(data.price || ''))
+    setOriginalPrice(data.price || null)
     setNego(data.negotiable || false)
     setDescription(data.description || '')
     setContactName(data.contact_name || '')
@@ -278,6 +281,10 @@ export default function EditListingPage({ user }) {
     if (error) {
       setError('Error saving: ' + error.message)
     } else {
+      // Track price change
+      if (Number(price) !== originalPrice && originalPrice) {
+        await supabase.from('price_history').insert({ listing_id: id, old_price: originalPrice, new_price: Number(price) })
+      }
       // Upload any new photos
       if (newFiles.length > 0) {
         setUploadProgress(`Uploading ${newFiles.length} photo${newFiles.length > 1 ? 's' : ''}...`)

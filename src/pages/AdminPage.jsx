@@ -667,6 +667,70 @@ function DealerOffersTab() {
   )
 }
 
+function ReportsTab() {
+  const [reports, setReports] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.from('listing_reports').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => { setReports(data || []); setLoading(false) })
+  }, [])
+
+  const updateStatus = async (id, status) => {
+    await supabase.from('listing_reports').update({ status }).eq('id', id)
+    setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+  }
+
+  const statusColor = s => ({ open:'#D97706', reviewed:'#1565C0', resolved:'#16A34A', dismissed:'#94A3B8' }[s] || '#94A3B8')
+  const statusBg = s => ({ open:'#FFFBEB', reviewed:'#EEF5FF', resolved:'#DCFCE7', dismissed:'#F8FAFC' }[s] || '#F8FAFC')
+
+  if (loading) return <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading...</div>
+
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540' }}>
+          🚩 Listing Reports <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({reports.length})</span>
+        </div>
+        <span style={{ fontSize:12, fontWeight:700, padding:'4px 12px', borderRadius:100, background:'#FFFBEB', color:'#D97706' }}>
+          {reports.filter(r => r.status === 'open').length} open
+        </span>
+      </div>
+      {reports.length === 0 ? (
+        <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+          <div style={{ fontSize:32, marginBottom:12 }}>✅</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540' }}>No reports yet</div>
+        </div>
+      ) : reports.map(r => (
+        <div key={r.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8, flexWrap:'wrap', gap:8 }}>
+            <div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#DC2626', marginBottom:2 }}>🚩 {r.reason}</div>
+              {r.details && <div style={{ fontSize:12, color:'#64748B', fontStyle:'italic' }}>"{r.details}"</div>}
+            </div>
+            <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:100, background:statusBg(r.status), color:statusColor(r.status) }}>{r.status}</span>
+          </div>
+          <div style={{ fontSize:11, color:'#94A3B8', marginBottom:10 }}>
+            {r.reporter_name && <span>{r.reporter_name} · </span>}
+            {r.reporter_email && <span>{r.reporter_email} · </span>}
+            {new Date(r.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}
+          </div>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            <a href={`/listings/${r.listing_id}`} target="_blank" rel="noopener noreferrer"
+              style={{ fontSize:11, fontWeight:700, color:'#1565C0', background:'#F0F6FF', border:'1.5px solid #BDD5FF', padding:'6px 12px', borderRadius:7, textDecoration:'none' }}>View Listing →</a>
+            {['reviewed','resolved','dismissed'].filter(s => s !== r.status).map(s => (
+              <button key={s} onClick={() => updateStatus(r.id, s)}
+                style={{ background:'#F8FAFC', color:'#475569', border:'1.5px solid #E2E8F0', padding:'6px 10px', borderRadius:7, fontSize:11, fontWeight:600, cursor:'pointer', textTransform:'capitalize' }}>
+                → {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const ADMIN_MOBILE_CSS = `
   @media (max-width: 768px) {
     .admin-layout { grid-template-columns: 1fr !important; }
@@ -751,7 +815,7 @@ export default function AdminPage({ user }) {
           {counts.pending>0 && <span style={{ background:'#EF4444', color:'#fff', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100 }}>{counts.pending}</span>}
         </div>
         <div className="admin-desktop-tabs" style={{ display:'flex', gap:12, alignItems:'center' }}>
-          {['listings','users','dealers','analytics','articles','videos','offers'].map(t => (
+          {['listings','users','dealers','analytics','articles','videos','offers','reports'].map(t => (
             <span key={t} onClick={()=>setAdminTab(t)} style={{ color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', fontSize:12, cursor:'pointer', fontWeight:adminTab===t?700:400, textTransform:'capitalize' }}>{t}{t==='listings'&&counts.pending>0?` (${counts.pending})`:''}</span>
           ))}
           <div style={{ width:30, height:30, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:11, fontWeight:700, color:'#fff' }}>{user?.email?.[0]?.toUpperCase()||'A'}</div>
@@ -760,7 +824,7 @@ export default function AdminPage({ user }) {
 
       {/* Mobile tab bar */}
       <div className="admin-nav-tabs" style={{ display:'none', background:'#0A2540', overflowX:'auto', borderBottom:'1px solid rgba(255,255,255,.1)' }}>
-        {['listings','users','dealers','analytics','articles','videos','offers'].map(t => (
+        {['listings','users','dealers','analytics','articles','videos','offers','reports'].map(t => (
           <button key={t} onClick={()=>setAdminTab(t)} style={{ flexShrink:0, padding:'11px 16px', border:'none', background:'none', fontSize:12, fontWeight:adminTab===t?700:500, color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', cursor:'pointer', borderBottom:`2px solid ${adminTab===t?'#4DA6FF':'transparent'}`, textTransform:'capitalize', fontFamily:'DM Sans,sans-serif' }}>
             {t}{t==='listings'&&counts.pending>0?` (${counts.pending})`:''}
           </button>
@@ -812,6 +876,7 @@ export default function AdminPage({ user }) {
           {adminTab==='articles' && <ArticlesTab/>}
           {adminTab==='videos' && <VideosAdminTab/>}
           {adminTab==='offers' && <DealerOffersTab/>}
+          {adminTab==='reports' && <ReportsTab/>}
         </main>
       </div>
       <Toast msg={toast.msg} type={toast.type} show={toast.show}/>

@@ -57,6 +57,12 @@ export function CarDetailPage({ user }) {
   const [copyMsg, setCopyMsg] = useState('')
   const [driveOpen, setDriveOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(true)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reportReason, setReportReason] = useState('')
+  const [reportName, setReportName] = useState('')
+  const [reportEmail, setReportEmail] = useState('')
+  const [reportDetails, setReportDetails] = useState('')
+  const [reportDone, setReportDone] = useState(false)
   const [driveDate, setDriveDate] = useState(null)
   const [driveTime, setDriveTime] = useState('')
   const [driveName, setDriveName] = useState('')
@@ -117,6 +123,7 @@ export function CarDetailPage({ user }) {
       buyer_phone: offerPhone, offer_amount: Number(offerAmount), message: offerMsg, status: 'pending'
     })
     if (error) { alert('Error: ' + error.message); return }
+    supabase.from('listing_leads').insert({ listing_id: id, lead_type: 'offer' })
     setOfferSubmitted(true)
   }
 
@@ -125,6 +132,12 @@ export function CarDetailPage({ user }) {
     const text = `Check out this ${car.year} ${car.make} ${car.model}${car.variant ? ` — ${car.variant}` : ''} for KSH ${Number(car.price).toLocaleString()} on CarExpert Africa`
     if (type === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`, '_blank')
     else if (type === 'copy') { navigator.clipboard.writeText(url); setCopyMsg('Copied!'); setTimeout(() => setCopyMsg(''), 2000) }
+  }
+
+  const handleReport = async () => {
+    if (!reportReason) return
+    await supabase.from('listing_reports').insert({ listing_id: id, reporter_name: reportName||null, reporter_email: reportEmail||null, reason: reportReason, details: reportDetails||null })
+    setReportDone(true)
   }
 
   const handleTestDrive = async () => {
@@ -136,6 +149,7 @@ export function CarDetailPage({ user }) {
       preferred_time: driveTime, message: driveMsg, status: 'pending'
     })
     if (error) { alert('Error: ' + error.message); return }
+    supabase.from('listing_leads').insert({ listing_id: id, lead_type: 'test_drive' })
     setDriveSubmitted(true)
   }
 
@@ -210,6 +224,8 @@ export function CarDetailPage({ user }) {
               <div style={{ display:'flex', gap:8, flexShrink:0 }}>
                 <button onClick={() => handleShare('whatsapp')} style={{ background:'#25D366', color:'#fff', border:'none', padding:'7px 12px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>📱 Share</button>
                 <button onClick={() => handleShare('copy')} style={{ background:'#F0F6FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'7px 12px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>{copyMsg || '🔗 Copy Link'}</button>
+                <Link to={`/compare?ids=${id}`} style={{ background:'#F8FAFC', color:'#475569', border:'1.5px solid #E2E8F0', padding:'7px 10px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', textDecoration:'none' }} title="Compare">🔄</Link>
+                <button onClick={() => setReportOpen(true)} style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'7px 10px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }} title="Report listing">🚩</button>
               </div>
             </div>
           </div>
@@ -328,12 +344,14 @@ export function CarDetailPage({ user }) {
               <>
                 <div style={{ display:'flex', gap:8, marginBottom:8 }}>
                   <a href={waLink} target="_blank" rel="noopener noreferrer"
-                    style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#25D366', color:'#fff', border:'none', padding:'11px 8px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
+                    style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#25D366', color:'#fff', border:'none', padding:'11px 8px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}
+                    onClick={() => supabase.from('listing_leads').insert({ listing_id: id, lead_type: 'whatsapp' })}>
                     📱 WhatsApp
                   </a>
                   {car.phone && (
                     <a href={`tel:${car.phone}`}
-                      style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'rgba(255,255,255,.12)', color:'#fff', border:'1.5px solid rgba(255,255,255,.2)', padding:'11px 8px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
+                      style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'rgba(255,255,255,.12)', color:'#fff', border:'1.5px solid rgba(255,255,255,.2)', padding:'11px 8px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}
+                      onClick={() => supabase.from('listing_leads').insert({ listing_id: id, lead_type: 'call' })}>
                       📞 Call
                     </a>
                   )}
@@ -458,6 +476,56 @@ export function CarDetailPage({ user }) {
                     style={{ flex:1, background:offerAmount&&offerName&&offerPhone?'#1565C0':'#94A3B8', color:'#fff', border:'none', padding:'11px', borderRadius:8, fontSize:13, fontWeight:700, cursor:offerAmount&&offerName&&offerPhone?'pointer':'default', fontFamily:'Outfit,sans-serif' }}>
                     Submit Offer →
                   </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Report Modal */}
+      {reportOpen && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div style={{ background:'#fff', borderRadius:16, padding:24, width:'100%', maxWidth:400, boxShadow:'0 20px 60px rgba(0,0,0,.2)' }}>
+            {reportDone ? (
+              <div style={{ textAlign:'center', padding:'16px 0' }}>
+                <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:8 }}>Report Submitted</div>
+                <div style={{ fontSize:13, color:'#64748B', marginBottom:20 }}>Our team will review this listing within 24 hours.</div>
+                <button onClick={() => { setReportOpen(false); setReportDone(false) }} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Done</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:4 }}>🚩 Report Listing</div>
+                <div style={{ fontSize:12, color:'#94A3B8', marginBottom:16 }}>Help keep CarExpert Africa trustworthy</div>
+                <div style={{ marginBottom:12 }}>
+                  <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Reason *</label>
+                  <select value={reportReason} onChange={e => setReportReason(e.target.value)}
+                    style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', boxSizing:'border-box' }}>
+                    <option value="">Select a reason...</option>
+                    {['Fraudulent listing','Wrong price or specs','Car already sold','Duplicate listing','Stolen vehicle','Misleading photos','Spam or scam','Other'].map(r => <option key={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div style={{ marginBottom:12 }}>
+                  <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Additional Details</label>
+                  <textarea value={reportDetails} onChange={e => setReportDetails(e.target.value)} placeholder="Tell us more..." rows={3}
+                    style={{ width:'100%', padding:'10px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', resize:'none', boxSizing:'border-box' }}/>
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
+                  <div>
+                    <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Your Name</label>
+                    <input value={reportName} onChange={e => setReportName(e.target.value)} placeholder="Optional"
+                      style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, fontFamily:'DM Sans,sans-serif', outline:'none', boxSizing:'border-box' }}/>
+                  </div>
+                  <div>
+                    <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }}>Email</label>
+                    <input type="email" value={reportEmail} onChange={e => setReportEmail(e.target.value)} placeholder="Optional"
+                      style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:12, fontFamily:'DM Sans,sans-serif', outline:'none', boxSizing:'border-box' }}/>
+                  </div>
+                </div>
+                <div style={{ display:'flex', gap:8 }}>
+                  <button onClick={() => setReportOpen(false)} style={{ flex:1, background:'#F8FAFC', color:'#64748B', border:'1.5px solid #E2E8F0', padding:'10px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Cancel</button>
+                  <button onClick={handleReport} disabled={!reportReason} style={{ flex:1, background: reportReason ? '#DC2626' : '#94A3B8', color:'#fff', border:'none', padding:'10px', borderRadius:8, fontSize:13, fontWeight:700, cursor: reportReason ? 'pointer' : 'default', fontFamily:'Outfit,sans-serif' }}>Submit Report</button>
                 </div>
               </>
             )}
@@ -1974,6 +2042,303 @@ export function ListCarPage({ user }) {
 // ─────────────────────────────────────────────────────────────
 // DASHBOARD PAGE
 // ─────────────────────────────────────────────────────────────
+function PerformanceTab({ user, listings }) {
+  const [leads, setLeads] = useState([])
+  const [priceHistory, setPriceHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+  const fmt = n => 'KSH ' + Number(n).toLocaleString()
+
+  useEffect(() => {
+    if (!listings.length) { setLoading(false); return }
+    const ids = listings.map(l => l.id)
+    Promise.all([
+      supabase.from('listing_leads').select('listing_id, lead_type, created_at').in('listing_id', ids),
+      supabase.from('price_history').select('listing_id, old_price, new_price, changed_at').in('listing_id', ids).order('changed_at', { ascending: false })
+    ]).then(([leadsRes, priceRes]) => {
+      setLeads(leadsRes.data || [])
+      setPriceHistory(priceRes.data || [])
+      setLoading(false)
+    })
+  }, [listings])
+
+  if (loading) return <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading performance data...</div>
+  if (!listings.length) return (
+    <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+      <div style={{ fontSize:32, marginBottom:12 }}>📊</div>
+      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:6 }}>No listings yet</div>
+      <Link to="/list-car" style={{ background:'#1565C0', color:'#fff', padding:'10px 20px', borderRadius:8, fontSize:13, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>List Your First Car</Link>
+    </div>
+  )
+
+  const getLeads = (id, type) => leads.filter(l => l.listing_id === id && (!type || l.lead_type === type)).length
+  const totalViews = listings.reduce((a, l) => a + (l.views || 0), 0)
+  const totalLeads = leads.length
+  const sorted = [...listings].sort((a, b) => (b.views || 0) + getLeads(b.id)*3 - ((a.views || 0) + getLeads(a.id)*3))
+  const best = sorted[0]
+  const worst = sorted[sorted.length - 1]
+
+  return (
+    <div>
+      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:16 }}>📊 Listing Performance</div>
+
+      {/* Summary stats */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px,1fr))', gap:10, marginBottom:20 }}>
+        {[
+          ['👁', totalViews, 'Total Views', '#1565C0','#EEF5FF'],
+          ['📞', leads.filter(l=>l.lead_type==='call').length, 'Call Clicks', '#16A34A','#DCFCE7'],
+          ['📱', leads.filter(l=>l.lead_type==='whatsapp').length, 'WhatsApp Clicks', '#25D366','#F0FDF4'],
+          ['🤝', leads.filter(l=>l.lead_type==='offer').length, 'Offers', '#D97706','#FFFBEB'],
+          ['📅', leads.filter(l=>l.lead_type==='test_drive').length, 'Test Drives', '#7C3AED','#F5F3FF'],
+        ].map(([icon,val,label,color,bg]) => (
+          <div key={label} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:'14px 12px', textAlign:'center' }}>
+            <div style={{ width:34, height:34, borderRadius:8, background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, margin:'0 auto 8px' }}>{icon}</div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:20, fontWeight:900, color, marginBottom:2 }}>{val}</div>
+            <div style={{ fontSize:10, color:'#94A3B8' }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Best/Worst */}
+      {listings.length > 1 && best && worst && best.id !== worst.id && (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20 }}>
+          {[['🏆 Best Performer', best, '#DCFCE7', '#16A34A'], ['⚠️ Needs Attention', worst, '#FEF3C7', '#D97706']].map(([label, car, bg, color]) => (
+            <div key={car.id} style={{ background:bg, border:`1.5px solid ${color}33`, borderRadius:12, padding:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color, marginBottom:6 }}>{label}</div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:4 }}>{car.year} {car.make} {car.model}</div>
+              <div style={{ fontSize:12, color:'#64748B', marginBottom:8 }}>{fmt(car.price)}</div>
+              <div style={{ display:'flex', gap:8, fontSize:11, color:'#475569', flexWrap:'wrap' }}>
+                <span>👁 {car.views || 0} views</span>
+                <span>📞 {getLeads(car.id)} leads</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Per-listing breakdown */}
+      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:12 }}>All Listings</div>
+      {listings.map(l => {
+        const lLeads = getLeads(l.id)
+        const calls = getLeads(l.id, 'call')
+        const wa = getLeads(l.id, 'whatsapp')
+        const offers = getLeads(l.id, 'offer')
+        const testDrives = getLeads(l.id, 'test_drive')
+        const maxBar = Math.max(1, ...listings.map(x => (x.views||0) + getLeads(x.id)*5))
+        const score = (l.views||0) + lLeads*5
+        const ph = priceHistory.filter(p => p.listing_id === l.id)
+
+        return (
+          <div key={l.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12, flexWrap:'wrap', gap:8 }}>
+              <div>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540' }}>{l.year} {l.make} {l.model}{l.variant?` — ${l.variant}`:''}</div>
+                <div style={{ fontSize:12, color:'#1565C0', fontWeight:700, marginTop:2 }}>{fmt(l.price)}</div>
+              </div>
+              <div style={{ display:'flex', gap:6 }}>
+                <Link to={`/listings/${l.id}`} style={{ fontSize:11, color:'#1565C0', background:'#F0F6FF', border:'1.5px solid #BDD5FF', padding:'5px 10px', borderRadius:6, textDecoration:'none', fontWeight:700, fontFamily:'Outfit,sans-serif' }}>View</Link>
+                <Link to={`/edit-listing/${l.id}`} style={{ fontSize:11, color:'#475569', background:'#F8FAFC', border:'1.5px solid #E2E8F0', padding:'5px 10px', borderRadius:6, textDecoration:'none', fontWeight:700, fontFamily:'Outfit,sans-serif' }}>Edit</Link>
+              </div>
+            </div>
+            {/* Performance bar */}
+            <div style={{ height:8, background:'#F0F4F8', borderRadius:100, marginBottom:10, overflow:'hidden' }}>
+              <div style={{ height:'100%', borderRadius:100, background:'linear-gradient(90deg,#1565C0,#4DA6FF)', width:`${Math.min(100, (score/maxBar)*100)}%`, transition:'width 1s' }}/>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:6 }}>
+              {[['👁',l.views||0,'Views'],['📞',calls,'Calls'],['📱',wa,'WhatsApp'],['🤝',offers,'Offers'],['📅',testDrives,'Test Drives']].map(([icon,val,lbl]) => (
+                <div key={lbl} style={{ textAlign:'center', background:'#F8FAFC', borderRadius:8, padding:'8px 4px' }}>
+                  <div style={{ fontSize:14 }}>{icon}</div>
+                  <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:800, color:'#0A2540' }}>{val}</div>
+                  <div style={{ fontSize:9, color:'#94A3B8' }}>{lbl}</div>
+                </div>
+              ))}
+            </div>
+            {/* Price history */}
+            {ph.length > 0 && (
+              <div style={{ marginTop:10, padding:'8px 10px', background:'#FFFBEB', borderRadius:8, border:'1px solid #FCD34D' }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#92400E', marginBottom:4 }}>💰 Price History</div>
+                {ph.slice(0,3).map((p,i) => (
+                  <div key={i} style={{ fontSize:11, color:'#475569', display:'flex', gap:8 }}>
+                    <span style={{ color: p.new_price < p.old_price ? '#16A34A' : '#DC2626' }}>
+                      {p.new_price < p.old_price ? '↓' : '↑'} {fmt(p.new_price)}
+                    </span>
+                    <span style={{ color:'#94A3B8' }}>from {fmt(p.old_price)} · {new Date(p.changed_at).toLocaleDateString('en-GB', {day:'numeric',month:'short'})}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Suggestions */}
+            {(l.views || 0) < 10 && lLeads === 0 && (
+              <div style={{ marginTop:10, fontSize:11, color:'#D97706', background:'#FFFBEB', borderRadius:8, padding:'8px 10px', border:'1px solid #FCD34D' }}>
+                💡 <strong>Low visibility</strong> — Consider adding more photos, lowering the price, or upgrading to Featured
+              </div>
+            )}
+            {(l.views || 0) > 20 && lLeads === 0 && (
+              <div style={{ marginTop:10, fontSize:11, color:'#DC2626', background:'#FEE2E2', borderRadius:8, padding:'8px 10px', border:'1px solid #FECACA' }}>
+                ⚠️ <strong>High views, no leads</strong> — Price may be too high. Similar cars sell for {fmt(Math.round(l.price * 0.92 / 50000)*50000)}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function OffersTab({ user, listings }) {
+  const [offers, setOffers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const fmt = n => 'KSH ' + Number(n).toLocaleString()
+
+  useEffect(() => {
+    if (!listings.length) { setLoading(false); return }
+    const ids = listings.map(l => l.id)
+    supabase.from('offers').select('*').in('listing_id', ids).order('created_at', { ascending: false })
+      .then(({ data }) => { setOffers(data || []); setLoading(false) })
+  }, [listings])
+
+  const respond = async (id, status, counter) => {
+    await supabase.from('offers').update({ status, counter_amount: counter || null }).eq('id', id)
+    setOffers(prev => prev.map(o => o.id === id ? { ...o, status, counter_amount: counter||null } : o))
+  }
+
+  const getListing = (id) => listings.find(l => l.id === id)
+  const statusColor = s => ({ pending:'#D97706', accepted:'#16A34A', declined:'#DC2626', countered:'#1565C0' }[s] || '#94A3B8')
+  const statusBg = s => ({ pending:'#FFFBEB', accepted:'#DCFCE7', declined:'#FEE2E2', countered:'#EEF5FF' }[s] || '#F8FAFC')
+
+  if (loading) return <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading offers...</div>
+
+  return (
+    <div>
+      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:16 }}>
+        🤝 Offers Received <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({offers.length})</span>
+      </div>
+      {offers.length === 0 ? (
+        <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+          <div style={{ fontSize:32, marginBottom:12 }}>🤝</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540' }}>No offers yet</div>
+          <div style={{ fontSize:13, color:'#94A3B8', marginTop:4 }}>Offers from buyers will appear here</div>
+        </div>
+      ) : offers.map(o => {
+        const listing = getListing(o.listing_id)
+        const [countering, setCountering] = useState(false)
+        const [counterAmt, setCounterAmt] = useState('')
+        return (
+          <div key={o.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12, flexWrap:'wrap', gap:8 }}>
+              <div>
+                {listing && <div style={{ fontSize:12, color:'#94A3B8', marginBottom:2 }}>{listing.year} {listing.make} {listing.model}</div>}
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540' }}>Offer: {fmt(o.offer_amount)}</div>
+                {listing && <div style={{ fontSize:11, color:'#64748B' }}>Asking: {fmt(listing.price)} · {Math.round((o.offer_amount/listing.price-1)*100)}% {o.offer_amount < listing.price ? 'below' : 'above'} asking</div>}
+              </div>
+              <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:100, background:statusBg(o.status), color:statusColor(o.status) }}>{o.status}</span>
+            </div>
+            <div style={{ fontSize:13, color:'#475569', marginBottom:12 }}>
+              <span style={{ fontWeight:600 }}>{o.buyer_name}</span> · {o.buyer_phone}
+              {o.message && <div style={{ marginTop:4, fontStyle:'italic', color:'#64748B' }}>"{o.message}"</div>}
+            </div>
+            {o.counter_amount && <div style={{ fontSize:12, color:'#1565C0', fontWeight:600, marginBottom:8 }}>Your counter offer: {fmt(o.counter_amount)}</div>}
+            {o.status === 'pending' && (
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                <button onClick={() => respond(o.id, 'accepted', null)}
+                  style={{ background:'#16A34A', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>✓ Accept</button>
+                <button onClick={() => setCountering(!countering)}
+                  style={{ background:'#1565C0', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>↩ Counter</button>
+                <button onClick={() => respond(o.id, 'declined', null)}
+                  style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>✕ Decline</button>
+                <a href={`https://wa.me/${o.buyer_phone.replace(/\D/g,'')}?text=Hi ${o.buyer_name}, regarding your offer of ${fmt(o.offer_amount)} on my ${listing?.year} ${listing?.make} ${listing?.model}...`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ background:'#25D366', color:'#fff', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, textDecoration:'none' }}>📱 WhatsApp</a>
+              </div>
+            )}
+            {countering && (
+              <div style={{ marginTop:10, display:'flex', gap:8, alignItems:'center' }}>
+                <input type="number" value={counterAmt} onChange={e => setCounterAmt(e.target.value)} placeholder="Counter offer amount"
+                  style={{ flex:1, padding:'9px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:13, outline:'none' }}/>
+                <button onClick={() => { respond(o.id, 'countered', Number(counterAmt)); setCountering(false) }}
+                  style={{ background:'#1565C0', color:'#fff', border:'none', padding:'9px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Send Counter</button>
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function TestDrivesTab({ user, listings }) {
+  const [drives, setDrives] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!listings.length) { setLoading(false); return }
+    const ids = listings.map(l => l.id)
+    supabase.from('test_drives').select('*').in('listing_id', ids).order('preferred_date', { ascending: true })
+      .then(({ data }) => { setDrives(data || []); setLoading(false) })
+  }, [listings])
+
+  const respond = async (id, status) => {
+    await supabase.from('test_drives').update({ status }).eq('id', id)
+    setDrives(prev => prev.map(d => d.id === id ? { ...d, status } : d))
+  }
+
+  const getListing = (id) => listings.find(l => l.id === id)
+  const statusColor = s => ({ pending:'#D97706', confirmed:'#16A34A', declined:'#DC2626', completed:'#475569' }[s] || '#94A3B8')
+  const statusBg = s => ({ pending:'#FFFBEB', confirmed:'#DCFCE7', declined:'#FEE2E2', completed:'#F8FAFC' }[s] || '#F8FAFC')
+  const isPast = d => new Date(d.preferred_date) < new Date()
+
+  if (loading) return <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading...</div>
+
+  return (
+    <div>
+      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:16 }}>
+        📅 Test Drive Requests <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({drives.length})</span>
+      </div>
+      {drives.length === 0 ? (
+        <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+          <div style={{ fontSize:32, marginBottom:12 }}>📅</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540' }}>No test drive requests yet</div>
+        </div>
+      ) : drives.map(d => {
+        const listing = getListing(d.listing_id)
+        const past = isPast(d)
+        return (
+          <div key={d.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10, opacity: past && d.status === 'pending' ? 0.7 : 1 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10, flexWrap:'wrap', gap:8 }}>
+              <div>
+                {listing && <div style={{ fontSize:11, color:'#94A3B8', marginBottom:2 }}>{listing.year} {listing.make} {listing.model}</div>}
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540' }}>
+                  {new Date(d.preferred_date).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })} at {d.preferred_time}
+                </div>
+                {past && <div style={{ fontSize:10, color:'#D97706', fontWeight:600 }}>⚠️ Past date</div>}
+              </div>
+              <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:100, background:statusBg(d.status), color:statusColor(d.status) }}>{d.status}</span>
+            </div>
+            <div style={{ fontSize:13, color:'#475569', marginBottom:10 }}>
+              <span style={{ fontWeight:600 }}>{d.buyer_name}</span> · {d.buyer_phone}
+              {d.message && <div style={{ marginTop:4, fontStyle:'italic', color:'#64748B' }}>"{d.message}"</div>}
+            </div>
+            {d.status === 'pending' && (
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                <button onClick={() => respond(d.id, 'confirmed')}
+                  style={{ background:'#16A34A', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>✓ Confirm</button>
+                <button onClick={() => respond(d.id, 'declined')}
+                  style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>✕ Decline</button>
+                <a href={`https://wa.me/${d.buyer_phone.replace(/\D/g,'')}?text=Hi ${d.buyer_name}, confirming your test drive on ${new Date(d.preferred_date).toLocaleDateString('en-GB')} at ${d.preferred_time}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ background:'#25D366', color:'#fff', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, textDecoration:'none' }}>📱 Confirm via WhatsApp</a>
+              </div>
+            )}
+            {d.status === 'confirmed' && (
+              <button onClick={() => respond(d.id, 'completed')}
+                style={{ background:'#F8FAFC', color:'#475569', border:'1.5px solid #E2E8F0', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:600, cursor:'pointer' }}>Mark Completed</button>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function SavedArticlesTab({ user }) {
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
@@ -2113,6 +2478,9 @@ export function DashboardPage({ user }) {
   const NAV_ITEMS = [
     { id:'overview', label:'Overview', icon:'⊞' },
     { id:'listings', label:'My Listings', icon:'🚗', badge: myListings.length },
+    { id:'performance', label:'Performance', icon:'📊' },
+    { id:'offers', label:'Offers', icon:'🤝' },
+    { id:'testdrives', label:'Test Drives', icon:'📅' },
     { id:'saved', label:'Saved Cars', icon:'❤️', badge: savedCars.length },
     { id:'searches', label:'Saved Searches', icon:'🔖' },
     { id:'articles', label:'Saved Articles', icon:'📰' },
@@ -2242,6 +2610,9 @@ export function DashboardPage({ user }) {
             </div>
           )}
 
+          {tab === 'performance' && <PerformanceTab user={user} listings={myListings} />}
+          {tab === 'offers' && <OffersTab user={user} listings={myListings} />}
+          {tab === 'testdrives' && <TestDrivesTab user={user} listings={myListings} />}
           {tab === 'saved' && (
             <div>
               <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:14 }}>Saved Cars <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({savedCars.length})</span></div>

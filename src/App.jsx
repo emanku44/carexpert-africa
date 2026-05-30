@@ -7,6 +7,8 @@ import AdminPage from './pages/AdminPage'
 import { TermsPage } from './pages/TermsPage'
 import EditListingPage from './pages/EditListingPage'
 import ArticlePage from './pages/ArticlePage'
+import PrivacyPage from './pages/PrivacyPage'
+import ComparePage from './pages/ComparePage'
 import {
   AuthPage, ListCarPage, DashboardPage,
   ValuationPage, PricingPage, NewsReviewsPage,
@@ -61,8 +63,10 @@ export default function App() {
         <Route path="/dashboard"    element={<ProtectedRoute user={user}><DashboardPage user={user} /></ProtectedRoute>} />
         <Route path="/admin"        element={<AdminRoute user={user}><AdminPage user={user} /></AdminRoute>} />
         <Route path="/terms"        element={<TermsPage user={user} />} />
+        <Route path="/privacy" element={<PrivacyPage user={user} />} />
+        <Route path="/compare" element={<ComparePage user={user} />} />
         <Route path="/edit-listing/:id" element={<ProtectedRoute user={user}><EditListingPage user={user} /></ProtectedRoute>} />
-<Route path="*"             element={<Navigate to="/" replace />} />
+        <Route path="*"             element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )
