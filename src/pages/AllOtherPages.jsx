@@ -2352,10 +2352,53 @@ function PerformanceTab({ user, listings }) {
   )
 }
 
+function OfferItem({ o, listing, onRespond }) {
+  const [countering, setCountering] = useState(false)
+  const [counterAmt, setCounterAmt] = useState('')
+  const fmt = n => 'KSH ' + Number(n).toLocaleString()
+  const statusColor = s => ({ pending:'#D97706', accepted:'#16A34A', declined:'#DC2626', countered:'#1565C0' }[s] || '#94A3B8')
+  const statusBg = s => ({ pending:'#FFFBEB', accepted:'#DCFCE7', declined:'#FEE2E2', countered:'#EEF5FF' }[s] || '#F8FAFC')
+
+  return (
+    <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12, flexWrap:'wrap', gap:8 }}>
+        <div>
+          {listing && <div style={{ fontSize:12, color:'#94A3B8', marginBottom:2 }}>{listing.year} {listing.make} {listing.model}</div>}
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540' }}>Offer: {fmt(o.offer_amount)}</div>
+          {listing && <div style={{ fontSize:11, color:'#64748B' }}>Asking: {fmt(listing.price)} · {Math.round((o.offer_amount/listing.price-1)*100)}% {o.offer_amount < listing.price ? 'below' : 'above'} asking</div>}
+        </div>
+        <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:100, background:statusBg(o.status), color:statusColor(o.status) }}>{o.status}</span>
+      </div>
+      <div style={{ fontSize:13, color:'#475569', marginBottom:12 }}>
+        <span style={{ fontWeight:600 }}>{o.buyer_name}</span> · {o.buyer_phone}
+        {o.message && <div style={{ marginTop:4, fontStyle:'italic', color:'#64748B' }}>"{o.message}"</div>}
+      </div>
+      {o.counter_amount && <div style={{ fontSize:12, color:'#1565C0', fontWeight:600, marginBottom:8 }}>Your counter offer: {fmt(o.counter_amount)}</div>}
+      {o.status === 'pending' && (
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+          <button onClick={() => onRespond(o.id, 'accepted', null)} style={{ background:'#16A34A', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>✓ Accept</button>
+          <button onClick={() => setCountering(!countering)} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>↩ Counter</button>
+          <button onClick={() => onRespond(o.id, 'declined', null)} style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>✕ Decline</button>
+          <a href={`https://wa.me/${o.buyer_phone.replace(/\D/g,'')}?text=Hi ${o.buyer_name}, regarding your offer of ${fmt(o.offer_amount)} on my ${listing?.year} ${listing?.make} ${listing?.model}...`}
+            target="_blank" rel="noopener noreferrer"
+            style={{ background:'#25D366', color:'#fff', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, textDecoration:'none' }}>📱 WhatsApp</a>
+        </div>
+      )}
+      {countering && (
+        <div style={{ marginTop:10, display:'flex', gap:8, alignItems:'center' }}>
+          <input type="number" value={counterAmt} onChange={e => setCounterAmt(e.target.value)} placeholder="Counter offer amount"
+            style={{ flex:1, padding:'9px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:13, outline:'none' }}/>
+          <button onClick={() => { onRespond(o.id, 'countered', Number(counterAmt)); setCountering(false) }}
+            style={{ background:'#1565C0', color:'#fff', border:'none', padding:'9px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Send Counter</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function OffersTab({ user, listings }) {
   const [offers, setOffers] = useState([])
   const [loading, setLoading] = useState(true)
-  const fmt = n => 'KSH ' + Number(n).toLocaleString()
 
   useEffect(() => {
     if (!listings.length) { setLoading(false); return }
@@ -2370,8 +2413,6 @@ function OffersTab({ user, listings }) {
   }
 
   const getListing = (id) => listings.find(l => l.id === id)
-  const statusColor = s => ({ pending:'#D97706', accepted:'#16A34A', declined:'#DC2626', countered:'#1565C0' }[s] || '#94A3B8')
-  const statusBg = s => ({ pending:'#FFFBEB', accepted:'#DCFCE7', declined:'#FEE2E2', countered:'#EEF5FF' }[s] || '#F8FAFC')
 
   if (loading) return <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading offers...</div>
 
@@ -2386,49 +2427,7 @@ function OffersTab({ user, listings }) {
           <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540' }}>No offers yet</div>
           <div style={{ fontSize:13, color:'#94A3B8', marginTop:4 }}>Offers from buyers will appear here</div>
         </div>
-      ) : offers.map(o => {
-        const listing = getListing(o.listing_id)
-        const [countering, setCountering] = useState(false)
-        const [counterAmt, setCounterAmt] = useState('')
-        return (
-          <div key={o.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12, flexWrap:'wrap', gap:8 }}>
-              <div>
-                {listing && <div style={{ fontSize:12, color:'#94A3B8', marginBottom:2 }}>{listing.year} {listing.make} {listing.model}</div>}
-                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:18, fontWeight:800, color:'#0A2540' }}>Offer: {fmt(o.offer_amount)}</div>
-                {listing && <div style={{ fontSize:11, color:'#64748B' }}>Asking: {fmt(listing.price)} · {Math.round((o.offer_amount/listing.price-1)*100)}% {o.offer_amount < listing.price ? 'below' : 'above'} asking</div>}
-              </div>
-              <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:100, background:statusBg(o.status), color:statusColor(o.status) }}>{o.status}</span>
-            </div>
-            <div style={{ fontSize:13, color:'#475569', marginBottom:12 }}>
-              <span style={{ fontWeight:600 }}>{o.buyer_name}</span> · {o.buyer_phone}
-              {o.message && <div style={{ marginTop:4, fontStyle:'italic', color:'#64748B' }}>"{o.message}"</div>}
-            </div>
-            {o.counter_amount && <div style={{ fontSize:12, color:'#1565C0', fontWeight:600, marginBottom:8 }}>Your counter offer: {fmt(o.counter_amount)}</div>}
-            {o.status === 'pending' && (
-              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                <button onClick={() => respond(o.id, 'accepted', null)}
-                  style={{ background:'#16A34A', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>✓ Accept</button>
-                <button onClick={() => setCountering(!countering)}
-                  style={{ background:'#1565C0', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>↩ Counter</button>
-                <button onClick={() => respond(o.id, 'declined', null)}
-                  style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>✕ Decline</button>
-                <a href={`https://wa.me/${o.buyer_phone.replace(/\D/g,'')}?text=Hi ${o.buyer_name}, regarding your offer of ${fmt(o.offer_amount)} on my ${listing?.year} ${listing?.make} ${listing?.model}...`}
-                  target="_blank" rel="noopener noreferrer"
-                  style={{ background:'#25D366', color:'#fff', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, textDecoration:'none' }}>📱 WhatsApp</a>
-              </div>
-            )}
-            {countering && (
-              <div style={{ marginTop:10, display:'flex', gap:8, alignItems:'center' }}>
-                <input type="number" value={counterAmt} onChange={e => setCounterAmt(e.target.value)} placeholder="Counter offer amount"
-                  style={{ flex:1, padding:'9px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:13, outline:'none' }}/>
-                <button onClick={() => { respond(o.id, 'countered', Number(counterAmt)); setCountering(false) }}
-                  style={{ background:'#1565C0', color:'#fff', border:'none', padding:'9px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>Send Counter</button>
-              </div>
-            )}
-          </div>
-        )
-      })}
+      ) : offers.map(o => <OfferItem key={o.id} o={o} listing={getListing(o.listing_id)} onRespond={respond} />)}
     </div>
   )
 }
