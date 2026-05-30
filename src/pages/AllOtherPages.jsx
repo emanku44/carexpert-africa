@@ -1905,6 +1905,9 @@ export function ListCarPage({ user }) {
   const [phone, setPhone] = useState('')
   const [location, setLocation] = useState(searchParams.get('location') || 'Nairobi — Westlands')
   const [description, setDescription] = useState('')
+  const [aiQuery, setAiQuery] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState('')
 
   const toggleFeat = f => setSelFeats(prev => { const n=new Set(prev); n.has(f)?n.delete(f):n.add(f); return n })
 
@@ -1921,6 +1924,61 @@ export function ListCarPage({ user }) {
   const removePhoto = (i) => {
     setSelectedFiles(prev => prev.filter((_,idx) => idx !== i))
     setPhotoPreviews(prev => prev.filter((_,idx) => idx !== i))
+  }
+
+  const handleAIFill = async () => {
+    if (!aiQuery.trim()) return
+    setAiLoading(true)
+    setAiError('')
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `You are a car listing assistant for Kenya. Extract vehicle details from a short description and return ONLY valid JSON with these exact fields:
+{
+  "make": string (e.g. "Toyota"),
+  "model": string (e.g. "Land Cruiser 100 Series"),
+  "variant": string or "" (e.g. "VX"),
+  "year": number (e.g. 2006),
+  "mileage": number or null,
+  "engine_cc": number or null (e.g. 4500),
+  "fuel_type": "Petrol" | "Diesel" | "Hybrid" | "Electric",
+  "transmission": "Automatic" | "Manual" | "CVT",
+  "body_type": "SUV" | "Sedan" | "Hatchback" | "Pickup" | "Minivan" | "Coupe" | "Wagon" | "Van" | "Truck" | "Other",
+  "drive_type": "AWD" | "4WD" | "RWD" | "FWD" | "4x4" | "2WD",
+  "colour": string or "",
+  "condition": "New" | "Used — Excellent" | "Used — Good" | "Used — Fair" | "Foreign Used — Excellent" | "Foreign Used — Good",
+  "description": string (a good 2-3 sentence listing description based on the details)
+}
+Return ONLY the JSON object, no other text.`,
+          messages: [{ role: 'user', content: `Extract details from: "${aiQuery.trim()}"` }]
+        })
+      })
+      const data = await response.json()
+      const text = data.content?.[0]?.text || ''
+      const json = JSON.parse(text.replace(/```json|```/g, '').trim())
+
+      if (json.make && LC_MAKES.includes(json.make)) setMake(json.make)
+      if (json.model) setModel(json.model)
+      if (json.variant) setVariant(json.variant)
+      if (json.year) setYear(String(json.year))
+      if (json.mileage) setKm(String(json.mileage))
+      if (json.engine_cc) setEngineCc(String(json.engine_cc))
+      if (json.fuel_type) setFuel(json.fuel_type)
+      if (json.transmission) setTx(json.transmission)
+      if (json.body_type) setBodyType(json.body_type)
+      if (json.drive_type) setDrive(json.drive_type)
+      if (json.colour) setColour(json.colour)
+      if (json.condition) setCondition(json.condition)
+      if (json.description) setDescription(json.description)
+      setAiQuery('')
+    } catch (e) {
+      setAiError('Could not parse the description. Try being more specific, e.g. "2006 Toyota Land Cruiser 100 Series VX diesel automatic"')
+    }
+    setAiLoading(false)
   }
 
   const handleSubmit = async () => {
@@ -1999,6 +2057,29 @@ export function ListCarPage({ user }) {
                   ✓ Pre-filled from your valuation — review and complete the remaining details
                 </div>
               )}
+
+              {/* AI Auto-fill */}
+              <div style={{ background:'linear-gradient(135deg,#EEF5FF,#F0F6FF)', border:'1.5px solid #BDD5FF', borderRadius:12, padding:14, marginBottom:18 }}>
+                <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#1565C0', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
+                  ✨ AI Auto-Fill <span style={{ fontSize:10, fontWeight:500, color:'#64748B', fontFamily:'DM Sans,sans-serif' }}>— describe your car and we'll fill the form</span>
+                </div>
+                <div style={{ display:'flex', gap:8 }}>
+                  <input
+                    value={aiQuery}
+                    onChange={e => setAiQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAIFill()}
+                    placeholder='e.g. "2006 100 series Land Cruiser VX diesel, grey, auto, 180k km"'
+                    style={{ flex:1, padding:'10px 12px', border:'1.5px solid #BDD5FF', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#fff' }}
+                  />
+                  <button onClick={handleAIFill} disabled={aiLoading || !aiQuery.trim()}
+                    style={{ background: aiQuery.trim() && !aiLoading ? '#1565C0' : '#94A3B8', color:'#fff', border:'none', padding:'10px 16px', borderRadius:8, fontSize:13, fontWeight:700, cursor: aiQuery.trim() && !aiLoading ? 'pointer' : 'default', fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}>
+                    {aiLoading ? '⏳ Filling...' : '✨ Fill Form'}
+                  </button>
+                </div>
+                {aiError && <div style={{ fontSize:11, color:'#DC2626', marginTop:6 }}>{aiError}</div>}
+                <div style={{ fontSize:10, color:'#94A3B8', marginTop:6 }}>Or fill in the fields manually below</div>
+              </div>
+
               <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:16, display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ width:3, height:15, background:'#1565C0', borderRadius:2, display:'inline-block' }}/> Vehicle Information
               </div>
