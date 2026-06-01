@@ -1931,35 +1931,11 @@ export function ListCarPage({ user }) {
     setAiLoading(true)
     setAiError('')
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: `You are a car listing assistant for Kenya. Extract vehicle details from a short description and return ONLY valid JSON with these exact fields:
-{
-  "make": string (e.g. "Toyota"),
-  "model": string (e.g. "Land Cruiser 100 Series"),
-  "variant": string or "" (e.g. "VX"),
-  "year": number (e.g. 2006),
-  "mileage": number or null,
-  "engine_cc": number or null (e.g. 4500),
-  "fuel_type": "Petrol" | "Diesel" | "Hybrid" | "Electric",
-  "transmission": "Automatic" | "Manual" | "CVT",
-  "body_type": "SUV" | "Sedan" | "Hatchback" | "Pickup" | "Minivan" | "Coupe" | "Wagon" | "Van" | "Truck" | "Other",
-  "drive_type": "AWD" | "4WD" | "RWD" | "FWD" | "4x4" | "2WD",
-  "colour": string or "",
-  "condition": "New" | "Used — Excellent" | "Used — Good" | "Used — Fair" | "Foreign Used — Excellent" | "Foreign Used — Good",
-  "description": string (a good 2-3 sentence listing description based on the details)
-}
-Return ONLY the JSON object, no other text.`,
-          messages: [{ role: 'user', content: `Extract details from: "${aiQuery.trim()}"` }]
-        })
+      const { data, error } = await supabase.functions.invoke('autofill', {
+        body: { query: aiQuery.trim() }
       })
-      const data = await response.json()
-      const text = data.content?.[0]?.text || ''
-      const json = JSON.parse(text.replace(/```json|```/g, '').trim())
+      if (error) throw new Error(error.message)
+      const json = data
 
       if (json.make && LC_MAKES.includes(json.make)) setMake(json.make)
       if (json.model) setModel(json.model)
@@ -1976,7 +1952,7 @@ Return ONLY the JSON object, no other text.`,
       if (json.description) setDescription(json.description)
       setAiQuery('')
     } catch (e) {
-      setAiError('Could not parse the description. Try being more specific, e.g. "2006 Toyota Land Cruiser 100 Series VX diesel automatic"')
+      setAiError('Could not fill form. Try: "2006 Toyota Land Cruiser 100 Series VX diesel automatic grey"')
     }
     setAiLoading(false)
   }
