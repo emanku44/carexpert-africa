@@ -2047,7 +2047,14 @@ export function ListCarPage({ user }) {
                     placeholder='e.g. "2006 100 series Land Cruiser VX diesel, grey, auto, 180k km"'
                     style={{ flex:1, padding:'10px 12px', border:'1.5px solid #BDD5FF', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#fff' }}
                   />
-                  <button onClick={() => { console.log('clicked'); handleAIFill() }}
+                  <button onClick={async () => {
+                            console.log('start')
+                            console.log('query:', aiQuery)
+                            if (!aiQuery.trim()) { console.log('empty query'); return }
+                            console.log('calling supabase...')
+                            const { data, error } = await supabase.functions.invoke('autofill', { body: { query: aiQuery.trim() } })
+                            console.log('result:', data, error)
+                          }}
                     style={{ background: aiQuery.trim() && !aiLoading ? '#1565C0' : '#94A3B8', color:'#fff', border:'none', padding:'10px 16px', borderRadius:8, fontSize:13, fontWeight:700, cursor: aiQuery.trim() && !aiLoading ? 'pointer' : 'default', fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}>
                     {aiLoading ? '⏳ Filling...' : '✨ Fill Form'}
                   </button>
