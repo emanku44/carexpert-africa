@@ -123,6 +123,8 @@ function NTSACheck() {
 function SellerRatings({ listingId, sellerId, sellerName }) {
   const [ratings, setRatings] = useState([])
   const [showForm, setShowForm] = useState(false)
+  const [hasInteracted, setHasInteracted] = useState(false)
+  const [checkingInteraction, setCheckingInteraction] = useState(true)
   const [name, setName] = useState('')
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
@@ -132,7 +134,22 @@ function SellerRatings({ listingId, sellerId, sellerName }) {
     if (!sellerId) return
     supabase.from('seller_ratings').select('*').eq('seller_id', sellerId).order('created_at', { ascending: false }).limit(10)
       .then(({ data }) => setRatings(data || []))
-  }, [sellerId])
+
+    // Check if current user has had an interaction (offer or test drive)
+    supabase.auth.getUser().then(async ({ data: { user: u } }) => {
+      if (!u) { setCheckingInteraction(false); return }
+      setName(u.user_metadata?.full_name || u.email?.split('@')[0] || '')
+      // Check for offer or test drive on this listing
+      const [offerRes, driveRes] = await Promise.all([
+        supabase.from('offers').select('id').eq('listing_id', listingId).eq('buyer_id', u.id).limit(1),
+        supabase.from('test_drives').select('id').eq('listing_id', listingId).eq('buyer_id', u.id).limit(1)
+      ])
+      if ((offerRes.data?.length > 0) || (driveRes.data?.length > 0)) {
+        setHasInteracted(true)
+      }
+      setCheckingInteraction(false)
+    })
+  }, [sellerId, listingId])
 
   const avgRating = ratings.length > 0 ? (ratings.reduce((a, r) => a + r.rating, 0) / ratings.length).toFixed(1) : null
 
@@ -143,7 +160,7 @@ function SellerRatings({ listingId, sellerId, sellerName }) {
     setRatings(prev => [{ id: Date.now(), reviewer_name: name, rating, comment, created_at: new Date().toISOString() }, ...prev])
   }
 
-  const stars = (n, size = 14) => '★'.repeat(n) + '☆'.repeat(5 - n)
+  const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n)
 
   return (
     <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:12 }}>
@@ -153,8 +170,12 @@ function SellerRatings({ listingId, sellerId, sellerName }) {
           ⭐ Seller Ratings {avgRating && <span style={{ fontSize:12, color:'#D97706' }}>{avgRating}/5</span>}
           <span style={{ fontSize:11, color:'#94A3B8', fontWeight:400 }}>({ratings.length})</span>
         </div>
-        {!showForm && !submitted && (
-          <button onClick={() => setShowForm(true)} style={{ background:'#EEF5FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'5px 12px', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>+ Rate Seller</button>
+        {!checkingInteraction && !showForm && !submitted && (
+          hasInteracted ? (
+            <button onClick={() => setShowForm(true)} style={{ background:'#EEF5FF', color:'#1565C0', border:'1.5px solid #BDD5FF', padding:'5px 12px', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>+ Rate Seller</button>
+          ) : (
+            <span style={{ fontSize:11, color:'#94A3B8', fontStyle:'italic' }}>Make an offer or book a test drive to rate</span>
+          )
         )}
       </div>
 
@@ -169,7 +190,7 @@ function SellerRatings({ listingId, sellerId, sellerName }) {
           </div>
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name"
             style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', marginBottom:8, boxSizing:'border-box' }}/>
-          <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="Share your experience with this seller (optional)" rows={2}
+          <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="How was your experience with this seller?" rows={2}
             style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', resize:'none', marginBottom:10, boxSizing:'border-box' }}/>
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={() => setShowForm(false)} style={{ flex:1, background:'#F0F4F8', color:'#64748B', border:'none', padding:'9px', borderRadius:7, fontSize:12, fontWeight:600, cursor:'pointer' }}>Cancel</button>
@@ -180,7 +201,7 @@ function SellerRatings({ listingId, sellerId, sellerName }) {
       {submitted && <div style={{ background:'#DCFCE7', color:'#16A34A', borderRadius:8, padding:'10px 14px', fontSize:13, fontWeight:600, marginBottom:12 }}>✓ Thanks for your rating!</div>}
 
       {ratings.length === 0 ? (
-        <div style={{ textAlign:'center', padding:'20px 0', color:'#94A3B8', fontSize:12 }}>No ratings yet. Be the first to rate this seller.</div>
+        <div style={{ textAlign:'center', padding:'20px 0', color:'#94A3B8', fontSize:12 }}>No ratings yet.</div>
       ) : ratings.slice(0, 3).map(r => (
         <div key={r.id} style={{ borderBottom:'1px solid #F0F4F8', paddingBottom:10, marginBottom:10 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
