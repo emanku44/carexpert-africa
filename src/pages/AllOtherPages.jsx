@@ -2467,9 +2467,37 @@ function PerformanceTab({ user, listings }) {
 function OfferItem({ o, listing, onRespond }) {
   const [countering, setCountering] = useState(false)
   const [counterAmt, setCounterAmt] = useState('')
+  const [ratingOpen, setRatingOpen] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [ratingComment, setRatingComment] = useState('')
+  const [ratingDone, setRatingDone] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reportReason, setReportReason] = useState('')
+  const [reportDetails, setReportDetails] = useState('')
+  const [reportDone, setReportDone] = useState(false)
   const fmt = n => 'KSH ' + Number(n).toLocaleString()
   const statusColor = s => ({ pending:'#D97706', accepted:'#16A34A', declined:'#DC2626', countered:'#1565C0' }[s] || '#94A3B8')
   const statusBg = s => ({ pending:'#FFFBEB', accepted:'#DCFCE7', declined:'#FEE2E2', countered:'#EEF5FF' }[s] || '#F8FAFC')
+
+  const submitRating = async () => {
+    if (!rating) return
+    const { data: { user: u } } = await supabase.auth.getUser()
+    await supabase.from('buyer_ratings').insert({
+      seller_id: u?.id, buyer_name: o.buyer_name, buyer_phone: o.buyer_phone,
+      rating, comment: ratingComment || null, listing_id: o.listing_id
+    })
+    setRatingDone(true)
+  }
+
+  const submitReport = async () => {
+    if (!reportReason) return
+    const { data: { user: u } } = await supabase.auth.getUser()
+    await supabase.from('user_reports').insert({
+      reporter_id: u?.id, reported_name: o.buyer_name, reported_phone: o.buyer_phone,
+      report_type: 'buyer', reason: reportReason, details: reportDetails || null
+    })
+    setReportDone(true)
+  }
 
   return (
     <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10 }}>
@@ -2486,8 +2514,9 @@ function OfferItem({ o, listing, onRespond }) {
         {o.message && <div style={{ marginTop:4, fontStyle:'italic', color:'#64748B' }}>"{o.message}"</div>}
       </div>
       {o.counter_amount && <div style={{ fontSize:12, color:'#1565C0', fontWeight:600, marginBottom:8 }}>Your counter offer: {fmt(o.counter_amount)}</div>}
+      
       {o.status === 'pending' && (
-        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:8 }}>
           <button onClick={() => onRespond(o.id, 'accepted', null)} style={{ background:'#16A34A', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>✓ Accept</button>
           <button onClick={() => setCountering(!countering)} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>↩ Counter</button>
           <button onClick={() => onRespond(o.id, 'declined', null)} style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>✕ Decline</button>
@@ -2496,6 +2525,60 @@ function OfferItem({ o, listing, onRespond }) {
             style={{ background:'#25D366', color:'#fff', padding:'8px 16px', borderRadius:7, fontSize:12, fontWeight:700, textDecoration:'none' }}>📱 WhatsApp</a>
         </div>
       )}
+
+      {/* Rate buyer + Report buyer buttons */}
+      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+        {(o.status === 'accepted' || o.status === 'declined') && !ratingDone && (
+          <button onClick={() => setRatingOpen(!ratingOpen)}
+            style={{ background:'#FFFBEB', color:'#D97706', border:'1.5px solid #FCD34D', padding:'6px 12px', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer' }}>
+            ⭐ Rate Buyer
+          </button>
+        )}
+        {ratingDone && <span style={{ fontSize:11, color:'#16A34A', fontWeight:600 }}>✓ Rating submitted</span>}
+        <button onClick={() => setReportOpen(!reportOpen)}
+          style={{ background:'#FEE2E2', color:'#DC2626', border:'none', padding:'6px 12px', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer' }}>
+          🚩 Report Buyer
+        </button>
+      </div>
+
+      {/* Rate buyer form */}
+      {ratingOpen && !ratingDone && (
+        <div style={{ marginTop:10, background:'#FFFBEB', borderRadius:8, padding:12, border:'1px solid #FCD34D' }}>
+          <div style={{ fontSize:12, fontWeight:700, color:'#92400E', marginBottom:8 }}>Rate {o.buyer_name}</div>
+          <div style={{ display:'flex', gap:4, marginBottom:8 }}>
+            {[1,2,3,4,5].map(n => (
+              <button key={n} onClick={() => setRating(n)}
+                style={{ fontSize:24, background:'none', border:'none', cursor:'pointer', color: n <= rating ? '#F59E0B' : '#E2E8F0', padding:0 }}>★</button>
+            ))}
+          </div>
+          <textarea value={ratingComment} onChange={e => setRatingComment(e.target.value)} placeholder="Was this buyer genuine? Did they show up? Any issues?" rows={2}
+            style={{ width:'100%', padding:'8px 10px', border:'1.5px solid #FCD34D', borderRadius:7, fontSize:12, fontFamily:'DM Sans,sans-serif', outline:'none', resize:'none', marginBottom:8, boxSizing:'border-box' }}/>
+          <button onClick={submitRating} disabled={!rating}
+            style={{ background: rating ? '#D97706' : '#94A3B8', color:'#fff', border:'none', padding:'7px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor: rating ? 'pointer' : 'default', fontFamily:'Outfit,sans-serif' }}>
+            Submit Rating
+          </button>
+        </div>
+      )}
+
+      {/* Report buyer form */}
+      {reportOpen && !reportDone && (
+        <div style={{ marginTop:10, background:'#FEE2E2', borderRadius:8, padding:12, border:'1px solid #FECACA' }}>
+          <div style={{ fontSize:12, fontWeight:700, color:'#DC2626', marginBottom:8 }}>Report {o.buyer_name}</div>
+          <select value={reportReason} onChange={e => setReportReason(e.target.value)}
+            style={{ width:'100%', padding:'8px 10px', border:'1.5px solid #FECACA', borderRadius:7, fontSize:12, fontFamily:'DM Sans,sans-serif', outline:'none', marginBottom:8, boxSizing:'border-box' }}>
+            <option value="">Select reason...</option>
+            {['No show / wasted time','Lowball offer in bad faith','Abusive or threatening','Suspected scammer','Fake contact details','Other'].map(r => <option key={r}>{r}</option>)}
+          </select>
+          <textarea value={reportDetails} onChange={e => setReportDetails(e.target.value)} placeholder="Additional details..." rows={2}
+            style={{ width:'100%', padding:'8px 10px', border:'1.5px solid #FECACA', borderRadius:7, fontSize:12, fontFamily:'DM Sans,sans-serif', outline:'none', resize:'none', marginBottom:8, boxSizing:'border-box' }}/>
+          <button onClick={submitReport} disabled={!reportReason}
+            style={{ background: reportReason ? '#DC2626' : '#94A3B8', color:'#fff', border:'none', padding:'7px 16px', borderRadius:7, fontSize:12, fontWeight:700, cursor: reportReason ? 'pointer' : 'default', fontFamily:'Outfit,sans-serif' }}>
+            Submit Report
+          </button>
+        </div>
+      )}
+      {reportDone && <div style={{ marginTop:8, fontSize:11, color:'#DC2626', fontWeight:600 }}>✓ Report submitted — our team will review</div>}
+
       {countering && (
         <div style={{ marginTop:10, display:'flex', gap:8, alignItems:'center' }}>
           <input type="number" value={counterAmt} onChange={e => setCounterAmt(e.target.value)} placeholder="Counter offer amount"
