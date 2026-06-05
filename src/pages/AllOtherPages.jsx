@@ -2844,6 +2844,7 @@ function SavedSearchesList({ user }) {
 export function DashboardPage({ user }) {
   const [tab, setTab] = useState('overview')
   const [myListings, setMyListings] = useState([])
+  const [listingSearch, setListingSearch] = useState('')
   const [savedCars, setSavedCars] = useState([])
   const [loadingListings, setLoadingListings] = useState(true)
   const [loadingSaved, setLoadingSaved] = useState(true)
@@ -2965,6 +2966,18 @@ export function DashboardPage({ user }) {
                 <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540' }}>My Listings</div>
                 <Link to="/list-car" style={{ background:'#1565C0', color:'#fff', border:'none', padding:'9px 16px', borderRadius:7, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>+ Add Listing</Link>
               </div>
+              {myListings.length > 3 && (
+                <div style={{ position:'relative', marginBottom:12 }}>
+                  <input
+                    value={listingSearch || ''}
+                    onChange={e => setListingSearch(e.target.value)}
+                    placeholder="Search your listings..."
+                    style={{ width:'100%', padding:'10px 12px 10px 36px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', boxSizing:'border-box' }}
+                  />
+                  <span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontSize:14, color:'#94A3B8' }}>🔍</span>
+                  {listingSearch && <span onClick={() => setListingSearch('')} style={{ position:'absolute', right:11, top:'50%', transform:'translateY(-50%)', fontSize:16, color:'#94A3B8', cursor:'pointer' }}>×</span>}
+                </div>
+              )}
               {loadingListings ? <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading...</div>
               : myListings.length === 0 ? (
                 <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
@@ -2972,7 +2985,7 @@ export function DashboardPage({ user }) {
                   <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:6 }}>No listings yet</div>
                   <Link to="/list-car" style={{ background:'#1565C0', color:'#fff', padding:'10px 24px', borderRadius:8, fontSize:13, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>+ List a Car</Link>
                 </div>
-              ) : myListings.map(l => {
+              ) : myListings.filter(l => !listingSearch || `${l.make} ${l.model} ${l.variant || ''} ${l.year}`.toLowerCase().includes(listingSearch.toLowerCase())).map(l => {
                 const daysLeft = l.expires_at ? Math.ceil((new Date(l.expires_at) - new Date()) / 86400000) : null
                 const isExpiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0
                 const isExpired = daysLeft !== null && daysLeft <= 0
