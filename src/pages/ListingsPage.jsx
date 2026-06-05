@@ -677,8 +677,12 @@ export default function ListingsPage({ user }) {
                       <a href={`https://wa.me/${(car.phone||'').replace(/\D/g,'')}?text=Hi, I'm interested in your ${car.year} ${car.make} ${car.model} on CarExpert Africa`}
                         target="_blank" rel="noopener noreferrer"
                         style={{ flex: 1, background: '#25D366', color: '#fff', border: 'none', padding: '9px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}
-                        onClick={e => e.stopPropagation()}>WhatsApp</a>
-                      <Link to={`/listings/${car.id}`} style={{ flex: 1, background: '#F0F6FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '9px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}>View →</Link>
+                        onClick={e => { e.stopPropagation(); supabase.from('listing_leads').insert({ listing_id: car.id, lead_type: 'whatsapp' }) }}>WhatsApp</a>
+                      {car.phone && (
+                        <a href={`tel:${car.phone}`}
+                          style={{ flex: 1, background: '#F0F6FF', color: '#1565C0', border: '1.5px solid #BDD5FF', padding: '9px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', textAlign: 'center', textDecoration: 'none' }}
+                          onClick={e => { e.stopPropagation(); supabase.from('listing_leads').insert({ listing_id: car.id, lead_type: 'call' }) }}>📞 Call</a>
+                      )}
                     </div>
                   </div>
                 </div>
