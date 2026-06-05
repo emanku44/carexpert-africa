@@ -239,7 +239,7 @@ export function CarDetailPage({ user }) {
           setCar(data)
           setDeposit(Math.round(data.price * 0.2))
           // increment views
-          supabase.from('listings').update({ views: (data.views || 0) + 1 }).eq('id', id)
+          supabase.rpc('increment_views', { listing_id: id })
           const ids = JSON.parse(localStorage.getItem('cea_recently_viewed') || '[]')
           const updated = [id, ...ids.filter(i => i !== id)].slice(0, 5)
           localStorage.setItem('cea_recently_viewed', JSON.stringify(updated))
