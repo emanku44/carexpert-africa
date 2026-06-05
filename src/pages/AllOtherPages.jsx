@@ -1938,7 +1938,6 @@ export function ListCarPage({ user }) {
       const json = data
 
       if (json.make && LC_MAKES.includes(json.make)) setMake(json.make)
-      if (json.model) setModel(json.model)
       if (json.variant) setVariant(json.variant)
       if (json.year) setYear(String(json.year))
       if (json.mileage) setKm(String(json.mileage))
@@ -1950,6 +1949,24 @@ export function ListCarPage({ user }) {
       if (json.colour) setColour(json.colour)
       if (json.condition) setCondition(json.condition)
       if (json.description) setDescription(json.description)
+      // Set model after make renders, with fuzzy match
+      setTimeout(() => {
+        if (json.model && json.make) {
+          const models = CAR_DATA[json.make] || []
+          // exact match first
+          if (models.includes(json.model)) {
+            setModel(json.model)
+          } else {
+            // fuzzy — find model that contains or is contained by the AI response
+            const fuzzy = models.find(m =>
+              m.toLowerCase().includes(json.model.toLowerCase()) ||
+              json.model.toLowerCase().includes(m.toLowerCase())
+            )
+            if (fuzzy) setModel(fuzzy)
+            else setModel(json.model) // set anyway, user can adjust
+          }
+        }
+      }, 100)
       setAiQuery('')
     } catch (e) {
       setAiError('Could not fill form. Try: "2006 Toyota Land Cruiser 100 Series VX diesel automatic grey"')
