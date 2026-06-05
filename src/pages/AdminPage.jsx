@@ -731,6 +731,90 @@ function ReportsTab() {
   )
 }
 
+function VerifyTab() {
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [notes, setNotes] = useState({})
+
+  useEffect(() => {
+    supabase.from('verification_requests').select('*').order('submitted_at', { ascending: false })
+      .then(({ data }) => { setRequests(data || []); setLoading(false) })
+  }, [])
+
+  const approve = async (req) => {
+    // Update verification request
+    await supabase.from('verification_requests').update({ status:'approved', reviewed_at: new Date().toISOString() }).eq('id', req.id)
+    // Mark all their listings as verified
+    await supabase.from('listings').update({ seller_verified: true }).eq('user_id', req.user_id)
+    // Update user metadata
+    await supabase.auth.admin?.updateUserById?.(req.user_id, { user_metadata: { verified: true } })
+    setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status:'approved' } : r))
+  }
+
+  const reject = async (req) => {
+    const note = notes[req.id] || ''
+    await supabase.from('verification_requests').update({ status:'rejected', notes: note, reviewed_at: new Date().toISOString() }).eq('id', req.id)
+    await supabase.from('listings').update({ seller_verified: false }).eq('user_id', req.user_id)
+    setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status:'rejected', notes: note } : r))
+  }
+
+  const statusColor = s => ({ pending:'#D97706', approved:'#16A34A', rejected:'#DC2626' }[s] || '#94A3B8')
+  const statusBg = s => ({ pending:'#FFFBEB', approved:'#DCFCE7', rejected:'#FEE2E2' }[s] || '#F8FAFC')
+
+  if (loading) return <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading...</div>
+
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <div style={{ fontFamily:'Outfit,sans-serif', fontSize:17, fontWeight:800, color:'#0A2540' }}>
+          ✅ Verification Requests <span style={{ color:'#94A3B8', fontWeight:400, fontSize:13 }}>({requests.length})</span>
+        </div>
+        <span style={{ fontSize:12, fontWeight:700, padding:'4px 12px', borderRadius:100, background:'#FFFBEB', color:'#D97706' }}>
+          {requests.filter(r => r.status === 'pending').length} pending
+        </span>
+      </div>
+      {requests.length === 0 ? (
+        <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
+          <div style={{ fontSize:32, marginBottom:12 }}>✅</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540' }}>No verification requests yet</div>
+        </div>
+      ) : requests.map(r => (
+        <div key={r.id} style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, padding:16, marginBottom:10 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12, flexWrap:'wrap', gap:8 }}>
+            <div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:800, color:'#0A2540', marginBottom:4 }}>{r.full_name}</div>
+              <div style={{ fontSize:12, color:'#475569', marginBottom:2 }}>📞 {r.phone}</div>
+              <div style={{ fontSize:12, color:'#475569', marginBottom:2 }}>🪪 {r.id_type}: {r.id_number}</div>
+              <div style={{ fontSize:11, color:'#94A3B8' }}>{new Date(r.submitted_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
+            </div>
+            <span style={{ fontSize:11, fontWeight:700, padding:'4px 12px', borderRadius:100, background:statusBg(r.status), color:statusColor(r.status) }}>
+              {r.status === 'approved' ? '✅ Approved' : r.status === 'rejected' ? '❌ Rejected' : '⏳ Pending'}
+            </span>
+          </div>
+          {r.status === 'pending' && (
+            <>
+              <input value={notes[r.id] || ''} onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))}
+                placeholder="Rejection reason (optional)..."
+                style={{ width:'100%', padding:'8px 12px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:12, fontFamily:'DM Sans,sans-serif', outline:'none', marginBottom:10, boxSizing:'border-box' }}/>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={() => approve(r)}
+                  style={{ flex:1, background:'#16A34A', color:'#fff', border:'none', padding:'9px', borderRadius:7, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>
+                  ✅ Approve & Verify
+                </button>
+                <button onClick={() => reject(r)}
+                  style={{ flex:1, background:'#FEE2E2', color:'#DC2626', border:'none', padding:'9px', borderRadius:7, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit,sans-serif' }}>
+                  ❌ Reject
+                </button>
+              </div>
+            </>
+          )}
+          {r.notes && <div style={{ fontSize:11, color:'#DC2626', marginTop:8 }}>Reason: {r.notes}</div>}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function UserReportsTab() {
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
@@ -885,7 +969,7 @@ export default function AdminPage({ user }) {
           {counts.pending>0 && <span style={{ background:'#EF4444', color:'#fff', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:100 }}>{counts.pending}</span>}
         </div>
         <div className="admin-desktop-tabs" style={{ display:'flex', gap:12, alignItems:'center' }}>
-          {['listings','users','dealers','analytics','articles','videos','offers','reports','userreports'].map(t => (
+          {['listings','users','dealers','analytics','articles','videos','offers','reports','userreports','verify'].map(t => (
             <span key={t} onClick={()=>setAdminTab(t)} style={{ color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', fontSize:12, cursor:'pointer', fontWeight:adminTab===t?700:400, textTransform:'capitalize' }}>{t}{t==='listings'&&counts.pending>0?` (${counts.pending})`:''}</span>
           ))}
           <div style={{ width:30, height:30, borderRadius:'50%', background:'#1565C0', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Outfit,sans-serif', fontSize:11, fontWeight:700, color:'#fff' }}>{user?.email?.[0]?.toUpperCase()||'A'}</div>
@@ -894,7 +978,7 @@ export default function AdminPage({ user }) {
 
       {/* Mobile tab bar */}
       <div className="admin-nav-tabs" style={{ display:'none', background:'#0A2540', overflowX:'auto', borderBottom:'1px solid rgba(255,255,255,.1)' }}>
-        {['listings','users','dealers','analytics','articles','videos','offers','reports','userreports'].map(t => (
+        {['listings','users','dealers','analytics','articles','videos','offers','reports','userreports','verify'].map(t => (
           <button key={t} onClick={()=>setAdminTab(t)} style={{ flexShrink:0, padding:'11px 16px', border:'none', background:'none', fontSize:12, fontWeight:adminTab===t?700:500, color:adminTab===t?'#4DA6FF':'rgba(255,255,255,.5)', cursor:'pointer', borderBottom:`2px solid ${adminTab===t?'#4DA6FF':'transparent'}`, textTransform:'capitalize', fontFamily:'DM Sans,sans-serif' }}>
             {t}{t==='listings'&&counts.pending>0?` (${counts.pending})`:''}
           </button>
@@ -948,6 +1032,7 @@ export default function AdminPage({ user }) {
           {adminTab==='offers' && <DealerOffersTab/>}
           {adminTab==='reports' && <ReportsTab/>}
           {adminTab==='userreports' && <UserReportsTab/>}
+          {adminTab==='verify' && <VerifyTab/>}
         </main>
       </div>
       <Toast msg={toast.msg} type={toast.type} show={toast.show}/>

@@ -665,7 +665,10 @@ export default function ListingsPage({ user }) {
                     }
                   </div>
                   <div style={{ padding: 12 }}>
-                    <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 800, color: '#0A2540', marginBottom: 2 }}>{fmt(car.price)}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+                      <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: 16, fontWeight: 800, color: '#0A2540' }}>{fmt(car.price)}</div>
+                      {car.seller_verified && <span style={{ fontSize:9, background:'#DCFCE7', color:'#16A34A', padding:'2px 6px', borderRadius:100, fontWeight:700, fontFamily:'DM Sans,sans-serif' }}>✅ Verified</span>}
+                    </div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 8 }}>{car.year} {car.make} {car.model}{car.variant ? ` — ${car.variant}` : ''}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
                       {[car.mileage && `${Number(car.mileage).toLocaleString()} km`, car.fuel_type, car.transmission, car.body_type].filter(Boolean).map((s, i) => (

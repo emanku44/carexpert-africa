@@ -573,7 +573,10 @@ export function CarDetailPage({ user }) {
                         {car.contact_name[0].toUpperCase()}
                       </div>
                       <div>
-                        <div style={{ fontSize:13, fontWeight:700 }}>{car.contact_name}</div>
+                        <div style={{ fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
+                          {car.contact_name}
+                          {car.seller_verified && <span style={{ fontSize:10, background:'rgba(77,166,255,.2)', color:'#4DA6FF', padding:'1px 7px', borderRadius:100, fontWeight:700 }}>✅ Verified</span>}
+                        </div>
                         <div style={{ fontSize:11, color:'rgba(255,255,255,.5)' }}>{car.location}</div>
                       </div>
                     </div>
@@ -2343,6 +2346,133 @@ export function ListCarPage({ user }) {
 // ─────────────────────────────────────────────────────────────
 // DASHBOARD PAGE
 // ─────────────────────────────────────────────────────────────
+function VerificationTab({ user }) {
+  const [request, setRequest] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [idType, setIdType] = useState('National ID')
+  const [idNumber, setIdNumber] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    supabase.from('verification_requests').select('*').eq('user_id', user.id).single()
+      .then(({ data }) => {
+        if (data) setRequest(data)
+        setLoading(false)
+      })
+    // Pre-fill name from user metadata
+    setFullName(user.user_metadata?.full_name || '')
+  }, [user])
+
+  const submit = async () => {
+    if (!fullName.trim() || !phone.trim() || !idNumber.trim()) return
+    setSubmitting(true)
+    const { error } = await supabase.from('verification_requests').upsert({
+      user_id: user.id, full_name: fullName.trim(), phone: phone.trim(),
+      id_type: idType, id_number: idNumber.trim(), status: 'pending', submitted_at: new Date().toISOString()
+    })
+    if (!error) { setSubmitted(true); setRequest({ status: 'pending' }) }
+    setSubmitting(false)
+  }
+
+  const statusColor = s => ({ pending:'#D97706', approved:'#16A34A', rejected:'#DC2626' }[s] || '#94A3B8')
+  const statusBg = s => ({ pending:'#FFFBEB', approved:'#DCFCE7', rejected:'#FEE2E2' }[s] || '#F8FAFC')
+  const inp = { width:'100%', padding:'11px 12px', border:'1.5px solid #E2E8F0', borderRadius:8, fontSize:13, fontFamily:'DM Sans,sans-serif', outline:'none', background:'#F8FAFC', boxSizing:'border-box' }
+  const lbl = { display:'block', fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:5 }
+
+  if (loading) return <div style={{ textAlign:'center', padding:40, color:'#94A3B8' }}>Loading...</div>
+
+  return (
+    <div>
+      <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:6 }}>✅ Seller Verification</div>
+      <div style={{ fontSize:13, color:'#64748B', marginBottom:20, lineHeight:1.6 }}>
+        Verified sellers get a <strong>✅ Verified</strong> badge on all their listings, building buyer trust and getting more enquiries.
+      </div>
+
+      {/* Benefits */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:10, marginBottom:20 }}>
+        {[
+          ['✅', 'Verified Badge', 'Shows on all your listings'],
+          ['📈', 'More Views', 'Buyers prefer verified sellers'],
+          ['🤝', 'More Offers', 'Higher conversion rate'],
+          ['🔒', 'Build Trust', 'Stand out from unverified sellers'],
+        ].map(([icon, title, desc]) => (
+          <div key={title} style={{ background:'#F0FDF4', border:'1px solid #86EFAC', borderRadius:10, padding:'12px 14px' }}>
+            <div style={{ fontSize:20, marginBottom:4 }}>{icon}</div>
+            <div style={{ fontFamily:'Outfit,sans-serif', fontSize:13, fontWeight:700, color:'#0A2540', marginBottom:2 }}>{title}</div>
+            <div style={{ fontSize:11, color:'#64748B' }}>{desc}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Status if already submitted */}
+      {request && (
+        <div style={{ background: statusBg(request.status), border:`1px solid ${statusColor(request.status)}33`, borderRadius:12, padding:16, marginBottom:20 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ fontSize:24 }}>{request.status === 'approved' ? '✅' : request.status === 'rejected' ? '❌' : '⏳'}</span>
+            <div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color: statusColor(request.status) }}>
+                {request.status === 'approved' ? 'You are Verified!' : request.status === 'rejected' ? 'Verification Rejected' : 'Verification Pending Review'}
+              </div>
+              <div style={{ fontSize:12, color:'#64748B', marginTop:2 }}>
+                {request.status === 'approved' ? 'Your ✅ Verified badge is active on all your listings.' :
+                 request.status === 'rejected' ? (request.notes || 'Please contact us for more information.') :
+                 'Our team will review your details within 24 hours.'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Form — only show if not approved */}
+      {(!request || request.status === 'rejected') && !submitted && (
+        <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:14, padding:20 }}>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:14, fontWeight:700, color:'#0A2540', marginBottom:16, display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ width:3, height:14, background:'#16A34A', borderRadius:2, display:'inline-block' }}/> Submit Verification Request
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+            <div style={{ gridColumn:'1/-1' }}>
+              <label style={lbl}>Full Name (as on ID) *</label>
+              <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="John Kamau" style={inp}/>
+            </div>
+            <div>
+              <label style={lbl}>Phone Number *</label>
+              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+254 7XX XXX XXX" style={inp}/>
+            </div>
+            <div>
+              <label style={lbl}>ID Type *</label>
+              <select value={idType} onChange={e => setIdType(e.target.value)} style={inp}>
+                {['National ID','Passport','Driving Licence','Business Registration'].map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div style={{ gridColumn:'1/-1' }}>
+              <label style={lbl}>ID Number *</label>
+              <input value={idNumber} onChange={e => setIdNumber(e.target.value)} placeholder="e.g. 12345678" style={inp}/>
+            </div>
+          </div>
+          <div style={{ background:'#EEF5FF', border:'1px solid #BDD5FF', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#1565C0', marginBottom:16 }}>
+            🔒 Your ID details are kept strictly confidential and only used to verify your identity. They are never shared publicly.
+          </div>
+          <button onClick={submit} disabled={submitting || !fullName.trim() || !phone.trim() || !idNumber.trim()}
+            style={{ width:'100%', background: fullName.trim() && phone.trim() && idNumber.trim() ? '#16A34A' : '#94A3B8', color:'#fff', border:'none', padding:13, borderRadius:9, fontSize:14, fontWeight:700, cursor: fullName.trim() && phone.trim() && idNumber.trim() ? 'pointer' : 'default', fontFamily:'Outfit,sans-serif' }}>
+            {submitting ? 'Submitting...' : '✅ Submit for Verification'}
+          </button>
+        </div>
+      )}
+      {submitted && (
+        <div style={{ textAlign:'center', padding:32, background:'#F0FDF4', borderRadius:12, border:'1px solid #86EFAC' }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+          <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#16A34A', marginBottom:8 }}>Verification Submitted!</div>
+          <div style={{ fontSize:13, color:'#64748B' }}>Our team will review your details within 24 hours and update your badge.</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PerformanceTab({ user, listings }) {
   const [leads, setLeads] = useState([])
   const [priceHistory, setPriceHistory] = useState([])
@@ -2869,6 +2999,7 @@ export function DashboardPage({ user }) {
     { id:'searches', label:'Saved Searches', icon:'🔖' },
     { id:'articles', label:'Saved Articles', icon:'📰' },
     { id:'leads', label:'Leads', icon:'💬' },
+    { id:'verify', label:'Get Verified', icon:'✅' },
     { id:'alerts', label:'Alerts', icon:'🔔' },
   ]
 
@@ -3075,6 +3206,12 @@ export function DashboardPage({ user }) {
           )}
 
           {tab === 'leads' && (
+            <div>
+              <div style={{ fontFamily:'Outfit,sans-serif', fontSize:16, fontWeight:800, color:'#0A2540', marginBottom:14 }}>Leads</div>
+              <div style={{ textAlign:'center', padding:40, color:'#94A3B8', fontSize:13 }}>Lead tracking coming soon</div>
+            </div>
+          )}
+          {tab === 'verify' && <VerificationTab user={user} />}
             <div style={{ textAlign:'center', padding:48, background:'#fff', borderRadius:12, border:'1.5px solid #E8EDF3' }}>
               <div style={{ fontSize:32, marginBottom:12 }}>💬</div>
               <div style={{ fontFamily:'Outfit,sans-serif', fontSize:15, fontWeight:700, color:'#0A2540', marginBottom:6 }}>Leads coming soon</div>
