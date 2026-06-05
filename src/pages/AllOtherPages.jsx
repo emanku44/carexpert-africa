@@ -216,7 +216,7 @@ export function CarDetailPage({ user }) {
   const [offerSubmitted, setOfferSubmitted] = useState(false)
   const [copyMsg, setCopyMsg] = useState('')
   const [driveOpen, setDriveOpen] = useState(false)
-  const [contactOpen, setContactOpen] = useState(true)
+  const [contactOpen, setContactOpen] = useState(window.innerWidth > 768)
   const [reportOpen, setReportOpen] = useState(false)
   const [reportReason, setReportReason] = useState('')
   const [reportName, setReportName] = useState('')
@@ -514,7 +514,10 @@ export function CarDetailPage({ user }) {
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 {car.negotiable && <span style={{ fontSize:10, color:'#4DA6FF', fontWeight:700, background:'rgba(77,166,255,.15)', padding:'3px 8px', borderRadius:100 }}>Negotiable</span>}
-                <span style={{ fontSize:18, color:'rgba(255,255,255,.5)', transform: contactOpen ? 'rotate(180deg)' : 'none', transition:'transform .2s', display:'block' }}>⌄</span>
+                <div style={{ background: contactOpen ? 'rgba(255,255,255,.1)' : '#4DA6FF', borderRadius:8, padding:'6px 12px', display:'flex', alignItems:'center', gap:6, transition:'all .2s' }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:'#fff' }}>{contactOpen ? 'Hide' : 'Contact Seller'}</span>
+                  <span style={{ fontSize:16, color:'#fff', transform: contactOpen ? 'rotate(180deg)' : 'none', transition:'transform .2s', display:'block' }}>⌄</span>
+                </div>
               </div>
             </div>
             {contactOpen && (
