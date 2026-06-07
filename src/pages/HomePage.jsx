@@ -102,6 +102,37 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
   )
 }
 
+function RecentSearches() {
+  const [searches, setSearches] = useState([])
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('cea_recent_filters') || '[]')
+    setSearches(saved)
+  }, [])
+
+  if (searches.length === 0) return null
+
+  return (
+    <div style={{ maxWidth:1200, margin:'0 auto', padding:'32px 16px 0' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+        <div style={{ fontFamily:'Outfit, sans-serif', fontSize:16, fontWeight:700, color:'#0A2540' }}>Recent Searches</div>
+        <button onClick={() => { localStorage.removeItem('cea_recent_filters'); setSearches([]) }}
+          style={{ fontSize:11, color:'#94A3B8', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>Clear</button>
+      </div>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+        {searches.map((s, i) => (
+          <a key={i} href={s.url}
+            style={{ display:'flex', alignItems:'center', gap:6, background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:100, padding:'7px 14px', fontSize:12, fontWeight:600, color:'#0A2540', textDecoration:'none', transition:'all .2s' }}
+            onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.color='#1565C0'; e.currentTarget.style.background='#EEF5FF' }}
+            onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.color='#0A2540'; e.currentTarget.style.background='#fff' }}>
+            <span style={{ fontSize:13 }}>🔍</span> {s.label}
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function RecentlyViewed() {
   const [cars, setCars] = useState([])
 
@@ -505,6 +536,9 @@ export default function HomePage({ user }) {
 
       {/* Dealers Banner */}
       {allListings.length >= 0 && <DealersBanner />}
+
+      {/* Recent Searches */}
+      <RecentSearches />
 
       {/* Recently Viewed */}
       <RecentlyViewed />

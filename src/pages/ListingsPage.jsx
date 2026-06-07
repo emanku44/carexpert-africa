@@ -408,6 +408,31 @@ export default function ListingsPage({ user }) {
     minPrice > 0, maxPrice < 30000000, minYear > 1970, maxYear < 2025, minKm > 0, maxKm < 300000
   ].filter(Boolean).length
 
+  // Save recent filters to localStorage
+  useEffect(() => {
+    if (activeFiltersCount === 0) return
+    const label = [selectedMake, selectedModel, selectedVariant, search, selectedLocation,
+      minPrice > 0 ? `From KSH ${(minPrice/1e6).toFixed(1)}M` : null,
+      maxPrice < 30000000 ? `Up to KSH ${(maxPrice/1e6).toFixed(1)}M` : null,
+      minYear > 1970 ? `From ${minYear}` : null,
+    ].filter(Boolean).join(' · ')
+    if (!label) return
+    const params = new URLSearchParams()
+    if (selectedMake) params.set('make', selectedMake)
+    if (selectedModel) params.set('model', selectedModel)
+    if (selectedVariant) params.set('variant', selectedVariant)
+    if (search) params.set('search', search)
+    if (selectedLocation) params.set('location', selectedLocation)
+    if (minPrice > 0) params.set('minPrice', minPrice)
+    if (maxPrice < 30000000) params.set('maxPrice', maxPrice)
+    if (minYear > 1970) params.set('minYear', minYear)
+    if (maxYear < 2025) params.set('maxYear', maxYear)
+    const entry = { label, url: `/listings?${params.toString()}`, ts: Date.now() }
+    const prev = JSON.parse(localStorage.getItem('cea_recent_filters') || '[]')
+    const updated = [entry, ...prev.filter(e => e.label !== label)].slice(0, 5)
+    localStorage.setItem('cea_recent_filters', JSON.stringify(updated))
+  }, [selectedMake, selectedModel, selectedVariant, search, selectedLocation, minPrice, maxPrice, minYear, maxYear])
+
   const applySearch = (filters) => {
     if (filters.make) setSelectedMake(filters.make)
     if (filters.model) setSelectedModel(filters.model)
