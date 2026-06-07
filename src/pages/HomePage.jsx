@@ -161,8 +161,8 @@ export default function HomePage({ user }) {
   const [transmission, setTransmission] = useState('')
   const [fuel, setFuel]                 = useState('')
   const [minPrice, setMinPrice]         = useState(0)
-  const [maxPrice, setMaxPrice]         = useState(20000000)
-  const [minYear, setMinYear]           = useState(2000)
+  const [maxPrice, setMaxPrice]         = useState(30000000)
+  const [minYear, setMinYear]           = useState(1970)
   const [maxYear, setMaxYear]           = useState(2025)
   const [minKm, setMinKm]               = useState(0)
   const [maxKm, setMaxKm]               = useState(300000)
@@ -201,7 +201,7 @@ export default function HomePage({ user }) {
     return true
   }).length
 
-  const filtersActive = make || model || body || transmission || fuel || minPrice > 0 || maxPrice < 20000000 || minYear > 2000 || maxYear < 2025 || minKm > 0 || maxKm < 300000
+  const filtersActive = make || model || body || transmission || fuel || minPrice > 0 || maxPrice < 30000000 || minYear > 1970 || maxYear < 2025 || minKm > 0 || maxKm < 300000
 
   const search = () => {
     const p = new URLSearchParams()
@@ -211,8 +211,8 @@ export default function HomePage({ user }) {
     if (transmission)        p.set('transmission', transmission)
     if (fuel)                p.set('fuel', fuel)
     if (minPrice > 0)        p.set('minPrice', minPrice)
-    if (maxPrice < 20000000) p.set('maxPrice', maxPrice)
-    if (minYear > 2000)      p.set('minYear', minYear)
+    if (maxPrice < 30000000) p.set('maxPrice', maxPrice)
+    if (minYear > 1970)      p.set('minYear', minYear)
     if (maxYear < 2025)      p.set('maxYear', maxYear)
     if (minKm > 0)           p.set('minKm', minKm)
     if (maxKm < 300000)      p.set('maxKm', maxKm)
@@ -307,7 +307,7 @@ export default function HomePage({ user }) {
               </div>
               <div>
                 <label style={lbl}>Price Range (KSH)</label>
-                <DualSlider minVal={minPrice} maxVal={maxPrice} absMin={0} absMax={20000000} step={500000} setMin={setMinPrice} setMax={setMaxPrice} formatLabel={n => `${(n/1e6).toFixed(1)}M`} />
+                <DualSlider minVal={minPrice} maxVal={maxPrice} absMin={0} absMax={30000000} step={500000} setMin={setMinPrice} setMax={setMaxPrice} formatLabel={n => `${(n/1e6).toFixed(1)}M`} />
               </div>
               <button onClick={search} style={{ background:'#1565C0', color:'#fff', border:'none', padding:'12px 16px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Outfit, sans-serif', whiteSpace:'nowrap', width:'100%' }}>
                 {filtersActive ? `Search ${matchingCount} Cars →` : `Search ${allListings.length} Cars →`}
@@ -343,7 +343,7 @@ export default function HomePage({ user }) {
                 </div>
                 <div>
                   <label style={lbl}>Year</label>
-                  <DualSlider minVal={minYear} maxVal={maxYear} absMin={2000} absMax={2025} step={1} setMin={setMinYear} setMax={setMaxYear} formatLabel={n => `${n}`} />
+                  <DualSlider minVal={minYear} maxVal={maxYear} absMin={1970} absMax={2025} step={1} setMin={setMinYear} setMax={setMaxYear} formatLabel={n => `${n}`} />
                 </div>
                 <div>
                   <label style={lbl}>Mileage (km)</label>
