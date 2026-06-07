@@ -102,6 +102,62 @@ function DualSlider({ minVal, maxVal, absMin, absMax, step, setMin, setMax, form
   )
 }
 
+function RecentlyViewed() {
+  const [cars, setCars] = useState([])
+
+  useEffect(() => {
+    const ids = JSON.parse(localStorage.getItem('cea_recently_viewed') || '[]')
+    if (ids.length === 0) return
+    supabase.from('listings')
+      .select('id, make, model, variant, year, price, mileage, fuel_type, transmission, listing_photos(*)')
+      .in('id', ids).eq('status', 'approved')
+      .then(({ data }) => {
+        if (!data) return
+        const ordered = ids.map(id => data.find(l => l.id === id)).filter(Boolean)
+        setCars(ordered.slice(0, 5))
+      })
+  }, [])
+
+  if (cars.length === 0) return null
+
+  return (
+    <div style={{ maxWidth:1200, margin:'0 auto', padding:'40px 16px 0' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <div>
+          <div style={{ fontFamily:'Outfit, sans-serif', fontSize:20, fontWeight:700, color:'#0A2540' }}>Recently Viewed</div>
+          <div style={{ fontSize:12, color:'#94A3B8', marginTop:3 }}>Pick up where you left off</div>
+        </div>
+        <button onClick={() => { localStorage.removeItem('cea_recently_viewed'); setCars([]) }}
+          style={{ fontSize:11, color:'#94A3B8', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>Clear</button>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:12 }}>
+        {cars.map(car => (
+          <Link key={car.id} to={`/listings/${car.id}`} style={{ textDecoration:'none' }}>
+            <div style={{ background:'#fff', border:'1.5px solid #E8EDF3', borderRadius:12, overflow:'hidden', transition:'all .2s' }}
+              onMouseOver={e => { e.currentTarget.style.borderColor='#1565C0'; e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(21,101,192,.1)' }}
+              onMouseOut={e => { e.currentTarget.style.borderColor='#E8EDF3'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
+              <div style={{ height:110, background:'#EEF5FF', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {car.listing_photos?.[0]?.url
+                  ? <img src={car.listing_photos[0].url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  : <span style={{ fontSize:28 }}>🚗</span>}
+              </div>
+              <div style={{ padding:'10px 10px 12px' }}>
+                <div style={{ fontFamily:'Outfit, sans-serif', fontSize:13, fontWeight:800, color:'#1565C0', marginBottom:2 }}>KSH {Number(car.price).toLocaleString()}</div>
+                <div style={{ fontSize:11, fontWeight:600, color:'#0A2540', marginBottom:4 }}>{car.year} {car.make} {car.model}{car.variant ? ` — ${car.variant}` : ''}</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
+                  {[car.mileage && `${(car.mileage/1000).toFixed(0)}k km`, car.fuel_type, car.transmission].filter(Boolean).map((s,i) => (
+                    <span key={i} style={{ fontSize:9, color:'#94A3B8', padding:'2px 5px', background:'#F8FAFC', borderRadius:100, border:'1px solid #E8EDF3' }}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function DealersBanner() {
   const [dealers, setDealers] = useState([])
 
@@ -449,6 +505,9 @@ export default function HomePage({ user }) {
 
       {/* Dealers Banner */}
       {allListings.length >= 0 && <DealersBanner />}
+
+      {/* Recently Viewed */}
+      <RecentlyViewed />
 
       {/* Dealer CTA */}
       <div style={{ maxWidth:1200, margin:'40px auto', padding:'0 16px' }}>
